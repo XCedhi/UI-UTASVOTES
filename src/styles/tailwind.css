@@ -1,0 +1,210 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary Colors */
+    --color-primary: #1e3a8a; /* blue-900 */
+    --color-primary-foreground: #ffffff; /* white */
+
+    /* Secondary Colors */
+    --color-secondary: #0f172a; /* slate-900 */
+    --color-secondary-foreground: #f8fafc; /* slate-50 */
+
+    /* Accent Colors */
+    --color-accent: #f59e0b; /* amber-500 */
+    --color-accent-foreground: #1f2937; /* gray-800 */
+
+    /* Background Colors */
+    --color-background: #fefefe; /* near-white */
+    --color-foreground: #0f172a; /* slate-900 */
+
+    /* Surface Colors */
+    --color-card: #f8fafc; /* slate-50 */
+    --color-card-foreground: #1e293b; /* slate-800 */
+
+    /* Popover Colors */
+    --color-popover: #ffffff; /* white */
+    --color-popover-foreground: #0f172a; /* slate-900 */
+
+    /* Muted Colors */
+    --color-muted: #f1f5f9; /* slate-100 */
+    --color-muted-foreground: #475569; /* slate-600 */
+
+    /* Destructive Colors */
+    --color-destructive: #dc2626; /* red-600 */
+    --color-destructive-foreground: #ffffff; /* white */
+
+    /* Success Colors */
+    --color-success: #059669; /* emerald-600 */
+    --color-success-foreground: #ffffff; /* white */
+
+    /* Warning Colors */
+    --color-warning: #d97706; /* amber-600 */
+    --color-warning-foreground: #ffffff; /* white */
+
+    /* Error Colors */
+    --color-error: #dc2626; /* red-600 */
+    --color-error-foreground: #ffffff; /* white */
+
+    /* Border & Input Colors */
+    --color-border: rgba(15, 23, 42, 0.12); /* slate-900 with opacity */
+    --color-input: #e2e8f0; /* slate-200 */
+    --color-ring: #1e3a8a; /* blue-900 */
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+    --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.1);
+    --shadow-lg: 0 10px 15px rgba(15, 23, 42, 0.12);
+    --shadow-xl: 0 20px 40px -8px rgba(15, 23, 42, 0.16);
+  }
+
+  .dark {
+    /* Primary Colors - Dark Mode */
+    --color-primary: #3b82f6; /* blue-500 */
+    --color-primary-foreground: #ffffff; /* white */
+
+    /* Secondary Colors - Dark Mode */
+    --color-secondary: #1e293b; /* slate-800 */
+    --color-secondary-foreground: #e2e8f0; /* slate-200 */
+
+    /* Accent Colors - Dark Mode */
+    --color-accent: #fbbf24; /* amber-400 */
+    --color-accent-foreground: #1f2937; /* gray-800 */
+
+    /* Background Colors - Dark Mode */
+    --color-background: #0a0f1c; /* custom dark blue */
+    --color-foreground: #e2e8f0; /* slate-200 */
+
+    /* Surface Colors - Dark Mode */
+    --color-card: #1e293b; /* slate-800 */
+    --color-card-foreground: #e2e8f0; /* slate-200 */
+
+    /* Popover Colors - Dark Mode */
+    --color-popover: #1e293b; /* slate-800 */
+    --color-popover-foreground: #e2e8f0; /* slate-200 */
+
+    /* Muted Colors - Dark Mode */
+    --color-muted: #334155; /* slate-700 */
+    --color-muted-foreground: #94a3b8; /* slate-400 */
+
+    /* Destructive Colors - Dark Mode */
+    --color-destructive: #ef4444; /* red-500 */
+    --color-destructive-foreground: #ffffff; /* white */
+
+    /* Success Colors - Dark Mode */
+    --color-success: #10b981; /* emerald-500 */
+    --color-success-foreground: #ffffff; /* white */
+
+    /* Warning Colors - Dark Mode */
+    --color-warning: #f59e0b; /* amber-500 */
+    --color-warning-foreground: #ffffff; /* white */
+
+    /* Error Colors - Dark Mode */
+    --color-error: #ef4444; /* red-500 */
+    --color-error-foreground: #ffffff; /* white */
+
+    /* Border & Input Colors - Dark Mode */
+    --color-border: rgba(248, 250, 252, 0.08); /* slate-50 with opacity */
+    --color-input: #334155; /* slate-700 */
+    --color-ring: #3b82f6; /* blue-500 */
+
+    /* Shadows - Dark Mode */
+    --shadow-sm: 0 1px 3px rgba(248, 250, 252, 0.05);
+    --shadow-md: 0 4px 6px rgba(248, 250, 252, 0.05);
+    --shadow-lg: 0 10px 15px rgba(248, 250, 252, 0.05);
+    --shadow-xl: 0 20px 40px -8px rgba(248, 250, 252, 0.05);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Crimson Text', serif;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .caption {
+    font-family: 'Inter Tight', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    letter-spacing: 0.025em;
+  }
+
+  .data-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings:
+      'tnum' on,
+      'lnum' on;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      font-size: 15px;
+    }
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+}

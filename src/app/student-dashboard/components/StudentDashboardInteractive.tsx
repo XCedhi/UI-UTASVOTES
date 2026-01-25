@@ -1,0 +1,427 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Header from '@/components/common/Header';
+import ElectionStatusIndicator from '@/components/common/ElectionStatusIndicator';
+import ElectionCard from './ElectionCard';
+import CampaignFeedItem from './CampaignFeedItem';
+import VotingHistoryCard from './VotingHistoryCard';
+import UpcomingDeadlinesCard from './UpcomingDeadlinesCard';
+import QuickActionsCard from './QuickActionsCard';
+import { useElectionContext, Election } from '@/contexts/ElectionContext';
+import { supabase } from '@/lib/supabase';
+
+interface CampaignFeed {
+  id: string;
+  candidateName: string;
+  candidateAvatar: string;
+  candidateAvatarAlt: string;
+  position: string;
+  contentType: 'manifesto' | 'video' | 'announcement' | 'qa';
+  title: string;
+  content: string;
+  mediaUrl?: string;
+  mediaAlt?: string;
+  timestamp: string;
+  likes: number;
+  comments: number;
+  isLiked: boolean;
+}
+
+interface VotingHistoryItem {
+  id: string;
+  electionName: string;
+  votedDate: string;
+  position: string;
+  status: 'completed' | 'pending-results';
+}
+
+interface Deadline {
+  id: string;
+  title: string;
+  date: string;
+  type: 'voting' | 'registration' | 'result';
+  daysRemaining: number;
+}
+
+interface QuickAction {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  href: string;
+  color: string;
+}
+
+const StudentDashboardInteractive = () => {
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'manifesto' | 'video' | 'announcement' | 'qa'>(
+    'all'
+  );
+  const [feedItems, setFeedItems] = useState<CampaignFeed[]>([]);
+  const { elections, notifications, feed, toggleFeedLike } = useElectionContext();
+  const [showComments, setShowComments] = useState(false);
+  const [activeFeedId, setActiveFeedId] = useState<string | null>(null);
+  interface CommentItem {
+    id: string;
+    user_name: string;
+    content: string;
+    created_at: string;
+  }
+  const [commentsList, setCommentsList] = useState<CommentItem[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [addingComment, setAddingComment] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  const electionsToShow: Election[] = elections;
+
+  // Mock data for voting history and deadlines (could be moved to context later)
+  const mockVotingHistory: VotingHistoryItem[] = [
+    {
+      id: 'vote-001',
+      electionName: 'Computer Science Department Representative',
+      votedDate: '18/01/2026',
+      position: 'Department Representative',
+      status: 'pending-results',
+    },
+    {
+      id: 'vote-002',
+      electionName: 'Library Committee Member 2025',
+      votedDate: '10/12/2025',
+      position: 'Committee Member',
+      status: 'completed',
+    },
+  ];
+
+  const mockDeadlines: Deadline[] = [
+    {
+      id: 'deadline-001',
+      title: 'Student Council President Voting Ends',
+      date: '25/01/2026',
+      type: 'voting',
+      daysRemaining: 3,
+    },
+    {
+      id: 'deadline-002',
+      title: 'CS Department Rep Voting Ends',
+      date: '28/01/2026',
+      type: 'voting',
+      daysRemaining: 6,
+    },
+    {
+      id: 'deadline-003',
+      title: 'Sports Committee Results Announcement',
+      date: '12/02/2026',
+      type: 'result',
+      daysRemaining: 21,
+    },
+  ];
+
+  const mockQuickActions: QuickAction[] = [
+    {
+      id: 'action-001',
+      title: 'Apply as Candidate',
+      description: 'Register to run in upcoming elections',
+      icon: 'DocumentTextIcon',
+      href: '/candidate-registration',
+      color: 'bg-primary',
+    },
+    {
+      id: 'action-002',
+      title: 'View All Results',
+      description: 'Check past election outcomes',
+      icon: 'ChartBarIcon',
+      href: '/student-election-results',
+      color: 'bg-success',
+    },
+    {
+      id: 'action-003',
+      title: 'Election Guidelines',
+      description: 'Learn about voting process',
+      icon: 'InformationCircleIcon',
+      href: '/election-guidelines',
+      color: 'bg-accent',
+    },
+    {
+      id: 'action-004',
+      title: 'Report Issue',
+      description: 'Contact electoral commission',
+      icon: 'ExclamationTriangleIcon',
+      href: '/report-issue',
+      color: 'bg-warning',
+    },
+  ];
+
+  const handleLike = (feedId: string) => {
+    if (!isHydrated) return;
+    toggleFeedLike(feedId);
+  };
+
+  const loadComments = async (feedId: string) => {
+    setLoadingComments(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('feed_id', feedId)
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        setCommentsList(data as unknown as CommentItem[]);
+      } else {
+        setCommentsList([]);
+      }
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleComment = async (feedId: string) => {
+    if (!isHydrated) return;
+    setActiveFeedId(feedId);
+    setShowComments(true);
+    setNewComment('');
+    await loadComments(feedId);
+  };
+
+  const submitComment = async () => {
+    if (!activeFeedId || !newComment.trim()) return;
+    setAddingComment(true);
+    try {
+      let userName = 'Student';
+      try {
+        const email = typeof window !== 'undefined' ? window.localStorage.getItem('userEmail') : null;
+        if (email) userName = email.split('@')[0];
+      } catch {
+        void 0;
+      }
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
+          feed_id: activeFeedId,
+          user_name: userName,
+          content: newComment.trim(),
+        })
+        .select()
+        .single();
+      if (!error && data) {
+        setCommentsList((prev) => [data as unknown as CommentItem, ...prev]);
+        setNewComment('');
+      }
+    } finally {
+      setAddingComment(false);
+    }
+  };
+
+  const filteredFeed = isHydrated
+    ? activeTab === 'all'
+      ? feed
+      : feed.filter((item) => item.type === activeTab)
+    : [];
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header
+          userRole="student"
+          userName="Loading..."
+          notificationCount={0}
+          electionStatus={{
+            isActive: true,
+            name: 'Loading...',
+            endTime: '2026-01-25T23:59:59',
+          }}
+        />
+        <main className="pt-20">
+          <div className="mx-4 lg:mx-6 py-8">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-muted rounded w-1/4"></div>
+              <div className="h-64 bg-muted rounded"></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header
+        userRole="student"
+        userName="Kwabena Osei"
+        userAvatar="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg"
+        notificationCount={notifications.length}
+        electionStatus={{
+          isActive: true,
+          name: 'Student Council President 2026',
+          endTime: '2026-01-25T23:59:59',
+        }}
+      />
+
+      <main className="pt-20">
+        <div className="mx-4 lg:mx-6 py-8">
+          <div className="mb-6">
+            <h1 className="font-heading text-3xl font-semibold text-foreground mb-2">
+              Student Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Welcome back, Kwabena! Stay updated with ongoing elections and campaign activities.
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <ElectionStatusIndicator
+              isActive={true}
+              electionName="Student Council President 2026"
+              endTime="2026-01-25T23:59:59"
+              className="w-full"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div>
+                <h2 className="font-heading text-2xl font-semibold text-foreground mb-4">
+                  Active Elections
+                </h2>
+                <div className="grid grid-cols-1 gap-4">
+                  {electionsToShow.map((election) => (
+                    <ElectionCard key={election.id} {...election} />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-heading text-2xl font-semibold text-foreground">
+                    Campaign Feed
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActiveTab('all')}
+                      className={`px-3 py-1 rounded-md text-sm font-caption transition-all duration-250 ease-smooth ${
+                        activeTab === 'all'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('manifesto')}
+                      className={`px-3 py-1 rounded-md text-sm font-caption transition-all duration-250 ease-smooth ${
+                        activeTab === 'manifesto'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      Manifestos
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('video')}
+                      className={`px-3 py-1 rounded-md text-sm font-caption transition-all duration-250 ease-smooth ${
+                        activeTab === 'video'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      Videos
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {filteredFeed.map((item) => (
+                    <CampaignFeedItem
+                      key={item.id}
+                      id={item.id}
+                      candidateName={item.candidateName}
+                      candidateAvatar={item.candidateAvatar}
+                      candidateAvatarAlt={item.candidateAvatarAlt}
+                      position={'Candidate'}
+                      contentType={item.type}
+                      title={item.title}
+                      content={item.content}
+                      mediaUrl={item.mediaUrl}
+                      mediaAlt={item.mediaAlt}
+                      timestamp={item.timestamp}
+                      likes={item.likes}
+                      comments={item.comments}
+                      isLiked={item.isLiked}
+                      onLike={() => handleLike(item.id)}
+                      onComment={() => handleComment(item.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <QuickActionsCard actions={mockQuickActions} />
+              <VotingHistoryCard history={mockVotingHistory} />
+              <UpcomingDeadlinesCard deadlines={mockDeadlines} />
+            </div>
+          </div>
+        </div>
+      </main>
+      {showComments && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-lg w-full max-w-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-heading font-semibold text-foreground">Comments</h3>
+              <button
+                onClick={() => {
+                  setShowComments(false);
+                  setActiveFeedId(null);
+                  setCommentsList([]);
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 max-h-64 overflow-auto border border-border rounded-md p-3 bg-background">
+              {loadingComments ? (
+                <div className="text-sm text-muted-foreground">Loading...</div>
+              ) : commentsList.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No comments yet</div>
+              ) : (
+                commentsList.map((c) => (
+                  <div key={c.id} className="p-2 border border-border rounded">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(c.created_at).toLocaleString()}
+                    </div>
+                    <div className="text-sm text-foreground">
+                      <span className="font-medium">{c.user_name}</span>: {c.content}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="mt-4 flex items-center gap-2">
+              <input
+                type="text"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment"
+                className="flex-1 px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground"
+              />
+              <button
+                onClick={submitComment}
+                disabled={addingComment}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
+              >
+                {addingComment ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default StudentDashboardInteractive;
