@@ -66,13 +66,16 @@ const Header = ({
       },
     },
     {
+      label: 'Import Data',
+      path: '/admin-system-control/users/import',
+      icon: 'ArrowUpTrayIcon',
+      roles: ['commission'],
+    },
+    {
       label: 'Manage Elections',
-      path: '/electoral-commission-panel',
+      path: '/admin-system-control/election',
       icon: 'Cog6ToothIcon',
-      roles: ['commission', 'admin'],
-      pathOverrides: {
-        admin: '/admin-system-control/election',
-      },
+      roles: ['admin'],
     },
   ];
 
@@ -273,7 +276,13 @@ const Header = ({
             <button
               onClick={() => {
                 setIsProfileMenuOpen(false);
-                router.push('/profile');
+                const profilePath =
+                  userRole === 'admin'
+                    ? '/admin-profile'
+                    : userRole === 'commission'
+                      ? '/commission-profile'
+                      : '/profile';
+                router.push(profilePath);
               }}
               className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-muted transition-all duration-250 ease-smooth"
             >
@@ -283,7 +292,13 @@ const Header = ({
             <button
               onClick={() => {
                 setIsProfileMenuOpen(false);
-                router.push('/settings');
+                const settingsPath =
+                  userRole === 'admin'
+                    ? '/admin-settings'
+                    : userRole === 'commission'
+                      ? '/commission-settings'
+                      : '/settings';
+                router.push(settingsPath);
               }}
               className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-muted transition-all duration-250 ease-smooth"
             >
