@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { downloadStudentImportTemplate } from '@/lib/excel-utils';
 
 interface StudentData {
   studentId: string;
@@ -234,8 +235,7 @@ const StudentImportInteractive = () => {
   };
 
   const downloadTemplate = () => {
-    // In production, generate actual Excel template
-    alert('Excel template will be downloaded with required columns and sample data');
+    downloadStudentImportTemplate();
   };
 
   const resetImport = () => {

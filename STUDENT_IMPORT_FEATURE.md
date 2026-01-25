@@ -6,13 +6,22 @@ Implemented a comprehensive Excel-based student data import system that allows A
 
 ## Key Features
 
-### 1. Excel File Upload
+### 1. Template Download
+- **Download Button** - "Download Template" button in top-right corner
+- **Pre-filled Format** - CSV file with all required column headers
+- **Sample Data** - Includes 3 example student records
+- **Easy Editing** - Opens in Excel, Google Sheets, or any spreadsheet app
+- **Proper Structure** - Ensures correct format for upload
+
+See `EXCEL_TEMPLATE_DOWNLOAD_FEATURE.md` for complete template documentation.
+
+### 2. Excel File Upload
 - **Drag & Drop** - Intuitive drag-and-drop interface
 - **File Browser** - Click to browse and select files
 - **File Validation** - Only accepts .xlsx and .xls files
 - **Visual Feedback** - Hover effects and drag indicators
 
-### 2. Required Data Format
+### 3. Required Data Format
 
 #### Mandatory Columns:
 ```
@@ -30,7 +39,7 @@ Implemented a comprehensive Excel-based student data import system that allows A
 8. Phone Number    - Contact number (optional)
 ```
 
-### 3. Data Validation
+### 4. Data Validation
 
 The system validates each row for:
 

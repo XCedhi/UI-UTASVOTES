@@ -1,3 +1,5 @@
+import { getEffectiveRole, hasAccessExpired } from './role-management';
+
 export type UserRole = 'student' | 'candidate' | 'commission' | 'admin';
 
 export interface UserSession {
@@ -5,6 +7,8 @@ export interface UserSession {
   role: UserRole;
   name: string;
   avatar?: string;
+  accessEndDate?: string | null;
+  originalRole?: UserRole | null;
 }
 
 export const getUserSession = (): UserSession | null => {
@@ -15,10 +19,25 @@ export const getUserSession = (): UserSession | null => {
     const email = localStorage.getItem('userEmail');
     const name = localStorage.getItem('userName') || 'User';
     const avatar = localStorage.getItem('userAvatar');
+    const accessEndDate = localStorage.getItem('userAccessEndDate');
+    const originalRole = localStorage.getItem('userOriginalRole') as UserRole | null;
     
     if (!role || !email) return null;
     
-    return { email, role, name, avatar };
+    // Check if commission access has expired and auto-downgrade
+    const effectiveRole = getEffectiveRole({ role, accessEndDate, originalRole });
+    
+    // If role changed due to expiration, update localStorage
+    if (effectiveRole !== role) {
+      localStorage.setItem('userRole', effectiveRole);
+      // Clear access period data
+      localStorage.removeItem('userAccessEndDate');
+      localStorage.removeItem('userOriginalRole');
+      
+      return { email, role: effectiveRole, name, avatar };
+    }
+    
+    return { email, role, name, avatar, accessEndDate, originalRole };
   } catch {
     return null;
   }
@@ -31,6 +50,8 @@ export const setUserSession = (session: UserSession) => {
   localStorage.setItem('userEmail', session.email);
   localStorage.setItem('userName', session.name);
   if (session.avatar) localStorage.setItem('userAvatar', session.avatar);
+  if (session.accessEndDate) localStorage.setItem('userAccessEndDate', session.accessEndDate);
+  if (session.originalRole) localStorage.setItem('userOriginalRole', session.originalRole);
 };
 
 export const clearUserSession = () => {
@@ -40,6 +61,8 @@ export const clearUserSession = () => {
   localStorage.removeItem('userEmail');
   localStorage.removeItem('userName');
   localStorage.removeItem('userAvatar');
+  localStorage.removeItem('userAccessEndDate');
+  localStorage.removeItem('userOriginalRole');
 };
 
 export const getRoleDashboard = (role: UserRole): string => {
