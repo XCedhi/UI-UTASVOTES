@@ -102,7 +102,7 @@ const CommissionStudentImportInteractive = () => {
       // Mock data for demonstration
       const mockData: StudentData[] = [
         {
-          studentId: 'UTAS2024001',
+          studentId: '2024001',
           firstName: 'Kwame',
           lastName: 'Mensah',
           email: 'kwame.mensah@cktutas.edu.gh',
@@ -112,7 +112,7 @@ const CommissionStudentImportInteractive = () => {
           phoneNumber: '+233241234567',
         },
         {
-          studentId: 'UTAS2024002',
+          studentId: '2024002',
           firstName: 'Ama',
           lastName: 'Osei',
           email: 'ama.osei@cktutas.edu.gh',
@@ -122,7 +122,7 @@ const CommissionStudentImportInteractive = () => {
           phoneNumber: '+233242345678',
         },
         {
-          studentId: 'UTAS2024003',
+          studentId: '2024003',
           firstName: 'Kofi',
           lastName: 'Asante',
           email: 'kofi.asante@cktutas.edu.gh',
@@ -142,7 +142,7 @@ const CommissionStudentImportInteractive = () => {
   const validateData = (data: StudentData[]): ValidationError[] => {
     const errors: ValidationError[] = [];
     const emailRegex = /^[a-zA-Z0-9._%+-]+@cktutas\.edu\.gh$/;
-    const studentIdRegex = /^UTAS\d{7}$/;
+    const studentIdRegex = /^\d+$/; // Just numbers
 
     data.forEach((student, index) => {
       const row = index + 2;
@@ -151,7 +151,7 @@ const CommissionStudentImportInteractive = () => {
         errors.push({
           row,
           field: 'Student ID',
-          message: 'Invalid format. Must be UTAS followed by 7 digits (e.g., UTAS2024001)',
+          message: 'Invalid format. Must be numeric only (e.g., 2024001, 123456)',
         });
       }
 
@@ -328,7 +328,7 @@ const CommissionStudentImportInteractive = () => {
                           className="text-success"
                         />
                         <span>
-                          <strong>Student ID</strong> - Format: UTAS2024001
+                          <strong>Student ID</strong> - Numeric only (e.g., 2024001, 123456)
                         </span>
                       </li>
                       <li className="flex items-center gap-2">

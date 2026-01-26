@@ -22,7 +22,7 @@ export function downloadStudentImportTemplate() {
   // Sample data to include in template
   const sampleData: StudentTemplateData[] = [
     {
-      'Student ID': 'UTAS2024001',
+      'Student ID': '2024001',
       'First Name': 'Kwame',
       'Last Name': 'Mensah',
       Email: 'kwame.mensah@cktutas.edu.gh',
@@ -32,7 +32,7 @@ export function downloadStudentImportTemplate() {
       'Phone Number': '+233241234567',
     },
     {
-      'Student ID': 'UTAS2024002',
+      'Student ID': '2024002',
       'First Name': 'Ama',
       'Last Name': 'Osei',
       Email: 'ama.osei@cktutas.edu.gh',
@@ -42,7 +42,7 @@ export function downloadStudentImportTemplate() {
       'Phone Number': '+233242345678',
     },
     {
-      'Student ID': 'UTAS2024003',
+      'Student ID': '2024003',
       'First Name': 'Kofi',
       'Last Name': 'Asante',
       Email: 'kofi.asante@cktutas.edu.gh',
@@ -102,7 +102,7 @@ export function downloadStudentImportTemplateXLSX() {
   
   const sampleData: StudentTemplateData[] = [
     {
-      'Student ID': 'UTAS2024001',
+      'Student ID': '2024001',
       'First Name': 'Kwame',
       'Last Name': 'Mensah',
       'Email': 'kwame.mensah@cktutas.edu.gh',
@@ -112,7 +112,7 @@ export function downloadStudentImportTemplateXLSX() {
       'Phone Number': '+233241234567',
     },
     {
-      'Student ID': 'UTAS2024002',
+      'Student ID': '2024002',
       'First Name': 'Ama',
       'Last Name': 'Osei',
       'Email': 'ama.osei@cktutas.edu.gh',
@@ -122,7 +122,7 @@ export function downloadStudentImportTemplateXLSX() {
       'Phone Number': '+233242345678',
     },
     {
-      'Student ID': 'UTAS2024003',
+      'Student ID': '2024003',
       'First Name': 'Kofi',
       'Last Name': 'Asante',
       'Email': 'kofi.asante@cktutas.edu.gh',
@@ -163,7 +163,7 @@ export function downloadStudentImportTemplateXLSX() {
     ['4. Save the file and upload it to the import page'],
     [''],
     ['Required Columns:'],
-    ['- Student ID: Format UTAS followed by 7 digits (e.g., UTAS2024001)'],
+    ['- Student ID: Numeric only (e.g., 2024001, 123456)'],
     ['- First Name: Student\'s first name'],
     ['- Last Name: Student\'s last name'],
     ['- Email: Must end with @cktutas.edu.gh'],
@@ -284,8 +284,8 @@ File Format Requirements:
 Required Columns:
 ----------------
 1. Student ID
-   - Format: UTAS followed by 7 digits
-   - Example: UTAS2024001
+   - Format: Numeric only (no prefix)
+   - Example: 2024001, 123456
    - Must be unique for each student
 
 2. First Name

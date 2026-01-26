@@ -6,6 +6,7 @@ import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { downloadStudentImportTemplate } from '@/lib/excel-utils';
 import { getUserSession } from '@/lib/auth-utils';
+import * as XLSX from 'xlsx';
 
 interface StudentData {
   studentId: string;
@@ -99,52 +100,144 @@ const StudentImportInteractive = () => {
   const processFile = async (file: File) => {
     setIsProcessing(true);
 
-    // Simulate file processing (in production, use a library like xlsx or SheetJS)
-    setTimeout(() => {
-      // Mock data for demonstration
-      const mockData: StudentData[] = [
-        {
-          studentId: 'UTAS2024001',
-          firstName: 'Kwame',
-          lastName: 'Mensah',
-          email: 'kwame.mensah@cktutas.edu.gh',
-          department: 'Computer Science',
-          level: '300',
-          program: 'BSc Computer Science',
-          phoneNumber: '+233241234567',
-        },
-        {
-          studentId: 'UTAS2024002',
-          firstName: 'Ama',
-          lastName: 'Osei',
-          email: 'ama.osei@cktutas.edu.gh',
-          department: 'Business Administration',
-          level: '200',
-          program: 'BSc Business Administration',
-          phoneNumber: '+233242345678',
-        },
-        {
-          studentId: 'UTAS2024003',
-          firstName: 'Kofi',
-          lastName: 'Asante',
-          email: 'kofi.asante@cktutas.edu.gh',
-          department: 'Engineering',
-          level: '400',
-          program: 'BEng Mechanical Engineering',
-          phoneNumber: '+233243456789',
-        },
-      ];
+    try {
+      // Read file as array buffer
+      const arrayBuffer = await file.arrayBuffer();
+      
+      // Parse Excel file using xlsx library
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      
+      // Get first sheet
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convert to JSON with header row
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { 
+        header: 1,
+        defval: '',
+        blankrows: false
+      }) as any[][];
 
-      setPreviewData(mockData);
+      console.log('Raw Excel data:', jsonData);
+
+      if (jsonData.length < 2) {
+        alert('File appears to be empty or has no data rows.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Get headers from first row
+      const headers = jsonData[0].map((h: any) => String(h).toLowerCase().trim());
+      console.log('Excel Headers found:', headers);
+
+      // Helper function to find column index
+      const findColumnIndex = (possibleNames: string[]): number => {
+        for (const name of possibleNames) {
+          const index = headers.findIndex(h => 
+            h.includes(name.toLowerCase()) || name.toLowerCase().includes(h)
+          );
+          if (index !== -1) return index;
+        }
+        return -1;
+      };
+
+      // Map column indices
+      const columnMap = {
+        studentId: findColumnIndex(['student id', 'studentid', 'id', 'student_id', 'matric', 'registration']),
+        firstName: findColumnIndex(['first name', 'firstname', 'first_name', 'fname', 'given name']),
+        lastName: findColumnIndex(['last name', 'lastname', 'last_name', 'lname', 'surname', 'family name']),
+        email: findColumnIndex(['email', 'e-mail', 'email address', 'mail']),
+        department: findColumnIndex(['department', 'dept', 'faculty', 'school']),
+        level: findColumnIndex(['level', 'year', 'class', 'grade']),
+        program: findColumnIndex(['program', 'programme', 'course', 'major', 'degree']),
+        phoneNumber: findColumnIndex(['phone', 'phone number', 'phonenumber', 'mobile', 'contact', 'tel'])
+      };
+
+      console.log('Column mapping:', columnMap);
+
+      const students: StudentData[] = [];
+
+      // Parse data rows (skip header row)
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        
+        // Skip empty rows
+        if (!row || row.every((cell: any) => !cell)) continue;
+
+        const student: StudentData = {
+          studentId: columnMap.studentId >= 0 ? String(row[columnMap.studentId] || '').trim() : '',
+          firstName: columnMap.firstName >= 0 ? String(row[columnMap.firstName] || '').trim() : '',
+          lastName: columnMap.lastName >= 0 ? String(row[columnMap.lastName] || '').trim() : '',
+          email: columnMap.email >= 0 ? String(row[columnMap.email] || '').trim() : '',
+          department: columnMap.department >= 0 ? String(row[columnMap.department] || '').trim() : '',
+          level: columnMap.level >= 0 ? String(row[columnMap.level] || '').trim() : '',
+          program: columnMap.program >= 0 ? String(row[columnMap.program] || '').trim() : '',
+          phoneNumber: columnMap.phoneNumber >= 0 ? String(row[columnMap.phoneNumber] || '').trim() || undefined : undefined,
+        };
+
+        // Only add if we have minimum required fields
+        if (student.studentId && student.firstName && student.lastName && student.email) {
+          students.push(student);
+          console.log(`Parsed student ${i}:`, student);
+        } else {
+          console.warn(`Skipping row ${i + 1} - missing required fields:`, {
+            row: i + 1,
+            studentId: student.studentId || 'MISSING',
+            firstName: student.firstName || 'MISSING',
+            lastName: student.lastName || 'MISSING',
+            email: student.email || 'MISSING'
+          });
+        }
+      }
+
+      if (students.length === 0) {
+        const missingColumns = [];
+        if (columnMap.studentId === -1) missingColumns.push('Student ID');
+        if (columnMap.firstName === -1) missingColumns.push('First Name');
+        if (columnMap.lastName === -1) missingColumns.push('Last Name');
+        if (columnMap.email === -1) missingColumns.push('Email');
+        
+        alert(
+          `No valid student data found!\n\n` +
+          `Found headers: ${headers.join(', ')}\n\n` +
+          `Missing columns: ${missingColumns.join(', ')}\n\n` +
+          `Required columns:\n` +
+          `- Student ID\n` +
+          `- First Name\n` +
+          `- Last Name\n` +
+          `- Email\n` +
+          `- Department\n` +
+          `- Level\n` +
+          `- Program`
+        );
+        setIsProcessing(false);
+        return;
+      }
+
+      console.log(`✅ Successfully parsed ${students.length} students from Excel file`);
+      alert(`Successfully loaded ${students.length} students from your file!`);
+      
+      setPreviewData(students);
       setShowPreview(true);
       setIsProcessing(false);
-    }, 2000);
+    } catch (error: any) {
+      console.error('Error processing Excel file:', error);
+      alert(
+        `Error processing file: ${error.message}\n\n` +
+        `Please ensure:\n` +
+        `1. File is a valid Excel file (.xlsx or .xls)\n` +
+        `2. First row contains column headers\n` +
+        `3. Data starts from row 2\n\n` +
+        `Check browser console (F12) for more details.`
+      );
+      setIsProcessing(false);
+    }
   };
 
   const validateData = (data: StudentData[]): ValidationError[] => {
     const errors: ValidationError[] = [];
     const emailRegex = /^[a-zA-Z0-9._%+-]+@cktutas\.edu\.gh$/;
-    const studentIdRegex = /^UTAS\d{7}$/;
+    const studentIdRegex = /^\d+$/; // Just numbers
 
     data.forEach((student, index) => {
       const row = index + 2; // +2 because row 1 is header and arrays are 0-indexed
@@ -153,7 +246,7 @@ const StudentImportInteractive = () => {
         errors.push({
           row,
           field: 'Student ID',
-          message: 'Invalid format. Must be UTAS followed by 7 digits (e.g., UTAS2024001)',
+          message: 'Invalid format. Must be numeric only (e.g., 2024001, 123456)',
         });
       }
 
@@ -228,22 +321,61 @@ const StudentImportInteractive = () => {
       return;
     }
 
-    // Simulate import process
-    setTimeout(() => {
-      // In production, this would:
-      // 1. Create accounts in Supabase
-      // 2. Generate secure passwords
-      // 3. Send welcome emails
-
-      setImportResult({
-        success: previewData.length,
-        failed: 0,
-        errors: [],
-        students: previewData,
+    try {
+      // Call API to create student accounts
+      const response = await fetch('/api/import-students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          students: previewData
+        }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to import students');
+      }
+
+      // Show results
+      setImportResult({
+        success: result.results.success,
+        failed: result.results.failed,
+        errors: result.results.errors.map((err: any) => ({
+          row: err.row,
+          field: 'Account Creation',
+          message: err.error
+        })),
+        students: result.results.createdStudents.map((s: any) => ({
+          studentId: s.studentId,
+          firstName: s.name.split(' ')[0],
+          lastName: s.name.split(' ').slice(1).join(' '),
+          email: s.email,
+          department: '',
+          level: '',
+          program: ''
+        })),
+      });
+      
       setIsProcessing(false);
       setShowPreview(false);
-    }, 3000);
+
+      // Log passwords for now (in production, these would be emailed)
+      if (result.results.createdStudents.length > 0) {
+        console.log('=== CREATED STUDENT ACCOUNTS ===');
+        result.results.createdStudents.forEach((s: any) => {
+          console.log(`${s.email}: ${s.password}`);
+        });
+        console.log('================================');
+        alert(`Successfully created ${result.results.success} student accounts!\n\nPasswords have been logged to the console.\n\nIn production, these would be emailed to students.`);
+      }
+    } catch (error: any) {
+      console.error('Error importing students:', error);
+      setIsProcessing(false);
+      alert(`Failed to import students: ${error.message}\n\nPlease check:\n1. SUPABASE_SERVICE_ROLE_KEY is set in .env\n2. Database schema is up to date\n3. Check browser console for details`);
+    }
   };
 
   const downloadTemplate = () => {
@@ -292,7 +424,7 @@ const StudentImportInteractive = () => {
                 Import Student Data
               </h1>
               <p className="text-muted-foreground">
-                Upload Excel file to create student accounts and send welcome emails
+                Upload Excel file (.xlsx or .xls) to create student accounts automatically
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -340,7 +472,7 @@ const StudentImportInteractive = () => {
                           className="text-success"
                         />
                         <span>
-                          <strong>Student ID</strong> - Format: UTAS2024001
+                          <strong>Student ID</strong> - Numeric only (e.g., 2024001, 123456)
                         </span>
                       </li>
                       <li className="flex items-center gap-2">

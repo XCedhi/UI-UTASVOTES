@@ -58,6 +58,7 @@ const UserManagementInteractive = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
+      console.log('🔄 Fetching users from database...');
       
       // Fetch all user profiles from database
       const { data, error } = await supabase
@@ -66,9 +67,11 @@ const UserManagementInteractive = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching users:', error);
+        console.error('❌ Error fetching users:', error);
         return;
       }
+
+      console.log('✅ Fetched users:', data?.length || 0);
 
       // Transform database data to match User interface
       const transformedUsers: User[] = (data || []).map((user: any) => ({
@@ -81,9 +84,10 @@ const UserManagementInteractive = () => {
         invitedAt: user.created_at,
       }));
 
+      console.log('✅ Setting users state with', transformedUsers.length, 'users');
       setUsers(transformedUsers);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('❌ Error fetching users:', error);
     } finally {
       setIsLoading(false);
     }
@@ -142,30 +146,108 @@ const UserManagementInteractive = () => {
     setShowEditModal(true);
   };
 
-  const handleDeactivateUser = (user: User) => {
+  const handleDeactivateUser = async (user: User) => {
     if (
       confirm(
         `Are you sure you want to deactivate ${user.name}? They will lose access to the system.`
       )
     ) {
-      // In production: Update user status to 'inactive'
-      alert(`User ${user.name} has been deactivated`);
+      try {
+        console.log('🔄 Deactivating user:', user.id);
+        
+        // Update user status to 'inactive' in database
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ status: 'inactive', updated_at: new Date().toISOString() })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('❌ Error deactivating user:', error);
+          alert('Failed to deactivate user. Please try again.');
+          return;
+        }
+
+        console.log('✅ User deactivated successfully');
+        
+        // Refresh user list
+        console.log('🔄 Refreshing user list...');
+        await fetchUsers();
+        alert(`User ${user.name} has been deactivated successfully!`);
+      } catch (error) {
+        console.error('❌ Error deactivating user:', error);
+        alert('Failed to deactivate user. Please try again.');
+      }
+    }
+  };
+
+  const handleActivateUser = async (user: User) => {
+    if (
+      confirm(
+        `Are you sure you want to activate ${user.name}? They will regain access to the system.`
+      )
+    ) {
+      try {
+        console.log('🔄 Activating user:', user.id);
+        
+        // Update user status to 'active' in database
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({ status: 'active', updated_at: new Date().toISOString() })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('❌ Error activating user:', error);
+          alert('Failed to activate user. Please try again.');
+          return;
+        }
+
+        console.log('✅ User activated successfully');
+        
+        // Refresh user list
+        console.log('🔄 Refreshing user list...');
+        await fetchUsers();
+        alert(`User ${user.name} has been activated successfully!`);
+      } catch (error) {
+        console.error('❌ Error activating user:', error);
+        alert('Failed to activate user. Please try again.');
+      }
     }
   };
 
   const handleSaveUserEdit = async () => {
+    if (!selectedUser) return;
+
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // In production, this would:
-      // 1. Update user record in database
-      // 2. Send notification email if role or access changed
-      // 3. Log changes in audit trail
-      // 4. Update session if needed
+    try {
+      console.log('🔄 Updating user:', selectedUser.id, 'to role:', selectedUser.role, 'status:', selectedUser.status);
+      
+      // Update user in database
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          role: selectedUser.role,
+          status: selectedUser.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedUser.id);
 
+      if (error) {
+        console.error('❌ Error updating user:', error);
+        alert('Failed to update user. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log('✅ User updated successfully');
+
+      // Success!
       setIsSubmitting(false);
       setEditSuccess(true);
+
+      // Refresh user list
+      console.log('🔄 Refreshing user list...');
+      await fetchUsers();
 
       // Reset after 2 seconds
       setTimeout(() => {
@@ -173,7 +255,11 @@ const UserManagementInteractive = () => {
         setEditSuccess(false);
         setSelectedUser(null);
       }, 2000);
-    }, 1500);
+    } catch (error) {
+      console.error('❌ Error updating user:', error);
+      alert('Failed to update user. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   const handleInviteUser = async () => {
@@ -207,6 +293,9 @@ const UserManagementInteractive = () => {
       // Success!
       setIsSubmitting(false);
       setInviteSuccess(true);
+
+      // Refresh user list to show new invitation
+      await fetchUsers();
 
       // Reset after 3 seconds
       setTimeout(() => {
@@ -358,6 +447,28 @@ const UserManagementInteractive = () => {
             <div className="p-6 border-b border-border">
               <h2 className="font-heading font-semibold text-xl text-foreground">All Users</h2>
             </div>
+            
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">Loading users...</p>
+                </div>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12">
+                <Icon
+                  name="UserGroupIcon"
+                  size={48}
+                  variant="outline"
+                  className="mx-auto text-muted-foreground mb-4 opacity-50"
+                />
+                <p className="text-muted-foreground mb-2">No users found</p>
+                <p className="text-sm text-muted-foreground">
+                  Invite users to get started
+                </p>
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/30">
@@ -416,7 +527,7 @@ const UserManagementInteractive = () => {
                             onClick={() => handleEditUser(user)}
                             className="text-primary hover:text-primary/80 transition-colors duration-200 text-sm font-medium"
                           >
-                            Edit
+                            Edit Role
                           </button>
                           {user.role === 'commission' && user.status === 'active' && (
                             <button
@@ -434,6 +545,14 @@ const UserManagementInteractive = () => {
                               Deactivate
                             </button>
                           )}
+                          {user.status === 'inactive' && (
+                            <button
+                              onClick={() => handleActivateUser(user)}
+                              className="text-success hover:text-success/80 transition-colors duration-200 text-sm font-medium"
+                            >
+                              Activate
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -441,6 +560,7 @@ const UserManagementInteractive = () => {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         </div>
       </main>
