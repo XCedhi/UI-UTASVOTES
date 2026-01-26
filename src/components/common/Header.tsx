@@ -62,7 +62,7 @@ const Header = ({
       roles: ['student', 'candidate', 'commission', 'admin'],
       pathOverrides: {
         admin: '/admin-election-results',
-        commission: '/admin-election-results',
+        commission: '/electoral-commission-panel/election-results',
       },
     },
     {

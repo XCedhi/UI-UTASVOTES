@@ -38,6 +38,8 @@ const ApplicationDetailsInteractive = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<{ name: string; url: string } | null>(null);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -56,9 +58,21 @@ const ApplicationDetailsInteractive = () => {
       submittedAt: '2026-01-20T10:30:00',
       manifesto: 'I pledge to represent the student body with integrity and dedication. My vision includes improving campus facilities, enhancing student welfare programs, and fostering better communication between students and administration.',
       documents: {
-        idCard: { uploaded: true, url: '#', verified: true },
-        transcript: { uploaded: true, url: '#', verified: true },
-        manifesto: { uploaded: true, url: '#', verified: false },
+        idCard: { 
+          uploaded: true, 
+          url: 'https://images.unsplash.com/photo-1633409361618-c73427e4e206?w=800&h=600&fit=crop', 
+          verified: true 
+        },
+        transcript: { 
+          uploaded: true, 
+          url: 'https://images.unsplash.com/photo-1554224311-beee460c201f?w=800&h=600&fit=crop', 
+          verified: true 
+        },
+        manifesto: { 
+          uploaded: true, 
+          url: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=600&fit=crop', 
+          verified: false 
+        },
       },
       eligibilityStatus: 'pending',
       paymentStatus: 'completed',
@@ -90,6 +104,14 @@ const ApplicationDetailsInteractive = () => {
       setIsProcessing(false);
       setRejectionReason('');
     }, 1500);
+  };
+
+  const handleViewDocument = (docName: string, docUrl: string) => {
+    setSelectedDocument({ 
+      name: docName.replace(/([A-Z])/g, ' $1').trim(), 
+      url: docUrl 
+    });
+    setShowDocumentModal(true);
   };
 
   if (!isHydrated || !application) {
@@ -304,7 +326,10 @@ const ApplicationDetailsInteractive = () => {
                         </div>
                       </div>
                       {doc.uploaded && (
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250">
+                        <button 
+                          onClick={() => handleViewDocument(key, doc.url || '')}
+                          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250"
+                        >
                           <Icon name="EyeIcon" size={16} variant="outline" />
                           View
                         </button>
@@ -437,6 +462,76 @@ const ApplicationDetailsInteractive = () => {
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {showDocumentModal && selectedDocument && (
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Icon name="DocumentTextIcon" size={20} variant="outline" className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-semibold text-xl text-foreground capitalize">
+                    {selectedDocument.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Document Preview</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDocumentModal(false);
+                  setSelectedDocument(null);
+                }}
+                className="p-2 hover:bg-muted rounded-md transition-all duration-250"
+              >
+                <Icon name="XMarkIcon" size={24} variant="outline" className="text-muted-foreground" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[500px] flex items-center justify-center">
+                <img
+                  src={selectedDocument.url}
+                  alt={selectedDocument.name}
+                  className="max-w-full max-h-full object-contain rounded-md"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon name="InformationCircleIcon" size={16} variant="outline" />
+                <span>Review document carefully before verification</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowDocumentModal(false);
+                    setSelectedDocument(null);
+                  }}
+                  className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-all duration-250"
+                >
+                  Close
+                </button>
+                <a
+                  href={selectedDocument.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250"
+                >
+                  <Icon name="ArrowTopRightOnSquareIcon" size={16} variant="outline" />
+                  Open in New Tab
+                </a>
+              </div>
             </div>
           </div>
         </div>
