@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import ProfilePictureUpload from '@/components/common/ProfilePictureUpload';
 import { getUserSession } from '@/lib/auth-utils';
 
 interface AdminProfile {
@@ -16,6 +17,7 @@ interface AdminProfile {
   joinedDate: string;
   lastLogin: string;
   permissions: string[];
+  profilePicture?: string;
 }
 
 const AdminProfileInteractive = () => {
@@ -32,6 +34,7 @@ const AdminProfileInteractive = () => {
     phone: '+233 24 123 4567',
     joinedDate: '2024-01-15',
     lastLogin: new Date().toISOString(),
+    profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
     permissions: [
       'Manage Users',
       'Manage Elections',
@@ -88,6 +91,13 @@ const AdminProfileInteractive = () => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleProfilePictureChange = (croppedImage: string) => {
+    setProfile((prev) => ({ ...prev, profilePicture: croppedImage }));
+    setEditForm((prev) => ({ ...prev, profilePicture: croppedImage }));
+    console.log('Profile picture updated');
+    // In production, upload to Supabase Storage here
+  };
+
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-background">
@@ -138,11 +148,11 @@ const AdminProfileInteractive = () => {
             <div className="px-6 pb-6">
               <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 mb-6">
                 <div className="flex items-end gap-4">
-                  <div className="w-32 h-32 rounded-full bg-card border-4 border-card overflow-hidden">
-                    <img
-                      src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-                      alt={profile.name}
-                      className="w-full h-full object-cover"
+                  <div className="-mt-4">
+                    <ProfilePictureUpload
+                      currentImage={profile.profilePicture}
+                      onSave={handleProfilePictureChange}
+                      userName={profile.name}
                     />
                   </div>
                   <div className="mb-4">

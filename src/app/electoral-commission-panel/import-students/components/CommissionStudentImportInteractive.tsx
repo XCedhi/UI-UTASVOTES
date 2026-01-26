@@ -31,11 +31,10 @@ interface ImportResult {
   students: StudentData[];
 }
 
-const StudentImportInteractive = () => {
+const CommissionStudentImportInteractive = () => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
-  const [userRole, setUserRole] = useState<'admin' | 'commission'>('admin');
-  const [userName, setUserName] = useState('Administrator');
+  const [userName, setUserName] = useState('Commission Member');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,10 +45,9 @@ const StudentImportInteractive = () => {
   useEffect(() => {
     setIsHydrated(true);
     
-    // Get user session to determine role
+    // Get user session
     const session = getUserSession();
     if (session) {
-      setUserRole(session.role as 'admin' | 'commission');
       setUserName(session.name);
     }
   }, []);
@@ -97,7 +95,7 @@ const StudentImportInteractive = () => {
   const processFile = async (file: File) => {
     setIsProcessing(true);
     
-    // Simulate file processing (in production, use a library like xlsx or SheetJS)
+    // Simulate file processing
     setTimeout(() => {
       // Mock data for demonstration
       const mockData: StudentData[] = [
@@ -145,7 +143,7 @@ const StudentImportInteractive = () => {
     const studentIdRegex = /^UTAS\d{7}$/;
 
     data.forEach((student, index) => {
-      const row = index + 2; // +2 because row 1 is header and arrays are 0-indexed
+      const row = index + 2;
 
       if (!student.studentId || !studentIdRegex.test(student.studentId)) {
         errors.push({
@@ -212,7 +210,6 @@ const StudentImportInteractive = () => {
 
     setIsProcessing(true);
 
-    // Validate data
     const errors = validateData(previewData);
 
     if (errors.length > 0) {
@@ -228,11 +225,6 @@ const StudentImportInteractive = () => {
 
     // Simulate import process
     setTimeout(() => {
-      // In production, this would:
-      // 1. Create accounts in Supabase
-      // 2. Generate secure passwords
-      // 3. Send welcome emails
-      
       setImportResult({
         success: previewData.length,
         failed: 0,
@@ -258,7 +250,7 @@ const StudentImportInteractive = () => {
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole={userRole} userName="Loading..." notificationCount={0} />
+        <Header userRole="commission" userName="Loading..." notificationCount={0} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-7xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -271,13 +263,9 @@ const StudentImportInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole={userRole}
+        userRole="commission"
         userName={userName}
-        userAvatar={
-          userRole === 'admin'
-            ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop'
-            : 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg'
-        }
+        userAvatar="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg"
         notificationCount={5}
       />
 
@@ -296,7 +284,7 @@ const StudentImportInteractive = () => {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.back()}
+                onClick={() => router.push('/electoral-commission-panel')}
                 className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-all duration-250"
               >
                 <Icon name="ArrowLeftIcon" size={20} variant="outline" />
@@ -573,11 +561,11 @@ const StudentImportInteractive = () => {
                 </button>
                 {importResult.success > 0 && (
                   <button
-                    onClick={() => router.push('/admin-system-control/users/manage')}
+                    onClick={() => router.push('/electoral-commission-panel')}
                     className="flex items-center gap-2 px-6 py-3 bg-success text-success-foreground rounded-md hover:bg-success/90 transition-all duration-250 ease-smooth shadow-md"
                   >
-                    <Icon name="UsersIcon" size={20} variant="outline" />
-                    View All Users
+                    <Icon name="ArrowLeftIcon" size={20} variant="outline" />
+                    Back to Dashboard
                   </button>
                 )}
               </div>
@@ -627,4 +615,4 @@ const StudentImportInteractive = () => {
   );
 };
 
-export default StudentImportInteractive;
+export default CommissionStudentImportInteractive;

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import ProfilePictureUpload from '@/components/common/ProfilePictureUpload';
 import { getUserSession } from '@/lib/auth-utils';
 import { getDaysUntilExpiration } from '@/lib/role-management';
 
@@ -18,6 +19,7 @@ interface CommissionProfile {
   accessEndDate: string;
   lastLogin: string;
   permissions: string[];
+  profilePicture?: string;
 }
 
 const CommissionProfileInteractive = () => {
@@ -35,6 +37,7 @@ const CommissionProfileInteractive = () => {
     joinedDate: '2025-09-01',
     accessEndDate: '2026-12-31',
     lastLogin: new Date().toISOString(),
+    profilePicture: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
     permissions: [
       'Manage Elections',
       'Verify Candidates',
@@ -86,6 +89,13 @@ const CommissionProfileInteractive = () => {
 
   const handleInputChange = (field: keyof CommissionProfile, value: string) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleProfilePictureChange = (croppedImage: string) => {
+    setProfile((prev) => ({ ...prev, profilePicture: croppedImage }));
+    setEditForm((prev) => ({ ...prev, profilePicture: croppedImage }));
+    console.log('Profile picture updated');
+    // In production, upload to Supabase Storage here
   };
 
   if (!isHydrated) {
@@ -152,11 +162,11 @@ const CommissionProfileInteractive = () => {
             <div className="px-6 pb-6">
               <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 mb-6">
                 <div className="flex items-end gap-4">
-                  <div className="w-32 h-32 rounded-full bg-card border-4 border-card overflow-hidden">
-                    <img
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
-                      alt={profile.name}
-                      className="w-full h-full object-cover"
+                  <div className="-mt-4">
+                    <ProfilePictureUpload
+                      currentImage={profile.profilePicture}
+                      onSave={handleProfilePictureChange}
+                      userName={profile.name}
                     />
                   </div>
                   <div className="mb-4">

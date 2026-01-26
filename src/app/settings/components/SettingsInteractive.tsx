@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SettingsState {
   emailNotifications: boolean;
@@ -19,6 +20,7 @@ interface SettingsState {
 
 const SettingsInteractive = () => {
   const router = useRouter();
+  const { theme: currentTheme, setTheme } = useTheme();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<SettingsState>({
@@ -35,7 +37,9 @@ const SettingsInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-  }, []);
+    // Sync with current theme
+    setSettings((prev) => ({ ...prev, theme: currentTheme }));
+  }, [currentTheme]);
 
   const handleToggle = (key: keyof SettingsState) => {
     setSettings((prev) => ({
@@ -211,32 +215,41 @@ const SettingsInteractive = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Theme</label>
-                <div className="grid grid-cols-3 gap-4">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Theme
+                  <span className="ml-2 text-xs text-muted-foreground">(Navy Blue Dark Mode)</span>
+                </label>
+                <div className="grid grid-cols-2 gap-4">
                   {[
-                    { value: 'light', label: 'Light', icon: 'SunIcon' },
-                    { value: 'dark', label: 'Dark', icon: 'MoonIcon' },
-                    { value: 'auto', label: 'Auto', icon: 'ComputerDesktopIcon' },
-                  ].map((theme) => (
+                    { value: 'light', label: 'Light Mode', icon: 'SunIcon', desc: 'Bright and clean' },
+                    { value: 'dark', label: 'Dark Mode', icon: 'MoonIcon', desc: 'Navy blue theme' },
+                  ].map((themeOption) => (
                     <button
-                      key={theme.value}
-                      onClick={() => setSettings({ ...settings, theme: theme.value as any })}
-                      className={`p-4 border-2 rounded-md transition-all duration-250 ${
-                        settings.theme === theme.value
-                          ? 'border-primary bg-primary/10'
+                      key={themeOption.value}
+                      onClick={() => {
+                        setTheme(themeOption.value as 'light' | 'dark');
+                        setSettings({ ...settings, theme: themeOption.value as any });
+                      }}
+                      className={`p-6 border-2 rounded-md transition-all duration-250 ${
+                        currentTheme === themeOption.value
+                          ? 'border-primary bg-primary/10 shadow-md'
                           : 'border-border hover:border-primary/50'
                       }`}
                     >
                       <Icon
-                        name={theme.icon as any}
-                        size={24}
+                        name={themeOption.icon as any}
+                        size={32}
                         variant="outline"
-                        className={settings.theme === theme.value ? 'text-primary' : 'text-muted-foreground'}
+                        className={currentTheme === themeOption.value ? 'text-primary' : 'text-muted-foreground'}
                       />
-                      <p className="text-sm font-medium text-foreground mt-2">{theme.label}</p>
+                      <p className="text-sm font-medium text-foreground mt-3">{themeOption.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{themeOption.desc}</p>
                     </button>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Dark mode features a professional navy blue color scheme for reduced eye strain
+                </p>
               </div>
             </div>
           </div>

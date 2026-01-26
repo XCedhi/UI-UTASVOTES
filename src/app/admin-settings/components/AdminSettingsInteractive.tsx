@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface SystemSettings {
   siteName: string;
@@ -38,6 +39,7 @@ interface SecuritySettings {
 
 const AdminSettingsInteractive = () => {
   const router = useRouter();
+  const { theme: currentTheme, setTheme } = useTheme();
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<'system' | 'election' | 'security' | 'notifications'>('system');
   const [isSaving, setIsSaving] = useState(false);
@@ -320,6 +322,46 @@ const AdminSettingsInteractive = () => {
                           </button>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
+                      Appearance
+                    </h3>
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-3">
+                        Theme
+                        <span className="ml-2 text-xs text-muted-foreground">(Navy Blue Dark Mode)</span>
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { value: 'light', label: 'Light Mode', icon: 'SunIcon', desc: 'Bright and clean interface' },
+                          { value: 'dark', label: 'Dark Mode', icon: 'MoonIcon', desc: 'Navy blue professional theme' },
+                        ].map((themeOption) => (
+                          <button
+                            key={themeOption.value}
+                            onClick={() => setTheme(themeOption.value as 'light' | 'dark')}
+                            className={`p-6 border-2 rounded-md transition-all duration-250 ${
+                              currentTheme === themeOption.value
+                                ? 'border-primary bg-primary/10 shadow-md'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <Icon
+                              name={themeOption.icon as any}
+                              size={32}
+                              variant="outline"
+                              className={currentTheme === themeOption.value ? 'text-primary' : 'text-muted-foreground'}
+                            />
+                            <p className="text-sm font-medium text-foreground mt-3">{themeOption.label}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{themeOption.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Dark mode features a professional navy blue color scheme optimized for extended use
+                      </p>
                     </div>
                   </div>
                 </div>

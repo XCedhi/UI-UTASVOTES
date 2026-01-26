@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import ElectionStatusIndicator from '@/components/common/ElectionStatusIndicator';
 import NotificationCenter from '@/components/common/NotificationCenter';
@@ -93,6 +94,7 @@ interface QuickStat {
 }
 
 const ElectoralCommissionInteractive = () => {
+  const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<'applications' | 'elections' | 'fees' | 'reports'>(
     'applications'
@@ -105,6 +107,10 @@ const ElectoralCommissionInteractive = () => {
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [quickStats, setQuickStats] = useState<QuickStat[]>([]);
+  const [reportType, setReportType] = useState<'election' | 'candidate' | 'voter' | 'financial'>(
+    'election'
+  );
+  const [selectedElectionForReport, setSelectedElectionForReport] = useState<string>('');
 
   useEffect(() => {
     setIsHydrated(true);
@@ -393,15 +399,19 @@ const ElectoralCommissionInteractive = () => {
   };
 
   const handleViewApplicationDetails = (id: string) => {
-    console.log('View application details:', id);
+    router.push(`/electoral-commission-panel/applications/${id}`);
   };
 
   const handleViewElectionAnalytics = (id: string) => {
-    console.log('View election analytics:', id);
+    router.push(`/electoral-commission-panel/elections/${id}/analytics`);
   };
 
   const handleManageElection = (id: string) => {
-    console.log('Manage election:', id);
+    router.push(`/electoral-commission-panel/elections/${id}/manage`);
+  };
+
+  const handleCreateElection = () => {
+    router.push('/electoral-commission-panel/elections/create');
   };
 
   const handleUpdateFee = (id: string, newAmount: number) => {
@@ -426,11 +436,41 @@ const ElectoralCommissionInteractive = () => {
   };
 
   const handleGenerateReport = () => {
-    console.log('Generating comprehensive election report...');
+    if (!selectedElectionForReport) {
+      alert('Please select an election to generate report');
+      return;
+    }
+    
+    const election = elections.find((e) => e.id === selectedElectionForReport);
+    if (!election) return;
+
+    console.log(`Generating ${reportType} report for ${election.name}...`);
+    
+    // Simulate report generation
+    const reportData = {
+      election: election.name,
+      type: reportType,
+      generatedAt: new Date().toISOString(),
+      totalVoters: election.totalVoters,
+      votedCount: election.votedCount,
+      turnout: election.turnoutPercentage,
+    };
+
+    // In production, this would trigger actual report generation
+    alert(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report generated successfully!\n\nElection: ${election.name}\nTurnout: ${election.turnoutPercentage}%\nVotes Cast: ${election.votedCount}/${election.totalVoters}`);
   };
 
-  const handleExportData = () => {
-    console.log('Exporting election data...');
+  const handleExportData = (format: 'pdf' | 'csv' | 'excel') => {
+    if (!selectedElectionForReport) {
+      alert('Please select an election to export data');
+      return;
+    }
+
+    const election = elections.find((e) => e.id === selectedElectionForReport);
+    if (!election) return;
+
+    console.log(`Exporting ${election.name} data as ${format.toUpperCase()}...`);
+    alert(`Data exported successfully as ${format.toUpperCase()}!`);
   };
 
   const activeElection = elections.find((e) => e.status === 'active');
@@ -612,7 +652,10 @@ const ElectoralCommissionInteractive = () => {
                         <h2 className="font-heading font-semibold text-xl text-foreground">
                           Election Monitoring
                         </h2>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth">
+                        <button 
+                          onClick={handleCreateElection}
+                          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth"
+                        >
                           <Icon name="PlusIcon" size={16} variant="outline" />
                           <span className="text-sm font-medium">Create Election</span>
                         </button>
@@ -640,54 +683,142 @@ const ElectoralCommissionInteractive = () => {
                     <div className="space-y-6">
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="font-heading font-semibold text-xl text-foreground">
-                          Election Reports
+                          Election Reports & Analytics
                         </h2>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <button
-                          onClick={handleGenerateReport}
-                          className="flex items-center gap-3 p-6 bg-card border border-border rounded-md hover:shadow-md transition-all duration-250 ease-smooth"
-                        >
-                          <div className="p-3 bg-primary/20 text-primary rounded-md">
-                            <Icon name="DocumentChartBarIcon" size={24} variant="outline" />
-                          </div>
-                          <div className="flex-1 text-left">
-                            <p className="font-medium text-foreground">Generate Report</p>
-                            <p className="text-sm text-muted-foreground">
-                              Create comprehensive election report
-                            </p>
-                          </div>
-                          <Icon
-                            name="ChevronRightIcon"
-                            size={20}
-                            variant="outline"
-                            className="text-muted-foreground"
-                          />
-                        </button>
+                      {/* Report Generation Section */}
+                      <div className="bg-muted rounded-md p-6">
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
+                          Generate New Report
+                        </h3>
 
-                        <button
-                          onClick={handleExportData}
-                          className="flex items-center gap-3 p-6 bg-card border border-border rounded-md hover:shadow-md transition-all duration-250 ease-smooth"
-                        >
-                          <div className="p-3 bg-success/20 text-success rounded-md">
-                            <Icon name="ArrowDownTrayIcon" size={24} variant="outline" />
+                        <div className="space-y-4">
+                          {/* Election Selection */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Select Election
+                            </label>
+                            <select
+                              value={selectedElectionForReport}
+                              onChange={(e) => setSelectedElectionForReport(e.target.value)}
+                              className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                              <option value="">Choose an election...</option>
+                              {elections.map((election) => (
+                                <option key={election.id} value={election.id}>
+                                  {election.name} ({election.status})
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                          <div className="flex-1 text-left">
-                            <p className="font-medium text-foreground">Export Data</p>
-                            <p className="text-sm text-muted-foreground">
-                              Download election data as Excel
-                            </p>
+
+                          {/* Report Type Selection */}
+                          <div>
+                            <label className="block text-sm font-medium text-foreground mb-2">
+                              Report Type
+                            </label>
+                            <div className="grid grid-cols-2 gap-3">
+                              {[
+                                { value: 'election', label: 'Election Summary', icon: 'ChartBarIcon' },
+                                { value: 'candidate', label: 'Candidate Analysis', icon: 'UserGroupIcon' },
+                                { value: 'voter', label: 'Voter Statistics', icon: 'UsersIcon' },
+                                { value: 'financial', label: 'Financial Report', icon: 'CurrencyDollarIcon' },
+                              ].map((type) => (
+                                <button
+                                  key={type.value}
+                                  onClick={() => setReportType(type.value as any)}
+                                  className={`flex items-center gap-3 p-4 rounded-md border-2 transition-all duration-250 ease-smooth ${
+                                    reportType === type.value
+                                      ? 'border-primary bg-primary/10'
+                                      : 'border-border bg-background hover:border-primary/50'
+                                  }`}
+                                >
+                                  <Icon
+                                    name={type.icon as any}
+                                    size={20}
+                                    variant="outline"
+                                    className={reportType === type.value ? 'text-primary' : 'text-muted-foreground'}
+                                  />
+                                  <span className={`text-sm font-medium ${
+                                    reportType === type.value ? 'text-primary' : 'text-foreground'
+                                  }`}>
+                                    {type.label}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
                           </div>
-                          <Icon
-                            name="ChevronRightIcon"
-                            size={20}
-                            variant="outline"
-                            className="text-muted-foreground"
-                          />
-                        </button>
+
+                          {/* Generate Button */}
+                          <button
+                            onClick={handleGenerateReport}
+                            disabled={!selectedElectionForReport}
+                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-250 ease-smooth"
+                          >
+                            <Icon name="DocumentChartBarIcon" size={20} variant="outline" />
+                            <span className="font-medium">Generate Report</span>
+                          </button>
+                        </div>
                       </div>
 
+                      {/* Export Options */}
+                      <div className="bg-muted rounded-md p-6">
+                        <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
+                          Export Data
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <button
+                            onClick={() => handleExportData('pdf')}
+                            disabled={!selectedElectionForReport}
+                            className="flex flex-col items-center gap-3 p-6 bg-background border border-border rounded-md hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-250 ease-smooth"
+                          >
+                            <div className="p-3 bg-error/20 text-error rounded-md">
+                              <Icon name="DocumentIcon" size={24} variant="outline" />
+                            </div>
+                            <div className="text-center">
+                              <p className="font-medium text-foreground">Export as PDF</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Certified report format
+                              </p>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={() => handleExportData('csv')}
+                            disabled={!selectedElectionForReport}
+                            className="flex flex-col items-center gap-3 p-6 bg-background border border-border rounded-md hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-250 ease-smooth"
+                          >
+                            <div className="p-3 bg-success/20 text-success rounded-md">
+                              <Icon name="TableCellsIcon" size={24} variant="outline" />
+                            </div>
+                            <div className="text-center">
+                              <p className="font-medium text-foreground">Export as CSV</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Raw data format
+                              </p>
+                            </div>
+                          </button>
+
+                          <button
+                            onClick={() => handleExportData('excel')}
+                            disabled={!selectedElectionForReport}
+                            className="flex flex-col items-center gap-3 p-6 bg-background border border-border rounded-md hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-250 ease-smooth"
+                          >
+                            <div className="p-3 bg-primary/20 text-primary rounded-md">
+                              <Icon name="DocumentTextIcon" size={24} variant="outline" />
+                            </div>
+                            <div className="text-center">
+                              <p className="font-medium text-foreground">Export as Excel</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Formatted spreadsheet
+                              </p>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Recent Reports */}
                       <div className="bg-muted rounded-md p-6">
                         <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
                           Recent Reports
@@ -696,50 +827,105 @@ const ElectoralCommissionInteractive = () => {
                           {[
                             {
                               name: 'Student Council 2026 - Final Report',
+                              type: 'Election Summary',
                               date: '2026-01-22',
                               size: '2.4 MB',
+                              format: 'PDF',
                             },
                             {
-                              name: 'Departmental Elections - Summary',
+                              name: 'Departmental Elections - Candidate Analysis',
+                              type: 'Candidate Analysis',
                               date: '2026-01-15',
                               size: '1.8 MB',
+                              format: 'Excel',
                             },
                             {
-                              name: 'Q4 2025 Electoral Statistics',
+                              name: 'Q4 2025 - Voter Statistics',
+                              type: 'Voter Statistics',
                               date: '2025-12-31',
                               size: '3.1 MB',
+                              format: 'PDF',
+                            },
+                            {
+                              name: 'Faculty Representatives - Financial Report',
+                              type: 'Financial Report',
+                              date: '2025-12-20',
+                              size: '1.2 MB',
+                              format: 'CSV',
                             },
                           ].map((report, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between p-3 bg-background rounded-md"
+                              className="flex items-center justify-between p-4 bg-background rounded-md hover:shadow-sm transition-all duration-250 ease-smooth"
                             >
                               <div className="flex items-center gap-3">
-                                <Icon
-                                  name="DocumentIcon"
-                                  size={20}
-                                  variant="outline"
-                                  className="text-primary"
-                                />
+                                <div className={`p-2 rounded-md ${
+                                  report.format === 'PDF' ? 'bg-error/20 text-error' :
+                                  report.format === 'Excel' ? 'bg-success/20 text-success' :
+                                  'bg-primary/20 text-primary'
+                                }`}>
+                                  <Icon
+                                    name="DocumentIcon"
+                                    size={20}
+                                    variant="outline"
+                                  />
+                                </div>
                                 <div>
                                   <p className="text-sm font-medium text-foreground">
                                     {report.name}
                                   </p>
-                                  <p className="text-xs text-muted-foreground font-caption">
-                                    {report.date} • {report.size}
+                                  <p className="text-xs text-muted-foreground font-caption mt-1">
+                                    {report.type} • {report.date} • {report.size}
                                   </p>
                                 </div>
                               </div>
-                              <button className="p-2 hover:bg-muted rounded-md transition-all duration-250 ease-smooth">
-                                <Icon
-                                  name="ArrowDownTrayIcon"
-                                  size={16}
-                                  variant="outline"
-                                  className="text-muted-foreground"
-                                />
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button className="p-2 hover:bg-muted rounded-md transition-all duration-250 ease-smooth">
+                                  <Icon
+                                    name="EyeIcon"
+                                    size={16}
+                                    variant="outline"
+                                    className="text-muted-foreground"
+                                  />
+                                </button>
+                                <button className="p-2 hover:bg-muted rounded-md transition-all duration-250 ease-smooth">
+                                  <Icon
+                                    name="ArrowDownTrayIcon"
+                                    size={16}
+                                    variant="outline"
+                                    className="text-muted-foreground"
+                                  />
+                                </button>
+                              </div>
                             </div>
                           ))}
+                        </div>
+                      </div>
+
+                      {/* Report Statistics */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-card border border-border rounded-md p-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <Icon name="DocumentTextIcon" size={24} variant="outline" className="text-primary" />
+                            <span className="text-2xl font-heading font-semibold text-foreground">24</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Total Reports Generated</p>
+                        </div>
+
+                        <div className="bg-card border border-border rounded-md p-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <Icon name="ArrowDownTrayIcon" size={24} variant="outline" className="text-success" />
+                            <span className="text-2xl font-heading font-semibold text-foreground">156</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Downloads This Month</p>
+                        </div>
+
+                        <div className="bg-card border border-border rounded-md p-6">
+                          <div className="flex items-center justify-between mb-2">
+                            <Icon name="ClockIcon" size={24} variant="outline" className="text-warning" />
+                            <span className="text-2xl font-heading font-semibold text-foreground">2h</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Avg. Generation Time</p>
                         </div>
                       </div>
                     </div>

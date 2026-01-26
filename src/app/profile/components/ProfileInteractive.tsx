@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
+import ProfilePictureUpload from '@/components/common/ProfilePictureUpload';
 
 interface ProfileData {
   fullName: string;
@@ -48,6 +49,12 @@ const ProfileInteractive = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setErrors({});
+  };
+
+  const handleProfilePictureChange = (croppedImage: string) => {
+    setProfileData((prev) => ({ ...prev, avatar: croppedImage }));
+    console.log('Profile picture updated');
+    // In production, upload to Supabase Storage here
   };
 
   if (!isHydrated) {
@@ -100,19 +107,12 @@ const ProfileInteractive = () => {
             <div className="h-32 bg-gradient-to-r from-primary to-accent" />
             <div className="px-6 pb-6">
               <div className="flex items-end gap-6 -mt-16 mb-6">
-                <div className="relative">
-                  <div className="w-32 h-32 rounded-full border-4 border-card overflow-hidden bg-muted">
-                    <AppImage
-                      src={profileData.avatar}
-                      alt={profileData.fullName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  {isEditing && (
-                    <button className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-full flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all duration-250">
-                      <Icon name="CameraIcon" size={20} variant="outline" />
-                    </button>
-                  )}
+                <div className="-mt-4">
+                  <ProfilePictureUpload
+                    currentImage={profileData.avatar}
+                    onSave={handleProfilePictureChange}
+                    userName={profileData.fullName}
+                  />
                 </div>
                 <div className="flex-1 pt-4">
                   <h2 className="font-heading font-bold text-2xl text-foreground mb-1">

@@ -67,7 +67,7 @@ const Header = ({
     },
     {
       label: 'Import Data',
-      path: '/admin-system-control/users/import',
+      path: '/electoral-commission-panel/import-students',
       icon: 'ArrowUpTrayIcon',
       roles: ['commission'],
     },
