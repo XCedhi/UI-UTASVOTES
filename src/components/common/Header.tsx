@@ -73,7 +73,7 @@ const Header = ({
     },
     {
       label: 'Manage Elections',
-      path: '/admin-system-control/election',
+      path: '/admin-election-management',
       icon: 'Cog6ToothIcon',
       roles: ['admin'],
     },
