@@ -43,12 +43,12 @@ const CommissionElectionResultsInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-    
+
     const session = getUserSession();
     if (session) {
       setUserName(session.name);
     }
-    
+
     loadElections();
   }, []);
 
@@ -249,7 +249,6 @@ const CommissionElectionResultsInteractive = () => {
 
       <main className="pt-24 pb-12 px-4 lg:px-6">
         <div className="max-w-[1400px] mx-auto space-y-6">
-
           {/* Header Section */}
           <div className="flex items-center justify-between">
             <div>
@@ -349,7 +348,12 @@ const CommissionElectionResultsInteractive = () => {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-card border border-border rounded-lg p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Icon name="ChartBarIcon" size={24} variant="outline" className="text-primary" />
+                    <Icon
+                      name="ChartBarIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-primary"
+                    />
                     {currentElection.status === 'active' && (
                       <span className="flex items-center gap-1 text-xs text-success">
                         <span className="w-2 h-2 bg-success rounded-full animate-pulse" />
@@ -381,7 +385,12 @@ const CommissionElectionResultsInteractive = () => {
 
                 <div className="bg-card border border-border rounded-lg p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <Icon name="CheckBadgeIcon" size={24} variant="outline" className="text-accent" />
+                    <Icon
+                      name="CheckBadgeIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-accent"
+                    />
                   </div>
                   <p className="text-2xl font-heading font-bold text-foreground mb-1">
                     {currentElection.positions.length}
@@ -402,7 +411,10 @@ const CommissionElectionResultsInteractive = () => {
 
               {/* Position Results */}
               {currentElection.positions.map((position) => (
-                <div key={position.id} className="bg-card border border-border rounded-lg overflow-hidden">
+                <div
+                  key={position.id}
+                  className="bg-card border border-border rounded-lg overflow-hidden"
+                >
                   <div className="p-6 border-b border-border bg-muted/30">
                     <div className="flex items-center justify-between">
                       <div>
@@ -473,7 +485,9 @@ const CommissionElectionResultsInteractive = () => {
                                   </span>
                                 )}
                               </div>
-                              <p className="text-sm text-muted-foreground mb-3">{candidate.department}</p>
+                              <p className="text-sm text-muted-foreground mb-3">
+                                {candidate.department}
+                              </p>
 
                               {/* Vote Progress Bar */}
                               <div className="space-y-2">

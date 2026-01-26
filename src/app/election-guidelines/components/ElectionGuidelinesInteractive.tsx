@@ -103,26 +103,48 @@ const ElectionGuidelinesInteractive = () => {
                     </h2>
                     <div className="prose prose-slate max-w-none">
                       <p className="text-muted-foreground mb-4">
-                        The UTASVotes electoral system is designed to facilitate free, fair, and transparent elections for student leadership positions at the University of Technical and Applied Sciences.
+                        The UTASVotes electoral system is designed to facilitate free, fair, and
+                        transparent elections for student leadership positions at the University of
+                        Technical and Applied Sciences.
                       </p>
                       <h3 className="font-heading font-semibold text-lg text-foreground mt-6 mb-3">
                         Key Principles
                       </h3>
                       <ul className="space-y-2 text-muted-foreground">
                         <li className="flex items-start gap-2">
-                          <Icon name="CheckCircleIcon" size={20} variant="solid" className="text-success mt-0.5" />
+                          <Icon
+                            name="CheckCircleIcon"
+                            size={20}
+                            variant="solid"
+                            className="text-success mt-0.5"
+                          />
                           <span>One student, one vote per position</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <Icon name="CheckCircleIcon" size={20} variant="solid" className="text-success mt-0.5" />
+                          <Icon
+                            name="CheckCircleIcon"
+                            size={20}
+                            variant="solid"
+                            className="text-success mt-0.5"
+                          />
                           <span>Secret ballot to ensure voter privacy</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <Icon name="CheckCircleIcon" size={20} variant="solid" className="text-success mt-0.5" />
+                          <Icon
+                            name="CheckCircleIcon"
+                            size={20}
+                            variant="solid"
+                            className="text-success mt-0.5"
+                          />
                           <span>Transparent counting and result publication</span>
                         </li>
                         <li className="flex items-start gap-2">
-                          <Icon name="CheckCircleIcon" size={20} variant="solid" className="text-success mt-0.5" />
+                          <Icon
+                            name="CheckCircleIcon"
+                            size={20}
+                            variant="solid"
+                            className="text-success mt-0.5"
+                          />
                           <span>Equal opportunity for all eligible candidates</span>
                         </li>
                       </ul>
@@ -146,7 +168,9 @@ const ElectionGuidelinesInteractive = () => {
                         </ul>
                       </div>
                       <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
-                        <h3 className="font-semibold text-foreground mb-2">Candidate Eligibility</h3>
+                        <h3 className="font-semibold text-foreground mb-2">
+                          Candidate Eligibility
+                        </h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                           <li>• Minimum CGPA of 2.5 (varies by position)</li>
                           <li>• Must be enrolled for at least one academic year</li>
@@ -170,11 +194,31 @@ const ElectionGuidelinesInteractive = () => {
                         </h3>
                         <div className="space-y-4">
                           {[
-                            { step: 1, title: 'Login', desc: 'Access the system with your institutional email' },
-                            { step: 2, title: 'Review Candidates', desc: 'Read manifestos and campaign materials' },
-                            { step: 3, title: 'Cast Your Vote', desc: 'Select your preferred candidate for each position' },
-                            { step: 4, title: 'Review Ballot', desc: 'Confirm your selections before submission' },
-                            { step: 5, title: 'Submit', desc: 'Finalize your vote and receive confirmation' },
+                            {
+                              step: 1,
+                              title: 'Login',
+                              desc: 'Access the system with your institutional email',
+                            },
+                            {
+                              step: 2,
+                              title: 'Review Candidates',
+                              desc: 'Read manifestos and campaign materials',
+                            },
+                            {
+                              step: 3,
+                              title: 'Cast Your Vote',
+                              desc: 'Select your preferred candidate for each position',
+                            },
+                            {
+                              step: 4,
+                              title: 'Review Ballot',
+                              desc: 'Confirm your selections before submission',
+                            },
+                            {
+                              step: 5,
+                              title: 'Submit',
+                              desc: 'Finalize your vote and receive confirmation',
+                            },
                           ].map((item) => (
                             <div key={item.step} className="flex gap-4">
                               <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold flex-shrink-0">
@@ -203,23 +247,44 @@ const ElectionGuidelinesInteractive = () => {
                           Application Process
                         </h3>
                         <p className="text-muted-foreground mb-4">
-                          Candidates must complete the registration process through the candidate portal.
+                          Candidates must complete the registration process through the candidate
+                          portal.
                         </p>
                         <div className="bg-muted/30 rounded-lg p-4 space-y-2">
                           <div className="flex items-center gap-2 text-sm">
-                            <Icon name="DocumentTextIcon" size={16} variant="outline" className="text-primary" />
+                            <Icon
+                              name="DocumentTextIcon"
+                              size={16}
+                              variant="outline"
+                              className="text-primary"
+                            />
                             <span className="text-foreground">Submit application form</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <Icon name="CameraIcon" size={16} variant="outline" className="text-primary" />
+                            <Icon
+                              name="CameraIcon"
+                              size={16}
+                              variant="outline"
+                              className="text-primary"
+                            />
                             <span className="text-foreground">Upload profile photo</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <Icon name="DocumentCheckIcon" size={16} variant="outline" className="text-primary" />
+                            <Icon
+                              name="DocumentCheckIcon"
+                              size={16}
+                              variant="outline"
+                              className="text-primary"
+                            />
                             <span className="text-foreground">Provide manifesto</span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
-                            <Icon name="CreditCardIcon" size={16} variant="outline" className="text-primary" />
+                            <Icon
+                              name="CreditCardIcon"
+                              size={16}
+                              variant="outline"
+                              className="text-primary"
+                            />
                             <span className="text-foreground">Pay application fee</span>
                           </div>
                         </div>
@@ -236,7 +301,12 @@ const ElectionGuidelinesInteractive = () => {
                     <div className="space-y-4">
                       <div className="bg-error/10 border border-error/20 rounded-lg p-4">
                         <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <Icon name="XCircleIcon" size={20} variant="solid" className="text-error" />
+                          <Icon
+                            name="XCircleIcon"
+                            size={20}
+                            variant="solid"
+                            className="text-error"
+                          />
                           Prohibited Activities
                         </h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
@@ -249,7 +319,12 @@ const ElectionGuidelinesInteractive = () => {
                       </div>
                       <div className="bg-success/10 border border-success/20 rounded-lg p-4">
                         <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <Icon name="CheckCircleIcon" size={20} variant="solid" className="text-success" />
+                          <Icon
+                            name="CheckCircleIcon"
+                            size={20}
+                            variant="solid"
+                            className="text-success"
+                          />
                           Expected Behavior
                         </h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">

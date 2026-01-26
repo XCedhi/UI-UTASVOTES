@@ -11,20 +11,20 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   useEffect(() => {
     const session = getUserSession();
-    
+
     // Not logged in - redirect to login
     if (!session) {
       router.push('/login');
       return;
     }
-    
+
     // Check if user can access this route
     if (!canAccessRoute(session.role, pathname)) {
       // Redirect to appropriate dashboard
       router.push(getRoleDashboard(session.role));
       return;
     }
-    
+
     setIsAuthorized(true);
   }, [pathname, router]);
 

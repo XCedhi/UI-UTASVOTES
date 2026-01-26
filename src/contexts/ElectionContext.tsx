@@ -191,9 +191,7 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
     // Simulate vote casting
     console.log('Vote cast:', { electionId, candidateId });
     // Update local state
-    setElections((prev) =>
-      prev.map((e) => (e.id === electionId ? { ...e, hasVoted: true } : e))
-    );
+    setElections((prev) => prev.map((e) => (e.id === electionId ? { ...e, hasVoted: true } : e)));
   };
 
   const toggleFeedLike = (feedId: string) => {

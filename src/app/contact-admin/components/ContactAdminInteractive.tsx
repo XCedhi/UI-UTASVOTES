@@ -111,7 +111,10 @@ const ContactAdminInteractive = () => {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Contact Form */}
               <div className="lg:col-span-2">
-                <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
+                <form
+                  onSubmit={handleSubmit}
+                  className="bg-card border border-border rounded-lg p-6 space-y-6"
+                >
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
                       Category
@@ -208,7 +211,12 @@ const ContactAdminInteractive = () => {
                   >
                     {isSubmitting ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Icon name="ArrowPathIcon" size={20} variant="outline" className="animate-spin" />
+                        <Icon
+                          name="ArrowPathIcon"
+                          size={20}
+                          variant="outline"
+                          className="animate-spin"
+                        />
                         Sending...
                       </span>
                     ) : (
@@ -229,21 +237,36 @@ const ContactAdminInteractive = () => {
                   </h3>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <Icon name="EnvelopeIcon" size={20} variant="outline" className="text-primary mt-1" />
+                      <Icon
+                        name="EnvelopeIcon"
+                        size={20}
+                        variant="outline"
+                        className="text-primary mt-1"
+                      />
                       <div>
                         <p className="text-sm font-medium text-foreground">Email</p>
                         <p className="text-sm text-muted-foreground">support@cktutas.edu.gh</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Icon name="PhoneIcon" size={20} variant="outline" className="text-primary mt-1" />
+                      <Icon
+                        name="PhoneIcon"
+                        size={20}
+                        variant="outline"
+                        className="text-primary mt-1"
+                      />
                       <div>
                         <p className="text-sm font-medium text-foreground">Phone</p>
                         <p className="text-sm text-muted-foreground">+233 30 123 4567</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Icon name="ClockIcon" size={20} variant="outline" className="text-primary mt-1" />
+                      <Icon
+                        name="ClockIcon"
+                        size={20}
+                        variant="outline"
+                        className="text-primary mt-1"
+                      />
                       <div>
                         <p className="text-sm font-medium text-foreground">Support Hours</p>
                         <p className="text-sm text-muted-foreground">Mon-Fri: 8AM - 5PM GMT</p>
@@ -254,11 +277,17 @@ const ContactAdminInteractive = () => {
 
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-6">
                   <div className="flex items-start gap-3">
-                    <Icon name="InformationCircleIcon" size={24} variant="outline" className="text-primary" />
+                    <Icon
+                      name="InformationCircleIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-primary"
+                    />
                     <div>
                       <h3 className="font-medium text-foreground mb-2">Quick Tip</h3>
                       <p className="text-sm text-muted-foreground">
-                        For faster resolution, include your student ID and any relevant screenshots or error messages.
+                        For faster resolution, include your student ID and any relevant screenshots
+                        or error messages.
                       </p>
                     </div>
                   </div>
@@ -274,7 +303,8 @@ const ContactAdminInteractive = () => {
                 Message Sent Successfully
               </h2>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Thank you for contacting us. Our support team will review your message and respond within 24 hours.
+                Thank you for contacting us. Our support team will review your message and respond
+                within 24 hours.
               </p>
               <div className="flex items-center justify-center gap-4">
                 <button

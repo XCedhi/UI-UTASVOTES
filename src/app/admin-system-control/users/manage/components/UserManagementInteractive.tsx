@@ -140,7 +140,11 @@ const UserManagementInteractive = () => {
   };
 
   const handleDeactivateUser = (user: User) => {
-    if (confirm(`Are you sure you want to deactivate ${user.name}? They will lose access to the system.`)) {
+    if (
+      confirm(
+        `Are you sure you want to deactivate ${user.name}? They will lose access to the system.`
+      )
+    ) {
       // In production: Update user status to 'inactive'
       alert(`User ${user.name} has been deactivated`);
     }
@@ -336,19 +340,33 @@ const UserManagementInteractive = () => {
               <table className="w-full">
                 <thead className="bg-muted/30">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Email</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Role</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Status</th>
-                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">Last Activity</th>
-                    <th className="px-6 py-3 text-right text-sm font-medium text-foreground">Actions</th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-medium text-foreground">
+                      Last Activity
+                    </th>
+                    <th className="px-6 py-3 text-right text-sm font-medium text-foreground">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {users.map((user) => (
                     <tr key={user.id} className="hover:bg-muted/20 transition-colors duration-200">
                       <td className="px-6 py-4 text-sm font-medium text-foreground">{user.name}</td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground font-data">{user.email}</td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground font-data">
+                        {user.email}
+                      </td>
                       <td className="px-6 py-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(user.role)}`}
@@ -427,7 +445,12 @@ const UserManagementInteractive = () => {
                       className="p-2 hover:bg-muted rounded-md transition-all duration-250"
                       disabled={isSubmitting}
                     >
-                      <Icon name="XMarkIcon" size={24} variant="outline" className="text-muted-foreground" />
+                      <Icon
+                        name="XMarkIcon"
+                        size={24}
+                        variant="outline"
+                        className="text-muted-foreground"
+                      />
                     </button>
                   </div>
                 </div>
@@ -453,11 +476,17 @@ const UserManagementInteractive = () => {
                             name="ShieldCheckIcon"
                             size={24}
                             variant="outline"
-                            className={formData.role === 'commission' ? 'text-primary' : 'text-muted-foreground'}
+                            className={
+                              formData.role === 'commission'
+                                ? 'text-primary'
+                                : 'text-muted-foreground'
+                            }
                           />
                           <div className="text-left">
                             <p className="font-medium text-foreground">Electoral Commission</p>
-                            <p className="text-xs text-muted-foreground">Manage elections & candidates</p>
+                            <p className="text-xs text-muted-foreground">
+                              Manage elections & candidates
+                            </p>
                           </div>
                         </div>
                       </button>
@@ -474,7 +503,9 @@ const UserManagementInteractive = () => {
                             name="KeyIcon"
                             size={24}
                             variant="outline"
-                            className={formData.role === 'admin' ? 'text-error' : 'text-muted-foreground'}
+                            className={
+                              formData.role === 'admin' ? 'text-error' : 'text-muted-foreground'
+                            }
                           />
                           <div className="text-left">
                             <p className="font-medium text-foreground">Administrator</p>
@@ -607,8 +638,8 @@ const UserManagementInteractive = () => {
                         <div>
                           <p className="font-medium text-foreground mb-1">Time-Bound Access</p>
                           <p className="text-sm text-muted-foreground">
-                            Commission access is temporary. After the end date, the user will automatically be
-                            downgraded to student role.
+                            Commission access is temporary. After the end date, the user will
+                            automatically be downgraded to student role.
                           </p>
                         </div>
                       </div>
@@ -680,7 +711,12 @@ const UserManagementInteractive = () => {
                   {/* Info Box */}
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-md">
                     <div className="flex items-start gap-3">
-                      <Icon name="InformationCircleIcon" size={20} variant="outline" className="text-primary flex-shrink-0 mt-0.5" />
+                      <Icon
+                        name="InformationCircleIcon"
+                        size={20}
+                        variant="outline"
+                        className="text-primary flex-shrink-0 mt-0.5"
+                      />
                       <div className="text-sm text-foreground">
                         <p className="font-medium mb-1">What happens next?</p>
                         <ul className="space-y-1 text-muted-foreground">
@@ -690,7 +726,10 @@ const UserManagementInteractive = () => {
                           <li>• Invitation expires in 7 days if not accepted</li>
                           {formData.role === 'commission' && (
                             <li className="text-warning font-medium">
-                              • Commission access automatically expires on {formData.accessEndDate ? new Date(formData.accessEndDate).toLocaleDateString() : 'end date'}
+                              • Commission access automatically expires on{' '}
+                              {formData.accessEndDate
+                                ? new Date(formData.accessEndDate).toLocaleDateString()
+                                : 'end date'}
                             </li>
                           )}
                         </ul>
@@ -741,16 +780,31 @@ const UserManagementInteractive = () => {
                 </p>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <p className="flex items-center justify-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className="text-success"
+                    />
                     Secure invitation link generated
                   </p>
                   <p className="flex items-center justify-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className="text-success"
+                    />
                     Email sent to institutional address
                   </p>
                   <p className="flex items-center justify-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                    User will appear as "Pending" until they accept
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className="text-success"
+                    />
+                    User will appear as &quot;Pending&quot; until they accept
                   </p>
                 </div>
               </div>
@@ -781,7 +835,12 @@ const UserManagementInteractive = () => {
                       className="p-2 hover:bg-muted rounded-md transition-all duration-250"
                       disabled={isSubmitting}
                     >
-                      <Icon name="XMarkIcon" size={24} variant="outline" className="text-muted-foreground" />
+                      <Icon
+                        name="XMarkIcon"
+                        size={24}
+                        variant="outline"
+                        className="text-muted-foreground"
+                      />
                     </button>
                   </div>
                 </div>
@@ -797,7 +856,9 @@ const UserManagementInteractive = () => {
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Email</p>
-                        <p className="font-medium text-foreground font-data">{selectedUser.email}</p>
+                        <p className="font-medium text-foreground font-data">
+                          {selectedUser.email}
+                        </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground mb-1">Current Role</p>
@@ -846,7 +907,11 @@ const UserManagementInteractive = () => {
                               }
                               size={20}
                               variant="outline"
-                              className={selectedUser.role === role ? 'text-primary' : 'text-muted-foreground'}
+                              className={
+                                selectedUser.role === role
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground'
+                              }
                             />
                             <div>
                               <p className="font-medium text-foreground capitalize">{role}</p>
@@ -882,7 +947,10 @@ const UserManagementInteractive = () => {
                           </label>
                           <input
                             type="date"
-                            value={selectedUser.invitedAt?.split('T')[0] || new Date().toISOString().split('T')[0]}
+                            value={
+                              selectedUser.invitedAt?.split('T')[0] ||
+                              new Date().toISOString().split('T')[0]
+                            }
                             onChange={(e) =>
                               setSelectedUser({ ...selectedUser, invitedAt: e.target.value })
                             }
@@ -900,7 +968,10 @@ const UserManagementInteractive = () => {
                             onChange={(e) =>
                               setSelectedUser({ ...selectedUser, lastLogin: e.target.value })
                             }
-                            min={selectedUser.invitedAt?.split('T')[0] || new Date().toISOString().split('T')[0]}
+                            min={
+                              selectedUser.invitedAt?.split('T')[0] ||
+                              new Date().toISOString().split('T')[0]
+                            }
                             className="w-full px-4 py-3 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-250"
                             disabled={isSubmitting}
                           />
@@ -918,7 +989,9 @@ const UserManagementInteractive = () => {
                       {['active', 'inactive', 'pending'].map((status) => (
                         <button
                           key={status}
-                          onClick={() => setSelectedUser({ ...selectedUser, status: status as any })}
+                          onClick={() =>
+                            setSelectedUser({ ...selectedUser, status: status as any })
+                          }
                           className={`p-3 border-2 rounded-lg transition-all duration-250 ${
                             selectedUser.status === status
                               ? 'border-primary bg-primary/5'
@@ -935,11 +1008,18 @@ const UserManagementInteractive = () => {
                   {/* Warning Box */}
                   <div className="p-4 bg-warning/5 border border-warning/20 rounded-md">
                     <div className="flex items-start gap-3">
-                      <Icon name="ExclamationTriangleIcon" size={20} variant="outline" className="text-warning flex-shrink-0 mt-0.5" />
+                      <Icon
+                        name="ExclamationTriangleIcon"
+                        size={20}
+                        variant="outline"
+                        className="text-warning flex-shrink-0 mt-0.5"
+                      />
                       <div className="text-sm text-foreground">
                         <p className="font-medium mb-1">Important Notes</p>
                         <ul className="space-y-1 text-muted-foreground">
-                          <li>• Changing role will affect user's access permissions immediately</li>
+                          <li>
+                            • Changing role will affect user&apos;s access permissions immediately
+                          </li>
                           <li>• Deactivating a user will revoke all access</li>
                           <li>• Commission members need valid access period</li>
                           <li>• User will receive notification email about changes</li>
@@ -991,15 +1071,30 @@ const UserManagementInteractive = () => {
                 </p>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   <p className="flex items-center justify-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className="text-success"
+                    />
                     User record updated in database
                   </p>
                   <p className="flex items-center justify-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className="text-success"
+                    />
                     Notification email sent to user
                   </p>
                   <p className="flex items-center justify-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className="text-success"
+                    />
                     Changes logged in audit trail
                   </p>
                 </div>

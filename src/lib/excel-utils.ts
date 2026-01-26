@@ -7,10 +7,10 @@ export interface StudentTemplateData {
   'Student ID': string;
   'First Name': string;
   'Last Name': string;
-  'Email': string;
-  'Department': string;
-  'Level': string;
-  'Program': string;
+  Email: string;
+  Department: string;
+  Level: string;
+  Program: string;
   'Phone Number': string;
 }
 
@@ -25,30 +25,30 @@ export function downloadStudentImportTemplate() {
       'Student ID': 'UTAS2024001',
       'First Name': 'Kwame',
       'Last Name': 'Mensah',
-      'Email': 'kwame.mensah@cktutas.edu.gh',
-      'Department': 'Computer Science',
-      'Level': '300',
-      'Program': 'BSc Computer Science',
+      Email: 'kwame.mensah@cktutas.edu.gh',
+      Department: 'Computer Science',
+      Level: '300',
+      Program: 'BSc Computer Science',
       'Phone Number': '+233241234567',
     },
     {
       'Student ID': 'UTAS2024002',
       'First Name': 'Ama',
       'Last Name': 'Osei',
-      'Email': 'ama.osei@cktutas.edu.gh',
-      'Department': 'Business Administration',
-      'Level': '200',
-      'Program': 'BSc Business Administration',
+      Email: 'ama.osei@cktutas.edu.gh',
+      Department: 'Business Administration',
+      Level: '200',
+      Program: 'BSc Business Administration',
       'Phone Number': '+233242345678',
     },
     {
       'Student ID': 'UTAS2024003',
       'First Name': 'Kofi',
       'Last Name': 'Asante',
-      'Email': 'kofi.asante@cktutas.edu.gh',
-      'Department': 'Engineering',
-      'Level': '400',
-      'Program': 'BEng Mechanical Engineering',
+      Email: 'kofi.asante@cktutas.edu.gh',
+      Department: 'Engineering',
+      Level: '400',
+      Program: 'BEng Mechanical Engineering',
       'Phone Number': '',
     },
   ];
@@ -60,11 +60,13 @@ export function downloadStudentImportTemplate() {
     headers.join(','),
     // Data rows
     ...sampleData.map((row) =>
-      headers.map((header) => {
-        const value = row[header as keyof StudentTemplateData];
-        // Wrap in quotes if contains comma
-        return value.includes(',') ? `"${value}"` : value;
-      }).join(',')
+      headers
+        .map((header) => {
+          const value = row[header as keyof StudentTemplateData];
+          // Wrap in quotes if contains comma
+          return value.includes(',') ? `"${value}"` : value;
+        })
+        .join(',')
     ),
   ].join('\n');
 
@@ -72,29 +74,29 @@ export function downloadStudentImportTemplate() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', 'UTASVotes_Student_Import_Template.csv');
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   URL.revokeObjectURL(url);
 }
 
 /**
  * Generate Excel template with proper formatting using XLSX library
  * This is the production-ready version that creates actual .xlsx files
- * 
+ *
  * To use this, install: npm install xlsx
  * Then uncomment and use this function instead
  */
 export function downloadStudentImportTemplateXLSX() {
   // This requires the 'xlsx' library
   // Uncomment when ready to use in production
-  
+
   /*
   import * as XLSX from 'xlsx';
   
@@ -183,7 +185,7 @@ export function downloadStudentImportTemplateXLSX() {
   // Download file
   XLSX.writeFile(workbook, 'UTASVotes_Student_Import_Template.xlsx');
   */
-  
+
   console.log('XLSX library not installed. Using CSV fallback.');
   downloadStudentImportTemplate();
 }
@@ -197,17 +199,17 @@ export function validateImportFile(file: File): { valid: boolean; error?: string
     'application/vnd.ms-excel',
     'text/csv',
   ];
-  
+
   const validExtensions = ['.xlsx', '.xls', '.csv'];
   const hasValidExtension = validExtensions.some((ext) => file.name.toLowerCase().endsWith(ext));
-  
+
   if (!validTypes.includes(file.type) && !hasValidExtension) {
     return {
       valid: false,
       error: 'Invalid file type. Please upload an Excel (.xlsx, .xls) or CSV file.',
     };
   }
-  
+
   // Check file size (max 10MB)
   const maxSize = 10 * 1024 * 1024; // 10MB in bytes
   if (file.size > maxSize) {
@@ -216,7 +218,7 @@ export function validateImportFile(file: File): { valid: boolean; error?: string
       error: 'File size exceeds 10MB limit. Please upload a smaller file.',
     };
   }
-  
+
   return { valid: true };
 }
 
@@ -226,21 +228,21 @@ export function validateImportFile(file: File): { valid: boolean; error?: string
 export function parseCSV(csvContent: string): Record<string, string>[] {
   const lines = csvContent.split('\n').filter((line) => line.trim());
   if (lines.length < 2) return [];
-  
+
   const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
   const data: Record<string, string>[] = [];
-  
+
   for (let i = 1; i < lines.length; i++) {
     const values = lines[i].split(',').map((v) => v.trim().replace(/^"|"$/g, ''));
     const row: Record<string, string> = {};
-    
+
     headers.forEach((header, index) => {
       row[header] = values[index] || '';
     });
-    
+
     data.push(row);
   }
-  
+
   return data;
 }
 
@@ -250,16 +252,16 @@ export function parseCSV(csvContent: string): Record<string, string>[] {
 export function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onload = (e) => {
       const content = e.target?.result as string;
       resolve(content);
     };
-    
+
     reader.onerror = () => {
       reject(new Error('Failed to read file'));
     };
-    
+
     reader.readAsText(file);
   });
 }
@@ -351,14 +353,14 @@ For support, contact: admin@cktutas.edu.gh
   const blob = new Blob([instructions], { type: 'text/plain;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', 'UTASVotes_Import_Instructions.txt');
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   URL.revokeObjectURL(url);
 }

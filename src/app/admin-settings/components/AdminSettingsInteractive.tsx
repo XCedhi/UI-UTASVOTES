@@ -41,7 +41,9 @@ const AdminSettingsInteractive = () => {
   const router = useRouter();
   const { theme: currentTheme, setTheme } = useTheme();
   const [isHydrated, setIsHydrated] = useState(false);
-  const [activeTab, setActiveTab] = useState<'system' | 'election' | 'security' | 'notifications'>('system');
+  const [activeTab, setActiveTab] = useState<'system' | 'election' | 'security' | 'notifications'>(
+    'system'
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -124,7 +126,9 @@ const AdminSettingsInteractive = () => {
               <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
                 System Settings
               </h1>
-              <p className="text-muted-foreground">Configure system-wide settings and preferences</p>
+              <p className="text-muted-foreground">
+                Configure system-wide settings and preferences
+              </p>
             </div>
             <button
               onClick={() => router.back()}
@@ -199,7 +203,10 @@ const AdminSettingsInteractive = () => {
                         <textarea
                           value={systemSettings.siteDescription}
                           onChange={(e) =>
-                            setSystemSettings({ ...systemSettings, siteDescription: e.target.value })
+                            setSystemSettings({
+                              ...systemSettings,
+                              siteDescription: e.target.value,
+                            })
                           }
                           rows={3}
                           className="w-full px-4 py-3 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
@@ -255,7 +262,8 @@ const AdminSettingsInteractive = () => {
                         {
                           key: 'maintenanceMode',
                           label: 'Maintenance Mode',
-                          description: 'Put the system in maintenance mode (only admins can access)',
+                          description:
+                            'Put the system in maintenance mode (only admins can access)',
                           icon: 'WrenchScrewdriverIcon',
                         },
                         {
@@ -332,12 +340,24 @@ const AdminSettingsInteractive = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-3">
                         Theme
-                        <span className="ml-2 text-xs text-muted-foreground">(Navy Blue Dark Mode)</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          (Navy Blue Dark Mode)
+                        </span>
                       </label>
                       <div className="grid grid-cols-2 gap-4">
                         {[
-                          { value: 'light', label: 'Light Mode', icon: 'SunIcon', desc: 'Bright and clean interface' },
-                          { value: 'dark', label: 'Dark Mode', icon: 'MoonIcon', desc: 'Navy blue professional theme' },
+                          {
+                            value: 'light',
+                            label: 'Light Mode',
+                            icon: 'SunIcon',
+                            desc: 'Bright and clean interface',
+                          },
+                          {
+                            value: 'dark',
+                            label: 'Dark Mode',
+                            icon: 'MoonIcon',
+                            desc: 'Navy blue professional theme',
+                          },
                         ].map((themeOption) => (
                           <button
                             key={themeOption.value}
@@ -352,15 +372,22 @@ const AdminSettingsInteractive = () => {
                               name={themeOption.icon as any}
                               size={32}
                               variant="outline"
-                              className={currentTheme === themeOption.value ? 'text-primary' : 'text-muted-foreground'}
+                              className={
+                                currentTheme === themeOption.value
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground'
+                              }
                             />
-                            <p className="text-sm font-medium text-foreground mt-3">{themeOption.label}</p>
+                            <p className="text-sm font-medium text-foreground mt-3">
+                              {themeOption.label}
+                            </p>
                             <p className="text-xs text-muted-foreground mt-1">{themeOption.desc}</p>
                           </button>
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground mt-3">
-                        Dark mode features a professional navy blue color scheme optimized for extended use
+                        Dark mode features a professional navy blue color scheme optimized for
+                        extended use
                       </p>
                     </div>
                   </div>
@@ -445,7 +472,8 @@ const AdminSettingsInteractive = () => {
                         {
                           key: 'allowLateVoting',
                           label: 'Allow Late Voting',
-                          description: 'Allow voting after the official deadline with admin approval',
+                          description:
+                            'Allow voting after the official deadline with admin approval',
                           icon: 'ClockIcon',
                         },
                         {
@@ -487,7 +515,8 @@ const AdminSettingsInteractive = () => {
                             onClick={() =>
                               setElectionSettings({
                                 ...electionSettings,
-                                [setting.key]: !electionSettings[setting.key as keyof ElectionSettings],
+                                [setting.key]:
+                                  !electionSettings[setting.key as keyof ElectionSettings],
                               })
                             }
                             className={`relative w-12 h-6 rounded-full transition-all duration-250 ${
@@ -540,7 +569,12 @@ const AdminSettingsInteractive = () => {
 
                       <div className="flex items-center justify-between p-4 bg-muted/30 rounded-md">
                         <div className="flex items-center gap-3">
-                          <Icon name="KeyIcon" size={24} variant="outline" className="text-primary" />
+                          <Icon
+                            name="KeyIcon"
+                            size={24}
+                            variant="outline"
+                            className="text-primary"
+                          />
                           <div>
                             <p className="font-medium text-foreground">Enforce Strong Passwords</p>
                             <p className="text-sm text-muted-foreground">
@@ -642,7 +676,9 @@ const AdminSettingsInteractive = () => {
                             className="text-primary"
                           />
                           <div>
-                            <p className="font-medium text-foreground">Require Two-Factor Authentication</p>
+                            <p className="font-medium text-foreground">
+                              Require Two-Factor Authentication
+                            </p>
                             <p className="text-sm text-muted-foreground">
                               Require 2FA for all admin and commission accounts
                             </p>
@@ -694,7 +730,12 @@ const AdminSettingsInteractive = () => {
                           className="flex items-center justify-between p-4 bg-muted/30 rounded-md"
                         >
                           <div className="flex items-center gap-3">
-                            <Icon name="EnvelopeIcon" size={20} variant="outline" className="text-primary" />
+                            <Icon
+                              name="EnvelopeIcon"
+                              size={20}
+                              variant="outline"
+                              className="text-primary"
+                            />
                             <p className="text-foreground">{notification}</p>
                           </div>
                           <button className="relative w-12 h-6 rounded-full bg-success">
@@ -721,7 +762,12 @@ const AdminSettingsInteractive = () => {
                           className="flex items-center justify-between p-4 bg-muted/30 rounded-md"
                         >
                           <div className="flex items-center gap-3">
-                            <Icon name="BellIcon" size={20} variant="outline" className="text-primary" />
+                            <Icon
+                              name="BellIcon"
+                              size={20}
+                              variant="outline"
+                              className="text-primary"
+                            />
                             <p className="text-foreground">{notification}</p>
                           </div>
                           <button className="relative w-12 h-6 rounded-full bg-success">

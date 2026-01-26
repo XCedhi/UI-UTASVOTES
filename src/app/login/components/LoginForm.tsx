@@ -67,38 +67,43 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
     setIsLoading(true);
 
     setTimeout(() => {
-      const mockCredentials: Record<string, { email: string; password: string; role: UserRole; name: string; avatar?: string }> = {
-        student: { 
-          email: 'student@cktutas.edu.gh', 
+      const mockCredentials: Record<
+        string,
+        { email: string; password: string; role: UserRole; name: string; avatar?: string }
+      > = {
+        student: {
+          email: 'student@cktutas.edu.gh',
           password: 'Student@2026',
           role: 'student',
           name: 'John Mensah',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop'
+          avatar:
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
         },
-        candidate: { 
-          email: 'candidate@cktutas.edu.gh', 
+        candidate: {
+          email: 'candidate@cktutas.edu.gh',
           password: 'Candidate@2026',
           role: 'candidate',
           name: 'Ama Osei',
-          avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg'
+          avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
         },
-        commission: { 
-          email: 'commission@cktutas.edu.gh', 
+        commission: {
+          email: 'commission@cktutas.edu.gh',
           password: 'Commission@2026',
           role: 'commission',
           name: 'Dr. Kwame Nkrumah',
-          avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop'
+          avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop',
         },
-        admin: { 
-          email: 'admin@cktutas.edu.gh', 
+        admin: {
+          email: 'admin@cktutas.edu.gh',
           password: 'Admin@2026',
           role: 'admin',
           name: 'System Administrator',
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop'
+          avatar:
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
         },
       };
 
-      let matchedUser: typeof mockCredentials[string] | null = null;
+      let matchedUser: (typeof mockCredentials)[string] | null = null;
 
       Object.values(mockCredentials).forEach((creds) => {
         if (email === creds.email && password === creds.password) {
@@ -110,7 +115,7 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
         if (onSubmit) {
           onSubmit(email, password);
         }
-        
+
         // Set user session
         setUserSession({
           email: matchedUser.email,
@@ -118,7 +123,7 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
           name: matchedUser.name,
           avatar: matchedUser.avatar,
         });
-        
+
         // Redirect to appropriate dashboard
         router.push(getRoleDashboard(matchedUser.role));
       } else {

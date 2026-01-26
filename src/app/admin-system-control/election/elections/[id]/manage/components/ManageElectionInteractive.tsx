@@ -1,13 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
-
-interface ManageElectionInteractiveProps {
-  electionId: string;
-}
 
 interface Position {
   id: string;
@@ -16,8 +12,9 @@ interface Position {
   status: 'open' | 'closed';
 }
 
-const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProps) => {
+const ManageElectionInteractive = () => {
   const router = useRouter();
+  const params = useParams();
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'positions' | 'candidates' | 'control'>(
     'settings'
@@ -92,9 +89,9 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole="commission"
-        userName="Dr. Akosua Boateng"
-        userAvatar="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg"
+        userRole="admin"
+        userName="System Administrator"
+        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
         notificationCount={0}
         electionStatus={{
           isActive: electionData.status === 'active',

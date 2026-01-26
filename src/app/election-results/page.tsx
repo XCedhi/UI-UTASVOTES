@@ -36,8 +36,8 @@ export default function ElectionResultsPage() {
                   Election Results Access
                 </h1>
                 <p className="text-muted-foreground">
-                  Live election results are only visible to the Electoral Commission and Admin. Students
-                  can view summaries of completed elections.
+                  Live election results are only visible to the Electoral Commission and Admin.
+                  Students can view summaries of completed elections.
                 </p>
               </div>
             </div>

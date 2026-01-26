@@ -34,7 +34,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      
+
       // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file');
@@ -87,11 +87,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.translate(-safeArea / 2, -safeArea / 2);
 
-    ctx.drawImage(
-      image,
-      safeArea / 2 - image.width * 0.5,
-      safeArea / 2 - image.height * 0.5
-    );
+    ctx.drawImage(image, safeArea / 2 - image.width * 0.5, safeArea / 2 - image.height * 0.5);
 
     const data = ctx.getImageData(0, 0, safeArea, safeArea);
 
@@ -149,7 +145,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      
+
       if (!file.type.startsWith('image/')) {
         alert('Please select an image file');
         return;
@@ -176,11 +172,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
         <div className="relative group">
           <div className="w-32 h-32 rounded-full overflow-hidden bg-muted border-4 border-border">
             {currentImage ? (
-              <img
-                src={currentImage}
-                alt={userName}
-                className="w-full h-full object-cover"
-              />
+              <img src={currentImage} alt={userName} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-primary/10">
                 <Icon name="UserIcon" size={48} variant="outline" className="text-primary" />
@@ -202,9 +194,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
           >
             Change Profile Picture
           </button>
-          <p className="text-xs text-muted-foreground mt-1">
-            JPG, PNG or WebP. Max 5MB.
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">JPG, PNG or WebP. Max 5MB.</p>
         </div>
 
         <input
@@ -260,7 +250,12 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
                     <span className="text-sm text-muted-foreground">{Math.round(zoom * 100)}%</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Icon name="MagnifyingGlassMinusIcon" size={20} variant="outline" className="text-muted-foreground" />
+                    <Icon
+                      name="MagnifyingGlassMinusIcon"
+                      size={20}
+                      variant="outline"
+                      className="text-muted-foreground"
+                    />
                     <input
                       type="range"
                       min={1}
@@ -270,7 +265,12 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
                       onChange={(e) => setZoom(Number(e.target.value))}
                       className="flex-1 h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                     />
-                    <Icon name="MagnifyingGlassPlusIcon" size={20} variant="outline" className="text-muted-foreground" />
+                    <Icon
+                      name="MagnifyingGlassPlusIcon"
+                      size={20}
+                      variant="outline"
+                      className="text-muted-foreground"
+                    />
                   </div>
                 </div>
 
@@ -281,7 +281,12 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
                     <span className="text-sm text-muted-foreground">{rotation}°</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Icon name="ArrowPathIcon" size={20} variant="outline" className="text-muted-foreground" />
+                    <Icon
+                      name="ArrowPathIcon"
+                      size={20}
+                      variant="outline"
+                      className="text-muted-foreground"
+                    />
                     <input
                       type="range"
                       min={0}
@@ -302,7 +307,12 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
                 onDrop={handleDrop}
                 className="mt-6 p-4 border-2 border-dashed border-border rounded-md text-center"
               >
-                <Icon name="ArrowUpTrayIcon" size={24} variant="outline" className="mx-auto text-muted-foreground mb-2" />
+                <Icon
+                  name="ArrowUpTrayIcon"
+                  size={24}
+                  variant="outline"
+                  className="mx-auto text-muted-foreground mb-2"
+                />
                 <p className="text-sm text-muted-foreground">
                   Drag & drop a new image here, or{' '}
                   <button

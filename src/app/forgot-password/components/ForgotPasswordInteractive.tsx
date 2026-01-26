@@ -57,13 +57,16 @@ const ForgotPasswordInteractive = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
-            <Icon name="LockClosedIcon" size={32} variant="outline" className="text-primary-foreground" />
+            <Icon
+              name="LockClosedIcon"
+              size={32}
+              variant="outline"
+              className="text-primary-foreground"
+            />
           </div>
-          <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
-            Forgot Password?
-          </h1>
+          <h1 className="font-heading font-bold text-3xl text-foreground mb-2">Forgot Password?</h1>
           <p className="text-muted-foreground">
-            Enter your email and we'll send you instructions to reset your password
+            Enter your email and we&apos;ll send you instructions to reset your password
           </p>
         </div>
 
@@ -77,7 +80,12 @@ const ForgotPasswordInteractive = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Icon name="EnvelopeIcon" size={20} variant="outline" className="text-muted-foreground" />
+                    <Icon
+                      name="EnvelopeIcon"
+                      size={20}
+                      variant="outline"
+                      className="text-muted-foreground"
+                    />
                   </div>
                   <input
                     id="email"
@@ -105,7 +113,12 @@ const ForgotPasswordInteractive = () => {
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Icon name="ArrowPathIcon" size={20} variant="outline" className="animate-spin" />
+                    <Icon
+                      name="ArrowPathIcon"
+                      size={20}
+                      variant="outline"
+                      className="animate-spin"
+                    />
                     Sending...
                   </span>
                 ) : (
@@ -133,11 +146,11 @@ const ForgotPasswordInteractive = () => {
                   Check Your Email
                 </h2>
                 <p className="text-muted-foreground mb-4">
-                  We've sent password reset instructions to:
+                  We&apos;ve sent password reset instructions to:
                 </p>
                 <p className="font-medium text-foreground mb-6">{email}</p>
                 <p className="text-sm text-muted-foreground">
-                  Didn't receive the email? Check your spam folder or{' '}
+                  Didn&apos;t receive the email? Check your spam folder or{' '}
                   <button
                     onClick={() => setIsSuccess(false)}
                     className="text-primary hover:text-primary/80 font-medium"

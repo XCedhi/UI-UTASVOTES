@@ -66,8 +66,8 @@ const SuccessModal = ({ isOpen, receiptNumber, onClose }: SuccessModalProps) => 
               <Icon name="ChartBarIcon" size={20} variant="solid" className="text-accent mt-0.5" />
               <div>
                 <p className="text-sm text-popover-foreground">
-                  Results will be available after the voting period ends. You&apos;ll be notified via
-                  email.
+                  Results will be available after the voting period ends. You&apos;ll be notified
+                  via email.
                 </p>
               </div>
             </div>

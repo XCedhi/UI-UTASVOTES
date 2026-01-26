@@ -34,7 +34,8 @@ const AdminProfileInteractive = () => {
     phone: '+233 24 123 4567',
     joinedDate: '2024-01-15',
     lastLogin: new Date().toISOString(),
-    profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
+    profilePicture:
+      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
     permissions: [
       'Manage Users',
       'Manage Elections',
@@ -156,7 +157,9 @@ const AdminProfileInteractive = () => {
                     />
                   </div>
                   <div className="mb-4">
-                    <h2 className="font-heading font-bold text-2xl text-foreground">{profile.name}</h2>
+                    <h2 className="font-heading font-bold text-2xl text-foreground">
+                      {profile.name}
+                    </h2>
                     <p className="text-muted-foreground">{profile.position}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-error/10 text-error">
@@ -367,18 +370,33 @@ const AdminProfileInteractive = () => {
                     <p className="text-sm text-muted-foreground">Update your account password</p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
 
               <button className="w-full flex items-center justify-between p-4 bg-muted/30 rounded-md hover:bg-muted/50 transition-all duration-250">
                 <div className="flex items-center gap-3">
-                  <Icon name="ShieldCheckIcon" size={24} variant="outline" className="text-success" />
+                  <Icon
+                    name="ShieldCheckIcon"
+                    size={24}
+                    variant="outline"
+                    className="text-success"
+                  />
                   <div className="text-left">
                     <p className="font-medium text-foreground">Two-Factor Authentication</p>
                     <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
 
               <button className="w-full flex items-center justify-between p-4 bg-muted/30 rounded-md hover:bg-muted/50 transition-all duration-250">
@@ -386,10 +404,17 @@ const AdminProfileInteractive = () => {
                   <Icon name="ClockIcon" size={24} variant="outline" className="text-accent" />
                   <div className="text-left">
                     <p className="font-medium text-foreground">Activity Log</p>
-                    <p className="text-sm text-muted-foreground">View your account activity history</p>
+                    <p className="text-sm text-muted-foreground">
+                      View your account activity history
+                    </p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
             </div>
           </div>

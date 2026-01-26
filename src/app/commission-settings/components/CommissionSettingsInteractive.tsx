@@ -215,7 +215,9 @@ const CommissionSettingsInteractive = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Date Format</label>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Date Format
+                </label>
                 <select
                   value={settings.dateFormat}
                   onChange={(e) => setSettings({ ...settings, dateFormat: e.target.value })}
@@ -234,8 +236,18 @@ const CommissionSettingsInteractive = () => {
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { value: 'light', label: 'Light Mode', icon: 'SunIcon', desc: 'Bright interface' },
-                    { value: 'dark', label: 'Dark Mode', icon: 'MoonIcon', desc: 'Navy blue theme' },
+                    {
+                      value: 'light',
+                      label: 'Light Mode',
+                      icon: 'SunIcon',
+                      desc: 'Bright interface',
+                    },
+                    {
+                      value: 'dark',
+                      label: 'Dark Mode',
+                      icon: 'MoonIcon',
+                      desc: 'Navy blue theme',
+                    },
                   ].map((themeOption) => (
                     <button
                       key={themeOption.value}
@@ -250,9 +262,15 @@ const CommissionSettingsInteractive = () => {
                         name={themeOption.icon as any}
                         size={32}
                         variant="outline"
-                        className={currentTheme === themeOption.value ? 'text-primary' : 'text-muted-foreground'}
+                        className={
+                          currentTheme === themeOption.value
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        }
                       />
-                      <p className="text-sm font-medium text-foreground mt-3">{themeOption.label}</p>
+                      <p className="text-sm font-medium text-foreground mt-3">
+                        {themeOption.label}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">{themeOption.desc}</p>
                     </button>
                   ))}
@@ -278,18 +296,33 @@ const CommissionSettingsInteractive = () => {
                     <p className="text-sm text-muted-foreground">Update your account password</p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
 
               <button className="w-full flex items-center justify-between p-4 bg-muted/30 rounded-md hover:bg-muted/50 transition-all duration-250">
                 <div className="flex items-center gap-3">
-                  <Icon name="ShieldCheckIcon" size={24} variant="outline" className="text-success" />
+                  <Icon
+                    name="ShieldCheckIcon"
+                    size={24}
+                    variant="outline"
+                    className="text-success"
+                  />
                   <div className="text-left">
                     <p className="font-medium text-foreground">Two-Factor Authentication</p>
                     <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
 
               <button className="w-full flex items-center justify-between p-4 bg-muted/30 rounded-md hover:bg-muted/50 transition-all duration-250">
@@ -297,10 +330,17 @@ const CommissionSettingsInteractive = () => {
                   <Icon name="ClockIcon" size={24} variant="outline" className="text-accent" />
                   <div className="text-left">
                     <p className="font-medium text-foreground">Activity Log</p>
-                    <p className="text-sm text-muted-foreground">View your account activity history</p>
+                    <p className="text-sm text-muted-foreground">
+                      View your account activity history
+                    </p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
             </div>
           </div>

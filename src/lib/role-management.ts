@@ -16,10 +16,10 @@ export interface UserAccessPeriod {
  */
 export function hasAccessExpired(accessEndDate: string | null | undefined): boolean {
   if (!accessEndDate) return false;
-  
+
   const endDate = new Date(accessEndDate);
   const now = new Date();
-  
+
   return now > endDate;
 }
 
@@ -28,11 +28,11 @@ export function hasAccessExpired(accessEndDate: string | null | undefined): bool
  */
 export function isAccessExpiringSoon(accessEndDate: string | null | undefined): boolean {
   if (!accessEndDate) return false;
-  
+
   const endDate = new Date(accessEndDate);
   const now = new Date();
   const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  
+
   return now < endDate && endDate <= sevenDaysFromNow;
 }
 
@@ -41,12 +41,12 @@ export function isAccessExpiringSoon(accessEndDate: string | null | undefined): 
  */
 export function getDaysUntilExpiration(accessEndDate: string | null | undefined): number {
   if (!accessEndDate) return Infinity;
-  
+
   const endDate = new Date(accessEndDate);
   const now = new Date();
   const diffTime = endDate.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
+
   return diffDays > 0 ? diffDays : 0;
 }
 
@@ -54,24 +54,22 @@ export function getDaysUntilExpiration(accessEndDate: string | null | undefined)
  * Determine the effective role for a user based on access period
  * This should be called on every authentication check
  */
-export function getEffectiveRole(
-  user: {
-    role: string;
-    accessEndDate?: string | null;
-    originalRole?: string | null;
-  }
-): 'admin' | 'commission' | 'student' | 'candidate' {
+export function getEffectiveRole(user: {
+  role: string;
+  accessEndDate?: string | null;
+  originalRole?: string | null;
+}): 'admin' | 'commission' | 'student' | 'candidate' {
   // Admin access is permanent
   if (user.role === 'admin') {
     return 'admin';
   }
-  
+
   // Check if commission access has expired
   if (user.role === 'commission' && hasAccessExpired(user.accessEndDate)) {
     // Return to original role (usually student)
     return (user.originalRole as any) || 'student';
   }
-  
+
   // Return current role
   return user.role as any;
 }
@@ -90,7 +88,7 @@ export function formatAccessPeriod(startDate: string, endDate: string): string {
     day: 'numeric',
     year: 'numeric',
   });
-  
+
   return `${start} - ${end}`;
 }
 
@@ -109,7 +107,7 @@ export function getAccessStatusBadge(accessEndDate: string | null | undefined): 
       icon: 'CheckCircleIcon',
     };
   }
-  
+
   if (hasAccessExpired(accessEndDate)) {
     return {
       label: 'Expired',
@@ -117,7 +115,7 @@ export function getAccessStatusBadge(accessEndDate: string | null | undefined): 
       icon: 'XCircleIcon',
     };
   }
-  
+
   if (isAccessExpiringSoon(accessEndDate)) {
     return {
       label: 'Expiring Soon',
@@ -125,7 +123,7 @@ export function getAccessStatusBadge(accessEndDate: string | null | undefined): 
       icon: 'ExclamationTriangleIcon',
     };
   }
-  
+
   return {
     label: 'Active',
     color: 'success',
@@ -144,9 +142,9 @@ export async function processExpiredAccess() {
   // 3. Send notification email about role change
   // 4. Log the automatic downgrade in audit trail
   // 5. Revoke any commission-specific permissions
-  
+
   console.log('Processing expired access...');
-  
+
   // Example Supabase query:
   /*
   const { data: expiredUsers } = await supabase
@@ -199,6 +197,6 @@ export function getSuggestedEndDate(startDate: string, durationMonths: number = 
   const start = new Date(startDate);
   const end = new Date(start);
   end.setMonth(end.getMonth() + durationMonths);
-  
+
   return end.toISOString().split('T')[0];
 }

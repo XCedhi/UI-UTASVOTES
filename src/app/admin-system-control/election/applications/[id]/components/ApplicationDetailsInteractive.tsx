@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
 
 interface Application {
   id: string;
@@ -86,12 +87,33 @@ const ApplicationDetailsInteractive = () => {
 
   const handleApprove = async () => {
     setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Update application status in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({
+          eligibilityStatus: 'verified',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', params.id);
+
+      if (error) {
+        console.error('Error approving application:', error);
+        alert('Failed to approve application. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Update local state
       setApplication((prev) => (prev ? { ...prev, eligibilityStatus: 'verified' } : null));
       setShowApproveModal(false);
+      alert('Application approved successfully!');
+    } catch (error) {
+      console.error('Error approving application:', error);
+      alert('Failed to approve application. Please try again.');
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   const handleReject = async () => {
@@ -100,15 +122,37 @@ const ApplicationDetailsInteractive = () => {
       return;
     }
     setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Update application status in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({
+          eligibilityStatus: 'rejected',
+          verificationNotes: rejectionReason,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', params.id);
+
+      if (error) {
+        console.error('Error rejecting application:', error);
+        alert('Failed to reject application. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Update local state
       setApplication((prev) =>
         prev ? { ...prev, eligibilityStatus: 'rejected', verificationNotes: rejectionReason } : null
       );
       setShowRejectModal(false);
-      setIsProcessing(false);
       setRejectionReason('');
-    }, 1500);
+      alert('Application rejected successfully!');
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      alert('Failed to reject application. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleViewDocument = (docName: string, docUrl: string) => {
@@ -122,7 +166,7 @@ const ApplicationDetailsInteractive = () => {
   if (!isHydrated || !application) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="commission" userName="Loading..." notificationCount={0} />
+        <Header userRole="admin" userName="Loading..." notificationCount={0} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -146,9 +190,9 @@ const ApplicationDetailsInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole="commission"
-        userName="Electoral Commissioner"
-        userAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
+        userRole="admin"
+        userName="System Administrator"
+        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
         notificationCount={3}
       />
 

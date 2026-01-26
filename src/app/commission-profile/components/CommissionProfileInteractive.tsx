@@ -143,12 +143,20 @@ const CommissionProfileInteractive = () => {
           {daysRemaining <= 30 && daysRemaining > 0 && (
             <div className="bg-warning/10 border border-warning/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
-                <Icon name="ExclamationTriangleIcon" size={24} variant="solid" className="text-warning flex-shrink-0" />
+                <Icon
+                  name="ExclamationTriangleIcon"
+                  size={24}
+                  variant="solid"
+                  className="text-warning flex-shrink-0"
+                />
                 <div>
-                  <p className="font-medium text-foreground mb-1">Commission Access Expiring Soon</p>
+                  <p className="font-medium text-foreground mb-1">
+                    Commission Access Expiring Soon
+                  </p>
                   <p className="text-sm text-muted-foreground">
                     Your commission access will expire in {daysRemaining} days on{' '}
-                    {new Date(profile.accessEndDate).toLocaleDateString()}. Contact admin if you need an extension.
+                    {new Date(profile.accessEndDate).toLocaleDateString()}. Contact admin if you
+                    need an extension.
                   </p>
                 </div>
               </div>
@@ -170,7 +178,9 @@ const CommissionProfileInteractive = () => {
                     />
                   </div>
                   <div className="mb-4">
-                    <h2 className="font-heading font-bold text-2xl text-foreground">{profile.name}</h2>
+                    <h2 className="font-heading font-bold text-2xl text-foreground">
+                      {profile.name}
+                    </h2>
                     <p className="text-muted-foreground">{profile.position}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
@@ -201,7 +211,9 @@ const CommissionProfileInteractive = () => {
                   </h3>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Full Name</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Full Name
+                    </label>
                     {isEditing ? (
                       <input
                         type="text"
@@ -215,13 +227,17 @@ const CommissionProfileInteractive = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Email Address</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Email Address
+                    </label>
                     <p className="text-foreground font-medium font-data">{profile.email}</p>
                     <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Phone Number</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Phone Number
+                    </label>
                     {isEditing ? (
                       <input
                         type="tel"
@@ -235,7 +251,9 @@ const CommissionProfileInteractive = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Department</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Department
+                    </label>
                     {isEditing ? (
                       <input
                         type="text"
@@ -256,12 +274,16 @@ const CommissionProfileInteractive = () => {
                   </h3>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Role</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Role
+                    </label>
                     <p className="text-foreground font-medium">{profile.role}</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Position</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Position
+                    </label>
                     {isEditing ? (
                       <input
                         type="text"
@@ -275,7 +297,9 @@ const CommissionProfileInteractive = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Access Period</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Access Period
+                    </label>
                     <p className="text-foreground font-medium">
                       {new Date(profile.joinedDate).toLocaleDateString()} -{' '}
                       {new Date(profile.accessEndDate).toLocaleDateString()}
@@ -286,7 +310,9 @@ const CommissionProfileInteractive = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-muted-foreground mb-2">Last Login</label>
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                      Last Login
+                    </label>
                     <p className="text-foreground font-medium">
                       {new Date(profile.lastLogin).toLocaleString()}
                     </p>
@@ -357,7 +383,12 @@ const CommissionProfileInteractive = () => {
                     <p className="text-sm text-muted-foreground">Update your account password</p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
 
               <button className="w-full flex items-center justify-between p-4 bg-muted/30 rounded-md hover:bg-muted/50 transition-all duration-250">
@@ -365,10 +396,17 @@ const CommissionProfileInteractive = () => {
                   <Icon name="ClockIcon" size={24} variant="outline" className="text-accent" />
                   <div className="text-left">
                     <p className="font-medium text-foreground">Activity Log</p>
-                    <p className="text-sm text-muted-foreground">View your account activity history</p>
+                    <p className="text-sm text-muted-foreground">
+                      View your account activity history
+                    </p>
                   </div>
                 </div>
-                <Icon name="ChevronRightIcon" size={20} variant="outline" className="text-muted-foreground" />
+                <Icon
+                  name="ChevronRightIcon"
+                  size={20}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
               </button>
             </div>
           </div>

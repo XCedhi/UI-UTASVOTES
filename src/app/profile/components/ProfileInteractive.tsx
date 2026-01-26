@@ -269,11 +269,17 @@ const ProfileInteractive = () => {
               {activeTab === 'security' && (
                 <div className="space-y-6">
                   <div className="bg-warning/10 border border-warning/20 rounded-md p-4 flex items-start gap-3">
-                    <Icon name="ShieldExclamationIcon" size={24} variant="outline" className="text-warning" />
+                    <Icon
+                      name="ShieldExclamationIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-warning"
+                    />
                     <div>
                       <h3 className="font-medium text-foreground mb-1">Password Security</h3>
                       <p className="text-sm text-muted-foreground">
-                        For security reasons, password changes must be done through the forgot password flow.
+                        For security reasons, password changes must be done through the forgot
+                        password flow.
                       </p>
                     </div>
                   </div>

@@ -69,7 +69,11 @@ const ReportIssueInteractive = () => {
 
     setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    setTicketNumber(`ISSUE-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`);
+    setTicketNumber(
+      `ISSUE-${Math.floor(Math.random() * 10000)
+        .toString()
+        .padStart(4, '0')}`
+    );
     setIsSubmitting(false);
     setIsSuccess(true);
   };
@@ -126,7 +130,10 @@ const ReportIssueInteractive = () => {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Issue Form */}
               <div className="lg:col-span-2">
-                <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-6">
+                <form
+                  onSubmit={handleSubmit}
+                  className="bg-card border border-border rounded-lg p-6 space-y-6"
+                >
                   {/* Category Selection */}
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-3">
@@ -285,7 +292,12 @@ const ReportIssueInteractive = () => {
                   >
                     {isSubmitting ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Icon name="ArrowPathIcon" size={20} variant="outline" className="animate-spin" />
+                        <Icon
+                          name="ArrowPathIcon"
+                          size={20}
+                          variant="outline"
+                          className="animate-spin"
+                        />
                         Submitting...
                       </span>
                     ) : (
@@ -302,26 +314,51 @@ const ReportIssueInteractive = () => {
               <div className="space-y-6">
                 <div className="bg-card border border-border rounded-lg p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <Icon name="InformationCircleIcon" size={24} variant="outline" className="text-primary" />
+                    <Icon
+                      name="InformationCircleIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-primary"
+                    />
                     <h3 className="font-heading font-semibold text-lg text-foreground">
                       Reporting Guidelines
                     </h3>
                   </div>
                   <ul className="space-y-3 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
-                      <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success mt-0.5" />
+                      <Icon
+                        name="CheckCircleIcon"
+                        size={16}
+                        variant="solid"
+                        className="text-success mt-0.5"
+                      />
                       <span>Be specific and detailed in your description</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success mt-0.5" />
+                      <Icon
+                        name="CheckCircleIcon"
+                        size={16}
+                        variant="solid"
+                        className="text-success mt-0.5"
+                      />
                       <span>Include steps to reproduce the issue</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success mt-0.5" />
+                      <Icon
+                        name="CheckCircleIcon"
+                        size={16}
+                        variant="solid"
+                        className="text-success mt-0.5"
+                      />
                       <span>Attach screenshots if possible</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success mt-0.5" />
+                      <Icon
+                        name="CheckCircleIcon"
+                        size={16}
+                        variant="solid"
+                        className="text-success mt-0.5"
+                      />
                       <span>Check if the issue has been reported before</span>
                     </li>
                   </ul>
@@ -329,11 +366,17 @@ const ReportIssueInteractive = () => {
 
                 <div className="bg-warning/10 border border-warning/20 rounded-lg p-6">
                   <div className="flex items-start gap-3">
-                    <Icon name="ExclamationTriangleIcon" size={24} variant="outline" className="text-warning" />
+                    <Icon
+                      name="ExclamationTriangleIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-warning"
+                    />
                     <div>
                       <h3 className="font-medium text-foreground mb-2">Security Issues</h3>
                       <p className="text-sm text-muted-foreground">
-                        For security vulnerabilities, please contact us directly at security@cktutas.edu.gh
+                        For security vulnerabilities, please contact us directly at
+                        security@cktutas.edu.gh
                       </p>
                     </div>
                   </div>
@@ -353,7 +396,8 @@ const ReportIssueInteractive = () => {
               </p>
               <p className="text-2xl font-data font-bold text-primary mb-6">{ticketNumber}</p>
               <p className="text-sm text-muted-foreground mb-8 max-w-md mx-auto">
-                Our technical team will review your report and work on a resolution. You'll receive updates via email.
+                Our technical team will review your report and work on a resolution. You&apos;ll
+                receive updates via email.
               </p>
               <div className="flex items-center justify-center gap-4">
                 <button

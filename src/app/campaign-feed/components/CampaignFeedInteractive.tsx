@@ -21,7 +21,9 @@ interface FeedItem {
 
 const CampaignFeedInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'manifesto' | 'video' | 'announcement' | 'qa'>('all');
+  const [activeFilter, setActiveFilter] = useState<
+    'all' | 'manifesto' | 'video' | 'announcement' | 'qa'
+  >('all');
   const [feedItems, setFeedItems] = useState<FeedItem[]>([
     {
       id: '1',
@@ -30,7 +32,8 @@ const CampaignFeedInteractive = () => {
       position: 'Student Union President',
       type: 'manifesto',
       title: 'My Vision for UTAS 2026',
-      content: 'I pledge to improve student welfare, enhance campus facilities, and ensure every voice is heard...',
+      content:
+        'I pledge to improve student welfare, enhance campus facilities, and ensure every voice is heard...',
       timestamp: '2026-01-25T10:30:00',
       likes: 234,
       comments: 45,
@@ -46,7 +49,11 @@ const CampaignFeedInteractive = () => {
     setFeedItems((items) =>
       items.map((item) =>
         item.id === id
-          ? { ...item, isLiked: !item.isLiked, likes: item.isLiked ? item.likes - 1 : item.likes + 1 }
+          ? {
+              ...item,
+              isLiked: !item.isLiked,
+              likes: item.isLiked ? item.likes - 1 : item.likes + 1,
+            }
           : item
       )
     );

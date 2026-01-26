@@ -45,7 +45,7 @@ const StudentImportInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-    
+
     // Get user session to determine role
     const session = getUserSession();
     if (session) {
@@ -66,7 +66,7 @@ const StudentImportInteractive = () => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile && isValidFile(droppedFile)) {
       setFile(droppedFile);
@@ -91,12 +91,14 @@ const StudentImportInteractive = () => {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'application/vnd.ms-excel',
     ];
-    return validTypes.includes(file.type) || file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+    return (
+      validTypes.includes(file.type) || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+    );
   };
 
   const processFile = async (file: File) => {
     setIsProcessing(true);
-    
+
     // Simulate file processing (in production, use a library like xlsx or SheetJS)
     setTimeout(() => {
       // Mock data for demonstration
@@ -232,7 +234,7 @@ const StudentImportInteractive = () => {
       // 1. Create accounts in Supabase
       // 2. Generate secure passwords
       // 3. Send welcome emails
-      
+
       setImportResult({
         success: previewData.length,
         failed: 0,
@@ -283,7 +285,6 @@ const StudentImportInteractive = () => {
 
       <main className="pt-24 pb-12 px-4 lg:px-6">
         <div className="max-w-7xl mx-auto space-y-6">
-
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
@@ -316,7 +317,12 @@ const StudentImportInteractive = () => {
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-6">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 p-3 bg-primary/10 rounded-lg">
-                <Icon name="InformationCircleIcon" size={24} variant="outline" className="text-primary" />
+                <Icon
+                  name="InformationCircleIcon"
+                  size={24}
+                  variant="outline"
+                  className="text-primary"
+                />
               </div>
               <div className="flex-1">
                 <h3 className="font-heading font-semibold text-lg text-foreground mb-3">
@@ -327,20 +333,48 @@ const StudentImportInteractive = () => {
                     <p className="font-medium text-foreground mb-2">Required Columns:</p>
                     <ul className="space-y-1 text-muted-foreground">
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>Student ID</strong> - Format: UTAS2024001</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>Student ID</strong> - Format: UTAS2024001
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>First Name</strong> - Student's first name</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>First Name</strong> - Student&apos;s first name
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>Last Name</strong> - Student's last name</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>Last Name</strong> - Student&apos;s last name
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>Email</strong> - Must end with @cktutas.edu.gh</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>Email</strong> - Must end with @cktutas.edu.gh
+                        </span>
                       </li>
                     </ul>
                   </div>
@@ -348,20 +382,48 @@ const StudentImportInteractive = () => {
                     <p className="font-medium text-foreground mb-2">Additional Columns:</p>
                     <ul className="space-y-1 text-muted-foreground">
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>Department</strong> - e.g., Computer Science</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>Department</strong> - e.g., Computer Science
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>Level</strong> - 100, 200, 300, or 400</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>Level</strong> - 100, 200, 300, or 400
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
-                        <span><strong>Program</strong> - e.g., BSc Computer Science</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="solid"
+                          className="text-success"
+                        />
+                        <span>
+                          <strong>Program</strong> - e.g., BSc Computer Science
+                        </span>
                       </li>
                       <li className="flex items-center gap-2">
-                        <Icon name="CheckCircleIcon" size={16} variant="outline" className="text-muted-foreground" />
-                        <span><strong>Phone Number</strong> - Optional</span>
+                        <Icon
+                          name="CheckCircleIcon"
+                          size={16}
+                          variant="outline"
+                          className="text-muted-foreground"
+                        />
+                        <span>
+                          <strong>Phone Number</strong> - Optional
+                        </span>
                       </li>
                     </ul>
                   </div>
@@ -369,7 +431,10 @@ const StudentImportInteractive = () => {
                 <div className="mt-4 p-3 bg-warning/10 border border-warning/20 rounded-md">
                   <p className="text-sm text-warning flex items-center gap-2">
                     <Icon name="ExclamationTriangleIcon" size={16} variant="solid" />
-                    <span>Download the template to ensure correct format. First row must contain column headers.</span>
+                    <span>
+                      Download the template to ensure correct format. First row must contain column
+                      headers.
+                    </span>
                   </p>
                 </div>
               </div>
@@ -390,7 +455,12 @@ const StudentImportInteractive = () => {
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="p-6 bg-primary/10 rounded-full">
-                  <Icon name="CloudArrowUpIcon" size={48} variant="outline" className="text-primary" />
+                  <Icon
+                    name="CloudArrowUpIcon"
+                    size={48}
+                    variant="outline"
+                    className="text-primary"
+                  />
                 </div>
                 <div>
                   <h3 className="font-heading font-semibold text-xl text-foreground mb-2">
@@ -442,7 +512,8 @@ const StudentImportInteractive = () => {
                       Preview Import Data
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Review {previewData.length} student{previewData.length !== 1 ? 's' : ''} before importing
+                      Review {previewData.length} student{previewData.length !== 1 ? 's' : ''}{' '}
+                      before importing
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -468,27 +539,49 @@ const StudentImportInteractive = () => {
                 <table className="w-full">
                   <thead className="bg-muted/30">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">#</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Student ID</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Department</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Level</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Program</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        #
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        Student ID
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        Name
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        Email
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        Department
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        Level
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                        Program
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {previewData.map((student, index) => (
                       <tr key={index} className="hover:bg-muted/20 transition-colors duration-200">
                         <td className="px-4 py-3 text-sm text-muted-foreground">{index + 1}</td>
-                        <td className="px-4 py-3 text-sm font-medium text-foreground font-data">{student.studentId}</td>
+                        <td className="px-4 py-3 text-sm font-medium text-foreground font-data">
+                          {student.studentId}
+                        </td>
                         <td className="px-4 py-3 text-sm text-foreground">
                           {student.firstName} {student.lastName}
                         </td>
-                        <td className="px-4 py-3 text-sm text-foreground font-data">{student.email}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{student.department}</td>
+                        <td className="px-4 py-3 text-sm text-foreground font-data">
+                          {student.email}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {student.department}
+                        </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{student.level}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{student.program}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">
+                          {student.program}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -505,14 +598,20 @@ const StudentImportInteractive = () => {
                 <div className="bg-success/5 border border-success/20 rounded-lg p-6">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 p-3 bg-success/10 rounded-lg">
-                      <Icon name="CheckCircleIcon" size={32} variant="solid" className="text-success" />
+                      <Icon
+                        name="CheckCircleIcon"
+                        size={32}
+                        variant="solid"
+                        className="text-success"
+                      />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-heading font-semibold text-xl text-foreground mb-2">
                         Import Successful!
                       </h3>
                       <p className="text-muted-foreground mb-4">
-                        Successfully imported {importResult.success} student{importResult.success !== 1 ? 's' : ''}
+                        Successfully imported {importResult.success} student
+                        {importResult.success !== 1 ? 's' : ''}
                       </p>
                       <div className="space-y-2 text-sm">
                         <div className="flex items-center gap-2 text-success">
@@ -545,14 +644,26 @@ const StudentImportInteractive = () => {
                         Validation Errors Found
                       </h3>
                       <p className="text-muted-foreground mb-4">
-                        {importResult.failed} error{importResult.failed !== 1 ? 's' : ''} detected. Please fix and try again.
+                        {importResult.failed} error{importResult.failed !== 1 ? 's' : ''} detected.
+                        Please fix and try again.
                       </p>
                       <div className="space-y-2 max-h-64 overflow-y-auto">
                         {importResult.errors.map((error, index) => (
-                          <div key={index} className="flex items-start gap-2 text-sm p-2 bg-error/5 rounded">
-                            <Icon name="ExclamationCircleIcon" size={16} variant="solid" className="text-error flex-shrink-0 mt-0.5" />
+                          <div
+                            key={index}
+                            className="flex items-start gap-2 text-sm p-2 bg-error/5 rounded"
+                          >
+                            <Icon
+                              name="ExclamationCircleIcon"
+                              size={16}
+                              variant="solid"
+                              className="text-error flex-shrink-0 mt-0.5"
+                            />
                             <span className="text-foreground">
-                              <strong>Row {error.row}, {error.field}:</strong> {error.message}
+                              <strong>
+                                Row {error.row}, {error.field}:
+                              </strong>{' '}
+                              {error.message}
                             </span>
                           </div>
                         ))}
@@ -593,11 +704,17 @@ const StudentImportInteractive = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col items-center text-center">
                   <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-3">
-                    <Icon name="UserPlusIcon" size={24} variant="outline" className="text-primary" />
+                    <Icon
+                      name="UserPlusIcon"
+                      size={24}
+                      variant="outline"
+                      className="text-primary"
+                    />
                   </div>
                   <h4 className="font-medium text-foreground mb-2">1. Accounts Created</h4>
                   <p className="text-sm text-muted-foreground">
-                    Student accounts are automatically created in the database with secure credentials
+                    Student accounts are automatically created in the database with secure
+                    credentials
                   </p>
                 </div>
                 <div className="flex flex-col items-center text-center">
@@ -615,7 +732,8 @@ const StudentImportInteractive = () => {
                   </div>
                   <h4 className="font-medium text-foreground mb-2">3. Emails Sent</h4>
                   <p className="text-sm text-muted-foreground">
-                    Welcome emails with login credentials are sent to all students' institutional emails
+                    Welcome emails with login credentials are sent to all students&apos;
+                    institutional emails
                   </p>
                 </div>
               </div>

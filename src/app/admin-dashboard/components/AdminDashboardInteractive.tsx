@@ -294,7 +294,9 @@ const AdminDashboardInteractive = () => {
                 className="bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-250 ease-smooth"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-lg ${getMetricColor(metric.color)} flex items-center justify-center`}>
+                  <div
+                    className={`w-12 h-12 rounded-lg ${getMetricColor(metric.color)} flex items-center justify-center`}
+                  >
                     <Icon name={metric.icon as any} size={24} variant="outline" />
                   </div>
                   {metric.trend !== 'neutral' && (
@@ -335,7 +337,9 @@ const AdminDashboardInteractive = () => {
                   className="bg-card border border-border rounded-lg p-4 text-left hover:shadow-md hover:border-primary/50 transition-all duration-250 ease-smooth group"
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-md ${getMetricColor(action.color)} flex items-center justify-center group-hover:scale-110 transition-transform duration-250`}>
+                    <div
+                      className={`w-10 h-10 rounded-md ${getMetricColor(action.color)} flex items-center justify-center group-hover:scale-110 transition-transform duration-250`}
+                    >
                       <Icon name={action.icon as any} size={20} variant="outline" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -368,7 +372,9 @@ const AdminDashboardInteractive = () => {
                   className="p-4 hover:bg-muted/30 transition-colors duration-250"
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`px-3 py-1 rounded-md border ${getSeverityColor(activity.severity)}`}>
+                    <div
+                      className={`px-3 py-1 rounded-md border ${getSeverityColor(activity.severity)}`}
+                    >
                       <Icon
                         name={
                           activity.type === 'election'

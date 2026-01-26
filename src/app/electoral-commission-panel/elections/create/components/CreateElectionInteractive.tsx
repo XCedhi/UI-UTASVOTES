@@ -198,7 +198,11 @@ const CreateElectionInteractive = () => {
                   </label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { value: 'university-wide', label: 'University-Wide', icon: 'BuildingLibraryIcon' },
+                      {
+                        value: 'university-wide',
+                        label: 'University-Wide',
+                        icon: 'BuildingLibraryIcon',
+                      },
                       { value: 'faculty', label: 'Faculty Level', icon: 'AcademicCapIcon' },
                       { value: 'departmental', label: 'Departmental', icon: 'UserGroupIcon' },
                     ].map((type) => (
@@ -218,7 +222,9 @@ const CreateElectionInteractive = () => {
                           size={24}
                           variant="outline"
                           className={
-                            electionData.type === type.value ? 'text-primary' : 'text-muted-foreground'
+                            electionData.type === type.value
+                              ? 'text-primary'
+                              : 'text-muted-foreground'
                           }
                         />
                         <span

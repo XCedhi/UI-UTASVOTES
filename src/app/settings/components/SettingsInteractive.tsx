@@ -110,9 +110,7 @@ const SettingsInteractive = () => {
                 <h2 className="font-heading font-semibold text-xl text-foreground">
                   Notifications
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  Choose how you want to be notified
-                </p>
+                <p className="text-sm text-muted-foreground">Choose how you want to be notified</p>
               </div>
             </div>
 
@@ -221,8 +219,18 @@ const SettingsInteractive = () => {
                 </label>
                 <div className="grid grid-cols-2 gap-4">
                   {[
-                    { value: 'light', label: 'Light Mode', icon: 'SunIcon', desc: 'Bright and clean' },
-                    { value: 'dark', label: 'Dark Mode', icon: 'MoonIcon', desc: 'Navy blue theme' },
+                    {
+                      value: 'light',
+                      label: 'Light Mode',
+                      icon: 'SunIcon',
+                      desc: 'Bright and clean',
+                    },
+                    {
+                      value: 'dark',
+                      label: 'Dark Mode',
+                      icon: 'MoonIcon',
+                      desc: 'Navy blue theme',
+                    },
                   ].map((themeOption) => (
                     <button
                       key={themeOption.value}
@@ -240,9 +248,15 @@ const SettingsInteractive = () => {
                         name={themeOption.icon as any}
                         size={32}
                         variant="outline"
-                        className={currentTheme === themeOption.value ? 'text-primary' : 'text-muted-foreground'}
+                        className={
+                          currentTheme === themeOption.value
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
+                        }
                       />
-                      <p className="text-sm font-medium text-foreground mt-3">{themeOption.label}</p>
+                      <p className="text-sm font-medium text-foreground mt-3">
+                        {themeOption.label}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">{themeOption.desc}</p>
                     </button>
                   ))}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import ElectionStatusIndicator from '@/components/common/ElectionStatusIndicator';
 import NotificationCenter from '@/components/common/NotificationCenter';
@@ -11,6 +12,7 @@ import FeeStructureManager from '@/app/electoral-commission-panel/components/Fee
 import QuickStatsGrid from '@/app/electoral-commission-panel/components/QuickStatsGrid';
 import CommissionActivityLog from '@/app/electoral-commission-panel/components/CommissionActivityLog';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
 
 interface Notification {
   id: string;
@@ -93,6 +95,7 @@ interface QuickStat {
 }
 
 const ElectionManagementInteractive = () => {
+  const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeTab, setActiveTab] = useState<'applications' | 'elections' | 'fees' | 'reports'>(
     'applications'
@@ -378,30 +381,78 @@ const ElectionManagementInteractive = () => {
     );
   }
 
-  const handleApproveApplication = (id: string) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, eligibilityStatus: 'verified' as const } : app))
-    );
-    console.log('Approved application:', id);
+  const handleApproveApplication = async (id: string) => {
+    try {
+      // Update application status in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({
+          eligibilityStatus: 'verified',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error approving application:', error);
+        alert('Failed to approve application. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === id ? { ...app, eligibilityStatus: 'verified' as const } : app
+        )
+      );
+
+      alert('Application approved successfully!');
+    } catch (error) {
+      console.error('Error approving application:', error);
+      alert('Failed to approve application. Please try again.');
+    }
   };
 
-  const handleRejectApplication = (id: string) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, eligibilityStatus: 'rejected' as const } : app))
-    );
-    console.log('Rejected application:', id);
+  const handleRejectApplication = async (id: string) => {
+    try {
+      // Update application status in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({
+          eligibilityStatus: 'rejected',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error rejecting application:', error);
+        alert('Failed to reject application. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === id ? { ...app, eligibilityStatus: 'rejected' as const } : app
+        )
+      );
+
+      alert('Application rejected successfully!');
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      alert('Failed to reject application. Please try again.');
+    }
   };
 
   const handleViewApplicationDetails = (id: string) => {
-    console.log('View application details:', id);
+    router.push(`/admin-system-control/election/applications/${id}`);
   };
 
   const handleViewElectionAnalytics = (id: string) => {
-    console.log('View election analytics:', id);
+    router.push(`/admin-system-control/election/elections/${id}/analytics`);
   };
 
   const handleManageElection = (id: string) => {
-    console.log('Manage election:', id);
+    router.push(`/admin-system-control/election/elections/${id}/manage`);
   };
 
   const handleUpdateFee = (id: string, newAmount: number) => {

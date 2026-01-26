@@ -440,12 +440,12 @@ const ElectoralCommissionInteractive = () => {
       alert('Please select an election to generate report');
       return;
     }
-    
+
     const election = elections.find((e) => e.id === selectedElectionForReport);
     if (!election) return;
 
     console.log(`Generating ${reportType} report for ${election.name}...`);
-    
+
     // Simulate report generation
     const reportData = {
       election: election.name,
@@ -457,7 +457,9 @@ const ElectoralCommissionInteractive = () => {
     };
 
     // In production, this would trigger actual report generation
-    alert(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report generated successfully!\n\nElection: ${election.name}\nTurnout: ${election.turnoutPercentage}%\nVotes Cast: ${election.votedCount}/${election.totalVoters}`);
+    alert(
+      `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report generated successfully!\n\nElection: ${election.name}\nTurnout: ${election.turnoutPercentage}%\nVotes Cast: ${election.votedCount}/${election.totalVoters}`
+    );
   };
 
   const handleExportData = (format: 'pdf' | 'csv' | 'excel') => {
@@ -652,7 +654,7 @@ const ElectoralCommissionInteractive = () => {
                         <h2 className="font-heading font-semibold text-xl text-foreground">
                           Election Monitoring
                         </h2>
-                        <button 
+                        <button
                           onClick={handleCreateElection}
                           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth"
                         >
@@ -720,10 +722,22 @@ const ElectoralCommissionInteractive = () => {
                             </label>
                             <div className="grid grid-cols-2 gap-3">
                               {[
-                                { value: 'election', label: 'Election Summary', icon: 'ChartBarIcon' },
-                                { value: 'candidate', label: 'Candidate Analysis', icon: 'UserGroupIcon' },
+                                {
+                                  value: 'election',
+                                  label: 'Election Summary',
+                                  icon: 'ChartBarIcon',
+                                },
+                                {
+                                  value: 'candidate',
+                                  label: 'Candidate Analysis',
+                                  icon: 'UserGroupIcon',
+                                },
                                 { value: 'voter', label: 'Voter Statistics', icon: 'UsersIcon' },
-                                { value: 'financial', label: 'Financial Report', icon: 'CurrencyDollarIcon' },
+                                {
+                                  value: 'financial',
+                                  label: 'Financial Report',
+                                  icon: 'CurrencyDollarIcon',
+                                },
                               ].map((type) => (
                                 <button
                                   key={type.value}
@@ -738,11 +752,17 @@ const ElectoralCommissionInteractive = () => {
                                     name={type.icon as any}
                                     size={20}
                                     variant="outline"
-                                    className={reportType === type.value ? 'text-primary' : 'text-muted-foreground'}
+                                    className={
+                                      reportType === type.value
+                                        ? 'text-primary'
+                                        : 'text-muted-foreground'
+                                    }
                                   />
-                                  <span className={`text-sm font-medium ${
-                                    reportType === type.value ? 'text-primary' : 'text-foreground'
-                                  }`}>
+                                  <span
+                                    className={`text-sm font-medium ${
+                                      reportType === type.value ? 'text-primary' : 'text-foreground'
+                                    }`}
+                                  >
                                     {type.label}
                                   </span>
                                 </button>
@@ -794,9 +814,7 @@ const ElectoralCommissionInteractive = () => {
                             </div>
                             <div className="text-center">
                               <p className="font-medium text-foreground">Export as CSV</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Raw data format
-                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">Raw data format</p>
                             </div>
                           </button>
 
@@ -859,16 +877,16 @@ const ElectoralCommissionInteractive = () => {
                               className="flex items-center justify-between p-4 bg-background rounded-md hover:shadow-sm transition-all duration-250 ease-smooth"
                             >
                               <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-md ${
-                                  report.format === 'PDF' ? 'bg-error/20 text-error' :
-                                  report.format === 'Excel' ? 'bg-success/20 text-success' :
-                                  'bg-primary/20 text-primary'
-                                }`}>
-                                  <Icon
-                                    name="DocumentIcon"
-                                    size={20}
-                                    variant="outline"
-                                  />
+                                <div
+                                  className={`p-2 rounded-md ${
+                                    report.format === 'PDF'
+                                      ? 'bg-error/20 text-error'
+                                      : report.format === 'Excel'
+                                        ? 'bg-success/20 text-success'
+                                        : 'bg-primary/20 text-primary'
+                                  }`}
+                                >
+                                  <Icon name="DocumentIcon" size={20} variant="outline" />
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium text-foreground">
@@ -906,24 +924,45 @@ const ElectoralCommissionInteractive = () => {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-card border border-border rounded-md p-6">
                           <div className="flex items-center justify-between mb-2">
-                            <Icon name="DocumentTextIcon" size={24} variant="outline" className="text-primary" />
-                            <span className="text-2xl font-heading font-semibold text-foreground">24</span>
+                            <Icon
+                              name="DocumentTextIcon"
+                              size={24}
+                              variant="outline"
+                              className="text-primary"
+                            />
+                            <span className="text-2xl font-heading font-semibold text-foreground">
+                              24
+                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground">Total Reports Generated</p>
                         </div>
 
                         <div className="bg-card border border-border rounded-md p-6">
                           <div className="flex items-center justify-between mb-2">
-                            <Icon name="ArrowDownTrayIcon" size={24} variant="outline" className="text-success" />
-                            <span className="text-2xl font-heading font-semibold text-foreground">156</span>
+                            <Icon
+                              name="ArrowDownTrayIcon"
+                              size={24}
+                              variant="outline"
+                              className="text-success"
+                            />
+                            <span className="text-2xl font-heading font-semibold text-foreground">
+                              156
+                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground">Downloads This Month</p>
                         </div>
 
                         <div className="bg-card border border-border rounded-md p-6">
                           <div className="flex items-center justify-between mb-2">
-                            <Icon name="ClockIcon" size={24} variant="outline" className="text-warning" />
-                            <span className="text-2xl font-heading font-semibold text-foreground">2h</span>
+                            <Icon
+                              name="ClockIcon"
+                              size={24}
+                              variant="outline"
+                              className="text-warning"
+                            />
+                            <span className="text-2xl font-heading font-semibold text-foreground">
+                              2h
+                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground">Avg. Generation Time</p>
                         </div>

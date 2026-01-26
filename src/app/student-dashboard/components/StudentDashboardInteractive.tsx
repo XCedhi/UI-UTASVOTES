@@ -193,7 +193,8 @@ const StudentDashboardInteractive = () => {
     try {
       let userName = 'Student';
       try {
-        const email = typeof window !== 'undefined' ? window.localStorage.getItem('userEmail') : null;
+        const email =
+          typeof window !== 'undefined' ? window.localStorage.getItem('userEmail') : null;
         if (email) userName = email.split('@')[0];
       } catch {
         void 0;

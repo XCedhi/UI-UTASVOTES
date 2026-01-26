@@ -147,7 +147,12 @@ const StudentElectionResultsInteractive = () => {
                             {candidate.name}
                           </h3>
                           {candidate.isWinner && (
-                            <Icon name="CheckBadgeIcon" size={24} variant="solid" className="text-primary" />
+                            <Icon
+                              name="CheckBadgeIcon"
+                              size={24}
+                              variant="solid"
+                              className="text-primary"
+                            />
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">

@@ -25,7 +25,8 @@ const ResetPasswordInteractive = () => {
     if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter';
     if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter';
     if (!/[0-9]/.test(password)) return 'Password must contain at least one number';
-    if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain at least one special character';
+    if (!/[^A-Za-z0-9]/.test(password))
+      return 'Password must contain at least one special character';
     return null;
   };
 
@@ -71,12 +72,8 @@ const ResetPasswordInteractive = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
             <Icon name="KeyIcon" size={32} variant="outline" className="text-primary-foreground" />
           </div>
-          <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
-            Reset Password
-          </h1>
-          <p className="text-muted-foreground">
-            Create a new password for your account
-          </p>
+          <h1 className="font-heading font-bold text-3xl text-foreground mb-2">Reset Password</h1>
+          <p className="text-muted-foreground">Create a new password for your account</p>
         </div>
 
         {/* Form Card */}
@@ -84,12 +81,20 @@ const ResetPasswordInteractive = () => {
           {!isSuccess ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-foreground mb-2"
+                >
                   New Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Icon name="LockClosedIcon" size={20} variant="outline" className="text-muted-foreground" />
+                    <Icon
+                      name="LockClosedIcon"
+                      size={20}
+                      variant="outline"
+                      className="text-muted-foreground"
+                    />
                   </div>
                   <input
                     id="password"
@@ -123,12 +128,20 @@ const ResetPasswordInteractive = () => {
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-foreground mb-2"
+                >
                   Confirm Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Icon name="LockClosedIcon" size={20} variant="outline" className="text-muted-foreground" />
+                    <Icon
+                      name="LockClosedIcon"
+                      size={20}
+                      variant="outline"
+                      className="text-muted-foreground"
+                    />
                   </div>
                   <input
                     id="confirmPassword"
@@ -166,23 +179,50 @@ const ResetPasswordInteractive = () => {
                 <p className="text-sm font-medium text-foreground mb-2">Password Requirements:</p>
                 <ul className="space-y-1 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className={password.length >= 8 ? 'text-success' : 'text-muted-foreground'} />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className={password.length >= 8 ? 'text-success' : 'text-muted-foreground'}
+                    />
                     At least 8 characters
                   </li>
                   <li className="flex items-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className={/[A-Z]/.test(password) ? 'text-success' : 'text-muted-foreground'} />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className={/[A-Z]/.test(password) ? 'text-success' : 'text-muted-foreground'}
+                    />
                     One uppercase letter
                   </li>
                   <li className="flex items-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className={/[a-z]/.test(password) ? 'text-success' : 'text-muted-foreground'} />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className={/[a-z]/.test(password) ? 'text-success' : 'text-muted-foreground'}
+                    />
                     One lowercase letter
                   </li>
                   <li className="flex items-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className={/[0-9]/.test(password) ? 'text-success' : 'text-muted-foreground'} />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className={/[0-9]/.test(password) ? 'text-success' : 'text-muted-foreground'}
+                    />
                     One number
                   </li>
                   <li className="flex items-center gap-2">
-                    <Icon name="CheckCircleIcon" size={16} variant="solid" className={/[^A-Za-z0-9]/.test(password) ? 'text-success' : 'text-muted-foreground'} />
+                    <Icon
+                      name="CheckCircleIcon"
+                      size={16}
+                      variant="solid"
+                      className={
+                        /[^A-Za-z0-9]/.test(password) ? 'text-success' : 'text-muted-foreground'
+                      }
+                    />
                     One special character
                   </li>
                 </ul>
@@ -195,7 +235,12 @@ const ResetPasswordInteractive = () => {
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
-                    <Icon name="ArrowPathIcon" size={20} variant="outline" className="animate-spin" />
+                    <Icon
+                      name="ArrowPathIcon"
+                      size={20}
+                      variant="outline"
+                      className="animate-spin"
+                    />
                     Resetting...
                   </span>
                 ) : (
@@ -213,7 +258,8 @@ const ResetPasswordInteractive = () => {
                   Password Reset Successful
                 </h2>
                 <p className="text-muted-foreground mb-6">
-                  Your password has been reset successfully. You can now log in with your new password.
+                  Your password has been reset successfully. You can now log in with your new
+                  password.
                 </p>
               </div>
               <button
