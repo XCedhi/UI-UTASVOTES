@@ -108,6 +108,14 @@ const ElectionManagementInteractive = () => {
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [quickStats, setQuickStats] = useState<QuickStat[]>([]);
+  const [recentReports, setRecentReports] = useState<Array<{
+    id: string;
+    name: string;
+    type: string;
+    date: string;
+    size: string;
+    downloadUrl?: string;
+  }>>([]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -368,7 +376,84 @@ const ElectionManagementInteractive = () => {
     setFeeStructures(mockFeeStructures);
     setActivityLogs(mockActivityLogs);
     setQuickStats(mockQuickStats);
+
+    // Load recent reports from database
+    loadRecentReports();
   }, []);
+
+  const loadRecentReports = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .order('generated_at', { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        setRecentReports(
+          data.map((report: any) => ({
+            id: report.id,
+            name: report.name,
+            type: report.type,
+            date: new Date(report.generated_at).toLocaleDateString(),
+            size: '2.4 MB', // You can calculate actual size if stored
+          }))
+        );
+      }
+    } catch (error) {
+      console.error('Error loading reports:', error);
+    }
+  };
+
+  const handleDownloadReport = async (reportId: string) => {
+    try {
+      // Fetch report details
+      const { data: reportData, error } = await supabase
+        .from('reports')
+        .select('*, elections(*)')
+        .eq('id', reportId)
+        .single();
+
+      if (error || !reportData) {
+        alert('Report not found.');
+        return;
+      }
+
+      // Fetch election and candidate data
+      const { data: candidatesData } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('election_id', reportData.election_id);
+
+      const election = reportData.elections;
+
+      // Prepare report data
+      const reportDataToExport = {
+        electionName: election?.name || 'Election Report',
+        startDate: election?.start_date || new Date().toISOString(),
+        endDate: election?.end_date || new Date().toISOString(),
+        totalVoters: election?.total_voters || 0,
+        votedCount: election?.voted_count || 0,
+        turnoutPercentage: election?.turnout_percentage || 0,
+        positions: [],
+        candidates: (candidatesData || []).map((c: any) => ({
+          name: c.full_name || c.candidate_name || 'Unknown',
+          position: c.position || 'Unknown Position',
+          votes: c.votes || 0,
+          percentage: c.vote_percentage || 0,
+        })),
+      };
+
+      // Generate and download report
+      const { generateElectionReport } = await import('@/lib/excel-utils');
+      generateElectionReport(reportDataToExport);
+      
+      alert('Report downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Failed to download report. Please try again.');
+    }
+  };
 
   if (!isHydrated) {
     return (
@@ -455,13 +540,103 @@ const ElectionManagementInteractive = () => {
     router.push(`/admin-system-control/election/elections/${id}/manage`);
   };
 
-  const handleUpdateFee = (id: string, newAmount: number) => {
-    setFeeStructures((prev) =>
-      prev.map((fee) =>
-        fee.id === id ? { ...fee, amount: newAmount, lastUpdated: new Date().toISOString() } : fee
-      )
-    );
-    console.log('Updated fee:', id, newAmount);
+  const handleUpdateFee = async (id: string, newAmount: number, newPosition?: string) => {
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from('fee_structures')
+        .update({
+          amount: newAmount,
+          position: newPosition,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating fee:', error);
+        alert('Failed to update fee. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setFeeStructures((prev) =>
+        prev.map((fee) =>
+          fee.id === id
+            ? {
+                ...fee,
+                amount: newAmount,
+                position: newPosition || fee.position,
+                lastUpdated: new Date().toISOString(),
+              }
+            : fee
+        )
+      );
+      alert('Fee updated successfully!');
+    } catch (error) {
+      console.error('Error updating fee:', error);
+      alert('Failed to update fee. Please try again.');
+    }
+  };
+
+  const handleAddFee = async (position: string, amount: number) => {
+    try {
+      // Insert into database
+      const { data, error } = await supabase
+        .from('fee_structures')
+        .insert({
+          position,
+          amount,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding fee:', error);
+        alert('Failed to add position. Please try again.');
+        return;
+      }
+
+      // Add to local state
+      setFeeStructures((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          position,
+          amount,
+          lastUpdated: new Date().toISOString(),
+        },
+      ]);
+      alert('Position added successfully!');
+    } catch (error) {
+      console.error('Error adding fee:', error);
+      alert('Failed to add position. Please try again.');
+    }
+  };
+
+  const handleDeleteFee = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this position?')) {
+      return;
+    }
+
+    try {
+      // Delete from database
+      const { error } = await supabase.from('fee_structures').delete().eq('id', id);
+
+      if (error) {
+        console.error('Error deleting fee:', error);
+        alert('Failed to delete position. Please try again.');
+        return;
+      }
+
+      // Remove from local state
+      setFeeStructures((prev) => prev.filter((fee) => fee.id !== id));
+      alert('Position deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting fee:', error);
+      alert('Failed to delete position. Please try again.');
+    }
   };
 
   const handleMarkAsRead = (id: string) => {
@@ -476,12 +651,203 @@ const ElectionManagementInteractive = () => {
     setNotifications([]);
   };
 
-  const handleGenerateReport = () => {
-    console.log('Generating comprehensive election report...');
+  const handleGenerateReport = async () => {
+    try {
+      // Fetch election data from database
+      const { data: electionsData, error: electionsError } = await supabase
+        .from('elections')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (electionsError) {
+        console.error('Error fetching election data:', electionsError);
+        alert('No election data available to generate report.');
+        return;
+      }
+
+      // Fetch candidates and votes
+      const { data: candidatesData, error: candidatesError } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('election_id', electionsData.id);
+
+      if (candidatesError) {
+        console.error('Error fetching candidates:', candidatesError);
+      }
+
+      // Prepare report data
+      const reportData = {
+        electionName: electionsData.name || 'Election Report',
+        startDate: electionsData.start_date || new Date().toISOString(),
+        endDate: electionsData.end_date || new Date().toISOString(),
+        totalVoters: electionsData.total_voters || 0,
+        votedCount: electionsData.voted_count || 0,
+        turnoutPercentage: electionsData.turnout_percentage || 0,
+        positions: [],
+        candidates: (candidatesData || []).map((c: any) => ({
+          name: c.full_name || c.candidate_name || 'Unknown',
+          position: c.position || 'Unknown Position',
+          votes: c.votes || 0,
+          percentage: c.vote_percentage || 0,
+        })),
+      };
+
+      // Generate report using excel-utils
+      const { generateElectionReport } = await import('@/lib/excel-utils');
+      generateElectionReport(reportData);
+
+      // Save report record to database
+      const reportRecord = {
+        name: `${reportData.electionName} - Comprehensive Report`,
+        type: 'comprehensive',
+        generated_at: new Date().toISOString(),
+        generated_by: 'admin',
+        election_id: electionsData.id,
+      };
+
+      const { data: savedReport, error: saveError } = await supabase
+        .from('reports')
+        .insert(reportRecord)
+        .select()
+        .single();
+
+      if (!saveError && savedReport) {
+        // Add to recent reports
+        setRecentReports((prev) => [
+          {
+            id: savedReport.id,
+            name: savedReport.name,
+            type: savedReport.type,
+            date: new Date(savedReport.generated_at).toLocaleDateString(),
+            size: '2.4 MB',
+          },
+          ...prev.slice(0, 4),
+        ]);
+      }
+
+      alert('Report generated successfully!');
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('Failed to generate report. Please try again.');
+    }
   };
 
-  const handleExportData = () => {
-    console.log('Exporting election data...');
+  const handleExportData = async () => {
+    try {
+      // Show export options
+      const exportType = prompt(
+        'Select export type:\n1. Election Results (CSV)\n2. Voter Statistics (CSV)\n3. Candidate Applications (CSV)\n\nEnter 1, 2, or 3:'
+      );
+
+      if (!exportType) return;
+
+      const { exportElectionDataCSV, exportVoterStatistics, exportCandidateApplications } =
+        await import('@/lib/excel-utils');
+
+      switch (exportType) {
+        case '1': {
+          // Export election results
+          const { data: electionsData, error } = await supabase
+            .from('elections')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (error || !electionsData) {
+            alert('No election data available.');
+            return;
+          }
+
+          const { data: candidatesData } = await supabase
+            .from('candidates')
+            .select('*')
+            .eq('election_id', electionsData.id);
+
+          const reportData = {
+            electionName: electionsData.name || 'Election',
+            startDate: electionsData.start_date || new Date().toISOString(),
+            endDate: electionsData.end_date || new Date().toISOString(),
+            totalVoters: electionsData.total_voters || 0,
+            votedCount: electionsData.voted_count || 0,
+            turnoutPercentage: electionsData.turnout_percentage || 0,
+            positions: [],
+            candidates: (candidatesData || []).map((c: any) => ({
+              name: c.full_name || c.candidate_name || 'Unknown',
+              position: c.position || 'Unknown',
+              votes: c.votes || 0,
+              percentage: c.vote_percentage || 0,
+            })),
+          };
+
+          exportElectionDataCSV(reportData);
+          alert('Election results exported successfully!');
+          break;
+        }
+
+        case '2': {
+          // Export voter statistics
+          const { data: electionsData, error } = await supabase
+            .from('elections')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error || !electionsData) {
+            alert('No election data available.');
+            return;
+          }
+
+          const stats = electionsData.map((e: any) => ({
+            name: e.name || 'Unknown Election',
+            totalVoters: e.total_voters || 0,
+            votedCount: e.voted_count || 0,
+            turnoutPercentage: e.turnout_percentage || 0,
+            startDate: e.start_date || new Date().toISOString(),
+            endDate: e.end_date || new Date().toISOString(),
+          }));
+
+          exportVoterStatistics(stats);
+          alert('Voter statistics exported successfully!');
+          break;
+        }
+
+        case '3': {
+          // Export candidate applications
+          const { data: applicationsData, error } = await supabase
+            .from('candidates')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error || !applicationsData) {
+            alert('No application data available.');
+            return;
+          }
+
+          const apps = applicationsData.map((a: any) => ({
+            candidateName: a.full_name || a.candidate_name || 'Unknown',
+            studentId: a.student_id || 'N/A',
+            email: a.email || 'N/A',
+            position: a.position || 'Unknown',
+            department: a.department || 'Unknown',
+            eligibilityStatus: a.eligibility_status || 'pending',
+            paymentStatus: a.payment_status || 'pending',
+            submittedAt: a.created_at || new Date().toISOString(),
+          }));
+
+          exportCandidateApplications(apps);
+          alert('Candidate applications exported successfully!');
+          break;
+        }
+
+        default:
+          alert('Invalid selection. Please enter 1, 2, or 3.');
+      }
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      alert('Failed to export data. Please try again.');
+    }
   };
 
   const activeElection = elections.find((e) => e.status === 'active');
@@ -684,6 +1050,8 @@ const ElectionManagementInteractive = () => {
                     <FeeStructureManager
                       feeStructures={feeStructures}
                       onUpdateFee={handleUpdateFee}
+                      onAddFee={handleAddFee}
+                      onDeleteFee={handleDeleteFee}
                     />
                   )}
 
@@ -743,55 +1111,60 @@ const ElectionManagementInteractive = () => {
                         <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
                           Recent Reports
                         </h3>
-                        <div className="space-y-3">
-                          {[
-                            {
-                              name: 'Student Council 2026 - Final Report',
-                              date: '2026-01-22',
-                              size: '2.4 MB',
-                            },
-                            {
-                              name: 'Departmental Elections - Summary',
-                              date: '2026-01-15',
-                              size: '1.8 MB',
-                            },
-                            {
-                              name: 'Q4 2025 Electoral Statistics',
-                              date: '2025-12-31',
-                              size: '3.1 MB',
-                            },
-                          ].map((report, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-3 bg-background rounded-md"
-                            >
-                              <div className="flex items-center gap-3">
-                                <Icon
-                                  name="DocumentIcon"
-                                  size={20}
-                                  variant="outline"
-                                  className="text-primary"
-                                />
-                                <div>
-                                  <p className="text-sm font-medium text-foreground">
-                                    {report.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground font-caption">
-                                    {report.date} • {report.size}
-                                  </p>
+                        {recentReports.length > 0 ? (
+                          <div className="space-y-3">
+                            {recentReports.map((report) => (
+                              <div
+                                key={report.id}
+                                className="flex items-center justify-between p-3 bg-background rounded-md"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Icon
+                                    name="DocumentIcon"
+                                    size={20}
+                                    variant="outline"
+                                    className="text-primary"
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">
+                                      {report.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground font-caption">
+                                      {report.date} • {report.size}
+                                    </p>
+                                  </div>
                                 </div>
+                                <button
+                                  onClick={() => handleDownloadReport(report.id)}
+                                  className="p-2 hover:bg-muted rounded-md transition-all duration-250 ease-smooth"
+                                  aria-label="Download report"
+                                >
+                                  <Icon
+                                    name="ArrowDownTrayIcon"
+                                    size={16}
+                                    variant="outline"
+                                    className="text-muted-foreground"
+                                  />
+                                </button>
                               </div>
-                              <button className="p-2 hover:bg-muted rounded-md transition-all duration-250 ease-smooth">
-                                <Icon
-                                  name="ArrowDownTrayIcon"
-                                  size={16}
-                                  variant="outline"
-                                  className="text-muted-foreground"
-                                />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Icon
+                              name="DocumentIcon"
+                              size={48}
+                              variant="outline"
+                              className="mx-auto text-muted-foreground mb-3 opacity-50"
+                            />
+                            <p className="text-muted-foreground text-sm">
+                              No reports generated yet
+                            </p>
+                            <p className="text-muted-foreground text-xs mt-1">
+                              Generate your first report to see it here
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

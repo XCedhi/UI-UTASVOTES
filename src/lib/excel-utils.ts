@@ -364,3 +364,210 @@ For support, contact: admin@cktutas.edu.gh
 
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Election Report Generation Functions
+ */
+
+export interface ElectionReportData {
+  electionName: string;
+  startDate: string;
+  endDate: string;
+  totalVoters: number;
+  votedCount: number;
+  turnoutPercentage: number;
+  positions: Array<{
+    name: string;
+    candidates: number;
+    votes: number;
+  }>;
+  candidates: Array<{
+    name: string;
+    position: string;
+    votes: number;
+    percentage: number;
+  }>;
+}
+
+/**
+ * Generate comprehensive election report as CSV
+ */
+export function generateElectionReport(data: ElectionReportData) {
+  const timestamp = new Date().toISOString().split('T')[0];
+  const reportContent = [
+    '='.repeat(80),
+    `UTASVOTES ELECTION REPORT`,
+    `Generated: ${new Date().toLocaleString()}`,
+    '='.repeat(80),
+    '',
+    'ELECTION OVERVIEW',
+    '-'.repeat(80),
+    `Election Name: ${data.electionName}`,
+    `Start Date: ${new Date(data.startDate).toLocaleString()}`,
+    `End Date: ${new Date(data.endDate).toLocaleString()}`,
+    `Total Registered Voters: ${data.totalVoters}`,
+    `Total Votes Cast: ${data.votedCount}`,
+    `Voter Turnout: ${data.turnoutPercentage.toFixed(2)}%`,
+    '',
+    'POSITIONS SUMMARY',
+    '-'.repeat(80),
+    'Position,Candidates,Total Votes',
+    ...data.positions.map((p) => `${p.name},${p.candidates},${p.votes}`),
+    '',
+    'CANDIDATE RESULTS',
+    '-'.repeat(80),
+    'Candidate Name,Position,Votes,Percentage',
+    ...data.candidates.map(
+      (c) => `${c.name},${c.position},${c.votes},${c.percentage.toFixed(2)}%`
+    ),
+    '',
+    '='.repeat(80),
+    'END OF REPORT',
+    '='.repeat(80),
+  ].join('\n');
+
+  const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Election_Report_${data.electionName.replace(/\s+/g, '_')}_${timestamp}.txt`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Export election data as CSV
+ */
+export function exportElectionDataCSV(data: ElectionReportData) {
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  // Create CSV content
+  const csvContent = [
+    // Header
+    'Candidate Name,Position,Votes,Percentage,Election Name,Start Date,End Date,Total Voters,Votes Cast,Turnout',
+    // Data rows
+    ...data.candidates.map((c) =>
+      [
+        c.name,
+        c.position,
+        c.votes,
+        c.percentage.toFixed(2) + '%',
+        data.electionName,
+        new Date(data.startDate).toLocaleDateString(),
+        new Date(data.endDate).toLocaleDateString(),
+        data.totalVoters,
+        data.votedCount,
+        data.turnoutPercentage.toFixed(2) + '%',
+      ].join(',')
+    ),
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Election_Data_${data.electionName.replace(/\s+/g, '_')}_${timestamp}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Export voter statistics as CSV
+ */
+export function exportVoterStatistics(elections: Array<{
+  name: string;
+  totalVoters: number;
+  votedCount: number;
+  turnoutPercentage: number;
+  startDate: string;
+  endDate: string;
+}>) {
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  const csvContent = [
+    'Election Name,Total Voters,Votes Cast,Turnout %,Start Date,End Date,Status',
+    ...elections.map((e) =>
+      [
+        e.name,
+        e.totalVoters,
+        e.votedCount,
+        e.turnoutPercentage.toFixed(2),
+        new Date(e.startDate).toLocaleDateString(),
+        new Date(e.endDate).toLocaleDateString(),
+        new Date(e.endDate) < new Date() ? 'Completed' : 'Active',
+      ].join(',')
+    ),
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Voter_Statistics_${timestamp}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Export candidate applications as CSV
+ */
+export function exportCandidateApplications(applications: Array<{
+  candidateName: string;
+  studentId: string;
+  email: string;
+  position: string;
+  department: string;
+  eligibilityStatus: string;
+  paymentStatus: string;
+  submittedAt: string;
+}>) {
+  const timestamp = new Date().toISOString().split('T')[0];
+  
+  const csvContent = [
+    'Candidate Name,Student ID,Email,Position,Department,Status,Payment,Submitted Date',
+    ...applications.map((a) =>
+      [
+        a.candidateName,
+        a.studentId,
+        a.email,
+        a.position,
+        a.department,
+        a.eligibilityStatus,
+        a.paymentStatus,
+        new Date(a.submittedAt).toLocaleDateString(),
+      ].join(',')
+    ),
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `Candidate_Applications_${timestamp}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}

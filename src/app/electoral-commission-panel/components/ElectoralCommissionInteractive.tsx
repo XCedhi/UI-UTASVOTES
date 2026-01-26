@@ -414,13 +414,103 @@ const ElectoralCommissionInteractive = () => {
     router.push('/electoral-commission-panel/elections/create');
   };
 
-  const handleUpdateFee = (id: string, newAmount: number) => {
-    setFeeStructures((prev) =>
-      prev.map((fee) =>
-        fee.id === id ? { ...fee, amount: newAmount, lastUpdated: new Date().toISOString() } : fee
-      )
-    );
-    console.log('Updated fee:', id, newAmount);
+  const handleUpdateFee = async (id: string, newAmount: number, newPosition?: string) => {
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from('fee_structures')
+        .update({
+          amount: newAmount,
+          position: newPosition,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating fee:', error);
+        alert('Failed to update fee. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setFeeStructures((prev) =>
+        prev.map((fee) =>
+          fee.id === id
+            ? {
+                ...fee,
+                amount: newAmount,
+                position: newPosition || fee.position,
+                lastUpdated: new Date().toISOString(),
+              }
+            : fee
+        )
+      );
+      alert('Fee updated successfully!');
+    } catch (error) {
+      console.error('Error updating fee:', error);
+      alert('Failed to update fee. Please try again.');
+    }
+  };
+
+  const handleAddFee = async (position: string, amount: number) => {
+    try {
+      // Insert into database
+      const { data, error } = await supabase
+        .from('fee_structures')
+        .insert({
+          position,
+          amount,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding fee:', error);
+        alert('Failed to add position. Please try again.');
+        return;
+      }
+
+      // Add to local state
+      setFeeStructures((prev) => [
+        ...prev,
+        {
+          id: data.id,
+          position,
+          amount,
+          lastUpdated: new Date().toISOString(),
+        },
+      ]);
+      alert('Position added successfully!');
+    } catch (error) {
+      console.error('Error adding fee:', error);
+      alert('Failed to add position. Please try again.');
+    }
+  };
+
+  const handleDeleteFee = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this position?')) {
+      return;
+    }
+
+    try {
+      // Delete from database
+      const { error } = await supabase.from('fee_structures').delete().eq('id', id);
+
+      if (error) {
+        console.error('Error deleting fee:', error);
+        alert('Failed to delete position. Please try again.');
+        return;
+      }
+
+      // Remove from local state
+      setFeeStructures((prev) => prev.filter((fee) => fee.id !== id));
+      alert('Position deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting fee:', error);
+      alert('Failed to delete position. Please try again.');
+    }
   };
 
   const handleMarkAsRead = (id: string) => {
@@ -678,6 +768,8 @@ const ElectoralCommissionInteractive = () => {
                     <FeeStructureManager
                       feeStructures={feeStructures}
                       onUpdateFee={handleUpdateFee}
+                      onAddFee={handleAddFee}
+                      onDeleteFee={handleDeleteFee}
                     />
                   )}
 
