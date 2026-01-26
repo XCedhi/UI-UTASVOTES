@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
 
 interface SystemMetric {
   label: string;
@@ -36,104 +37,191 @@ const AdminDashboardInteractive = () => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [selectedTimeRange, setSelectedTimeRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
+  const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchDashboardData();
   }, []);
 
-  const systemMetrics: SystemMetric[] = [
-    {
-      label: 'Total Users',
-      value: '12,847',
-      change: 8.2,
-      icon: 'UsersIcon',
-      color: 'primary',
-      trend: 'up',
-    },
-    {
-      label: 'Active Elections',
-      value: 3,
-      change: 0,
-      icon: 'CheckBadgeIcon',
-      color: 'success',
-      trend: 'neutral',
-    },
-    {
-      label: 'Total Votes Cast',
-      value: '8,234',
-      change: 15.3,
-      icon: 'ChartBarIcon',
-      color: 'accent',
-      trend: 'up',
-    },
-    {
-      label: 'System Uptime',
-      value: '99.9%',
-      change: 0.1,
-      icon: 'ServerIcon',
-      color: 'success',
-      trend: 'up',
-    },
-    {
-      label: 'Pending Applications',
-      value: 24,
-      change: -12.5,
-      icon: 'DocumentTextIcon',
-      color: 'warning',
-      trend: 'down',
-    },
-    {
-      label: 'Security Alerts',
-      value: 2,
-      change: -50,
-      icon: 'ShieldExclamationIcon',
-      color: 'error',
-      trend: 'down',
-    },
-  ];
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
 
-  const recentActivities: RecentActivity[] = [
-    {
-      id: '1',
-      type: 'election',
-      title: 'New Election Created',
-      description: 'Student Council Elections 2026 has been created by EC Admin',
-      timestamp: '2026-01-25T10:30:00',
-      severity: 'success',
-    },
-    {
-      id: '2',
-      type: 'user',
-      title: 'Bulk User Import',
-      description: '1,234 new student accounts imported successfully',
-      timestamp: '2026-01-25T09:15:00',
-      severity: 'info',
-    },
-    {
-      id: '3',
-      type: 'security',
-      title: 'Failed Login Attempts',
-      description: '5 failed login attempts detected from IP 192.168.1.100',
-      timestamp: '2026-01-25T08:45:00',
-      severity: 'warning',
-    },
-    {
-      id: '4',
-      type: 'system',
-      title: 'Database Backup Completed',
-      description: 'Scheduled backup completed successfully (2.4 GB)',
-      timestamp: '2026-01-25T03:00:00',
-      severity: 'success',
-    },
-    {
-      id: '5',
-      type: 'election',
-      title: 'Voting Period Extended',
-      description: 'Departmental Elections deadline extended by 24 hours',
-      timestamp: '2026-01-24T16:20:00',
-      severity: 'info',
-    },
-  ];
+      // Fetch total users
+      const { count: totalUsers } = await supabase
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch active elections
+      const { count: activeElections } = await supabase
+        .from('elections')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+      // Fetch total votes
+      const { count: totalVotes } = await supabase
+        .from('votes')
+        .select('*', { count: 'exact', head: true });
+
+      // Fetch pending applications
+      const { count: pendingApplications } = await supabase
+        .from('candidates')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      // Fetch security alerts
+      const { count: securityAlerts } = await supabase
+        .from('system_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_resolved', false);
+
+      // Update system metrics with real data
+      setSystemMetrics([
+        {
+          label: 'Total Users',
+          value: totalUsers || 0,
+          change: 0,
+          icon: 'UsersIcon',
+          color: 'primary',
+          trend: 'neutral',
+        },
+        {
+          label: 'Active Elections',
+          value: activeElections || 0,
+          change: 0,
+          icon: 'CheckBadgeIcon',
+          color: 'success',
+          trend: 'neutral',
+        },
+        {
+          label: 'Total Votes Cast',
+          value: totalVotes || 0,
+          change: 0,
+          icon: 'ChartBarIcon',
+          color: 'accent',
+          trend: 'neutral',
+        },
+        {
+          label: 'System Uptime',
+          value: '99.9%',
+          change: 0,
+          icon: 'ServerIcon',
+          color: 'success',
+          trend: 'neutral',
+        },
+        {
+          label: 'Pending Applications',
+          value: pendingApplications || 0,
+          change: 0,
+          icon: 'DocumentTextIcon',
+          color: 'warning',
+          trend: 'neutral',
+        },
+        {
+          label: 'Security Alerts',
+          value: securityAlerts || 0,
+          change: 0,
+          icon: 'ShieldExclamationIcon',
+          color: 'error',
+          trend: 'neutral',
+        },
+      ]);
+
+      // Fetch recent activity logs
+      const { data: activityLogs } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (activityLogs && activityLogs.length > 0) {
+        const activities: RecentActivity[] = activityLogs.map((log: any) => ({
+          id: log.id,
+          type: log.action_type === 'creation' ? 'election' : 
+                log.action_type === 'approval' || log.action_type === 'rejection' ? 'user' : 
+                'system',
+          title: log.action,
+          description: log.target || 'System activity',
+          timestamp: log.created_at,
+          severity: log.action_type === 'approval' || log.action_type === 'creation' ? 'success' :
+                    log.action_type === 'rejection' ? 'warning' : 'info',
+        }));
+        setRecentActivities(activities);
+      } else {
+        // Show placeholder if no activity logs
+        setRecentActivities([
+          {
+            id: '1',
+            type: 'system',
+            title: 'System Initialized',
+            description: 'Dashboard is ready. Start by creating elections or importing users.',
+            timestamp: new Date().toISOString(),
+            severity: 'info',
+          },
+        ]);
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setLoading(false);
+      
+      // Set default values on error
+      setSystemMetrics([
+        {
+          label: 'Total Users',
+          value: 0,
+          change: 0,
+          icon: 'UsersIcon',
+          color: 'primary',
+          trend: 'neutral',
+        },
+        {
+          label: 'Active Elections',
+          value: 0,
+          change: 0,
+          icon: 'CheckBadgeIcon',
+          color: 'success',
+          trend: 'neutral',
+        },
+        {
+          label: 'Total Votes Cast',
+          value: 0,
+          change: 0,
+          icon: 'ChartBarIcon',
+          color: 'accent',
+          trend: 'neutral',
+        },
+        {
+          label: 'System Uptime',
+          value: '99.9%',
+          change: 0,
+          icon: 'ServerIcon',
+          color: 'success',
+          trend: 'neutral',
+        },
+        {
+          label: 'Pending Applications',
+          value: 0,
+          change: 0,
+          icon: 'DocumentTextIcon',
+          color: 'warning',
+          trend: 'neutral',
+        },
+        {
+          label: 'Security Alerts',
+          value: 0,
+          change: 0,
+          icon: 'ShieldExclamationIcon',
+          color: 'error',
+          trend: 'neutral',
+        },
+      ]);
+    }
+  };
 
   const quickActions: QuickAction[] = [
     {
@@ -228,7 +316,7 @@ const AdminDashboardInteractive = () => {
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || loading) {
     return (
       <div className="min-h-screen bg-background">
         <Header userRole="admin" userName="Admin" notificationCount={0} />

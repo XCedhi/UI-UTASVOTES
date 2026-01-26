@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
 
 interface User {
   id: string;
@@ -35,6 +36,8 @@ const UserManagementInteractive = () => {
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [editSuccess, setEditSuccess] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [formData, setFormData] = useState<InviteFormData>({
     firstName: '',
     lastName: '',
@@ -49,42 +52,42 @@ const UserManagementInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchUsers();
   }, []);
 
-  const users: User[] = [
-    {
-      id: '1',
-      name: 'John Mensah',
-      email: 'john.mensah@cktutas.edu.gh',
-      role: 'student',
-      status: 'active',
-      lastLogin: '2026-01-25T10:30:00',
-    },
-    {
-      id: '2',
-      name: 'Ama Osei',
-      email: 'ama.osei@cktutas.edu.gh',
-      role: 'candidate',
-      status: 'active',
-      lastLogin: '2026-01-24T15:20:00',
-    },
-    {
-      id: '3',
-      name: 'Dr. Kwame Nkrumah',
-      email: 'kwame.nkrumah@cktutas.edu.gh',
-      role: 'commission',
-      status: 'active',
-      lastLogin: '2026-01-25T09:15:00',
-    },
-    {
-      id: '4',
-      name: 'Prof. Akosua Boateng',
-      email: 'akosua.boateng@cktutas.edu.gh',
-      role: 'commission',
-      status: 'pending',
-      invitedAt: '2026-01-24T14:00:00',
-    },
-  ];
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch all user profiles from database
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        return;
+      }
+
+      // Transform database data to match User interface
+      const transformedUsers: User[] = (data || []).map((user: any) => ({
+        id: user.id,
+        name: user.full_name || 'Unknown User',
+        email: user.email,
+        role: user.role as 'student' | 'candidate' | 'commission' | 'admin',
+        status: user.status as 'active' | 'inactive' | 'pending',
+        lastLogin: user.last_login,
+        invitedAt: user.created_at,
+      }));
+
+      setUsers(transformedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const errors: Partial<InviteFormData> = {};
@@ -178,15 +181,30 @@ const UserManagementInteractive = () => {
 
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // In production, this would:
-      // 1. Generate secure invitation token
-      // 2. Create pending user record in database with access period
-      // 3. Send invitation email with token link and access period info
-      // 4. Log invitation in audit trail
-      // 5. Schedule automatic role downgrade job for access end date
+    try {
+      // Call API to send invitation email via Supabase Auth
+      const response = await fetch('/api/invite-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          role: formData.role,
+          accessStartDate: formData.accessStartDate || null,
+          accessEndDate: formData.accessEndDate || null,
+        }),
+      });
 
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send invitation');
+      }
+
+      // Success!
       setIsSubmitting(false);
       setInviteSuccess(true);
 
@@ -206,7 +224,11 @@ const UserManagementInteractive = () => {
         });
         setFormErrors({});
       }, 3000);
-    }, 2000);
+    } catch (error: any) {
+      console.error('Error sending invitation:', error);
+      setIsSubmitting(false);
+      alert(`Failed to send invitation: ${error.message}\n\nPlease check:\n1. SUPABASE_SERVICE_ROLE_KEY is set in .env\n2. Email is configured in Supabase Dashboard\n3. Check browser console for details`);
+    }
   };
 
   const handleInputChange = (field: keyof InviteFormData, value: string) => {

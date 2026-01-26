@@ -119,267 +119,189 @@ const ElectionManagementInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-
-    const mockNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'approval',
-        title: 'New Candidate Application',
-        message: 'Kwame Mensah has submitted application for SRC President position',
-        timestamp: '2026-01-22T18:30:00',
-        isRead: false,
-        actionUrl: '/admin-system-control/election',
-      },
-      {
-        id: '2',
-        type: 'system',
-        title: 'Election Deadline Approaching',
-        message: 'Student Council 2026 voting ends in 6 hours',
-        timestamp: '2026-01-22T17:00:00',
-        isRead: false,
-      },
-      {
-        id: '3',
-        type: 'election',
-        title: 'High Voter Turnout',
-        message: 'Current turnout at 78% for ongoing election',
-        timestamp: '2026-01-22T15:45:00',
-        isRead: true,
-      },
-    ];
-
-    const mockApplications: CandidateApplication[] = [
-      {
-        id: '1',
-        candidateName: 'Kwame Mensah',
-        studentId: 'UTAS2024001',
-        email: 'kwame.mensah@cktutas.edu.gh',
-        position: 'SRC President',
-        department: 'Computer Science',
-        avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-        submittedAt: '2026-01-22T14:30:00',
-        documents: {
-          idCard: true,
-          transcript: true,
-          manifesto: true,
-        },
-        eligibilityStatus: 'pending',
-        paymentStatus: 'completed',
-        applicationFee: 50.0,
-      },
-      {
-        id: '2',
-        candidateName: 'Ama Osei',
-        studentId: 'UTAS2024002',
-        email: 'ama.osei@cktutas.edu.gh',
-        position: 'Vice President',
-        department: 'Business Administration',
-        avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2',
-        submittedAt: '2026-01-22T13:15:00',
-        documents: {
-          idCard: true,
-          transcript: true,
-          manifesto: false,
-        },
-        eligibilityStatus: 'pending',
-        paymentStatus: 'completed',
-        applicationFee: 40.0,
-      },
-      {
-        id: '3',
-        candidateName: 'Kofi Asante',
-        studentId: 'UTAS2024003',
-        email: 'kofi.asante@cktutas.edu.gh',
-        position: 'General Secretary',
-        department: 'Engineering',
-        avatar: 'https://images.pixabay.com/photo/2016/11/21/12/42/beard-1845166_1280.jpg',
-        submittedAt: '2026-01-22T11:45:00',
-        documents: {
-          idCard: true,
-          transcript: true,
-          manifesto: true,
-        },
-        eligibilityStatus: 'verified',
-        paymentStatus: 'completed',
-        applicationFee: 35.0,
-      },
-    ];
-
-    const mockElections: ElectionData[] = [
-      {
-        id: '1',
-        name: 'Student Council 2026',
-        status: 'active',
-        totalVoters: 5420,
-        votedCount: 4228,
-        startDate: '2026-01-20T08:00:00',
-        endDate: '2026-01-23T18:00:00',
-        positions: 8,
-        candidates: 24,
-        turnoutPercentage: 78.0,
-      },
-      {
-        id: '2',
-        name: 'Faculty Representatives',
-        status: 'scheduled',
-        totalVoters: 3200,
-        votedCount: 0,
-        startDate: '2026-02-01T08:00:00',
-        endDate: '2026-02-05T18:00:00',
-        positions: 12,
-        candidates: 36,
-        turnoutPercentage: 0,
-      },
-      {
-        id: '3',
-        name: 'Departmental Elections',
-        status: 'completed',
-        totalVoters: 2800,
-        votedCount: 2156,
-        startDate: '2026-01-10T08:00:00',
-        endDate: '2026-01-15T18:00:00',
-        positions: 15,
-        candidates: 42,
-        turnoutPercentage: 77.0,
-      },
-    ];
-
-    const mockSystemAlerts: SystemAlert[] = [
-      {
-        id: '1',
-        type: 'security',
-        title: 'Multiple Login Attempts Detected',
-        message:
-          'Unusual login activity detected from IP 192.168.1.100 - 5 failed attempts in 2 minutes',
-        timestamp: '2026-01-22T18:45:00',
-        severity: 'high',
-        isResolved: false,
-      },
-      {
-        id: '2',
-        type: 'system',
-        title: 'Database Backup Completed',
-        message: 'Scheduled database backup completed successfully at 02:00 AM',
-        timestamp: '2026-01-22T02:00:00',
-        severity: 'low',
-        isResolved: true,
-      },
-      {
-        id: '3',
-        type: 'warning',
-        title: 'High Server Load',
-        message: 'Server CPU usage at 85% - consider scaling resources',
-        timestamp: '2026-01-22T17:30:00',
-        severity: 'medium',
-        isResolved: false,
-      },
-    ];
-
-    const mockFeeStructures: FeeStructure[] = [
-      { id: '1', position: 'SRC President', amount: 50.0, lastUpdated: '2026-01-15T10:00:00' },
-      { id: '2', position: 'Vice President', amount: 40.0, lastUpdated: '2026-01-15T10:00:00' },
-      { id: '3', position: 'General Secretary', amount: 35.0, lastUpdated: '2026-01-15T10:00:00' },
-      {
-        id: '4',
-        position: 'Financial Secretary',
-        amount: 35.0,
-        lastUpdated: '2026-01-15T10:00:00',
-      },
-      {
-        id: '5',
-        position: 'Organizing Secretary',
-        amount: 30.0,
-        lastUpdated: '2026-01-15T10:00:00',
-      },
-      {
-        id: '6',
-        position: "Women's Commissioner",
-        amount: 30.0,
-        lastUpdated: '2026-01-15T10:00:00',
-      },
-    ];
-
-    const mockActivityLogs: ActivityLog[] = [
-      {
-        id: '1',
-        commissionMember: 'Dr. Akosua Boateng',
-        memberAvatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-        action: 'approved candidate application for',
-        target: 'Kofi Asante - General Secretary',
-        timestamp: '2026-01-22T16:30:00',
-        actionType: 'approval',
-      },
-      {
-        id: '2',
-        commissionMember: 'Prof. Yaw Owusu',
-        memberAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
-        action: 'updated fee structure for',
-        target: 'SRC President position',
-        timestamp: '2026-01-22T14:15:00',
-        actionType: 'update',
-      },
-      {
-        id: '3',
-        commissionMember: 'Mrs. Abena Adjei',
-        memberAvatar: 'https://images.pixabay.com/photo/2017/08/01/08/29/woman-2563491_1280.jpg',
-        action: 'created new election',
-        target: 'Faculty Representatives 2026',
-        timestamp: '2026-01-22T11:00:00',
-        actionType: 'creation',
-      },
-      {
-        id: '4',
-        commissionMember: 'Dr. Akosua Boateng',
-        memberAvatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-        action: 'rejected candidate application for',
-        target: 'Emmanuel Darko - Treasurer',
-        timestamp: '2026-01-22T09:45:00',
-        actionType: 'rejection',
-      },
-    ];
-
-    const mockQuickStats: QuickStat[] = [
-      {
-        label: 'Pending Applications',
-        value: 12,
-        icon: 'DocumentTextIcon',
-        trend: { value: 8, isPositive: true },
-        color: 'bg-warning/20 text-warning',
-      },
-      {
-        label: 'Active Elections',
-        value: 2,
-        icon: 'CheckBadgeIcon',
-        trend: { value: 0, isPositive: true },
-        color: 'bg-success/20 text-success',
-      },
-      {
-        label: 'Total Candidates',
-        value: 68,
-        icon: 'UserGroupIcon',
-        trend: { value: 15, isPositive: true },
-        color: 'bg-primary/20 text-primary',
-      },
-      {
-        label: 'System Alerts',
-        value: 3,
-        icon: 'ExclamationTriangleIcon',
-        trend: { value: 2, isPositive: false },
-        color: 'bg-error/20 text-error',
-      },
-    ];
-
-    setNotifications(mockNotifications);
-    setApplications(mockApplications);
-    setElections(mockElections);
-    setSystemAlerts(mockSystemAlerts);
-    setFeeStructures(mockFeeStructures);
-    setActivityLogs(mockActivityLogs);
-    setQuickStats(mockQuickStats);
-
-    // Load recent reports from database
-    loadRecentReports();
+    fetchElectionManagementData();
   }, []);
+
+  const fetchElectionManagementData = async () => {
+    try {
+      // Fetch notifications
+      const { data: notificationsData } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (notificationsData) {
+        setNotifications(notificationsData.map((n: any) => ({
+          id: n.id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          timestamp: n.created_at,
+          isRead: n.is_read,
+          actionUrl: n.action_url,
+        })));
+      }
+
+      // Fetch candidate applications
+      const { data: candidatesData } = await supabase
+        .from('candidates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (candidatesData) {
+        setApplications(candidatesData.map((c: any) => ({
+          id: c.id,
+          candidateName: c.full_name,
+          studentId: c.student_id,
+          email: c.email,
+          position: c.position,
+          department: c.department,
+          avatar: c.avatar || 'https://via.placeholder.com/150',
+          submittedAt: c.created_at,
+          documents: {
+            idCard: !!c.student_id_doc_url,
+            transcript: !!c.transcript_url,
+            manifesto: !!c.manifesto_doc_url,
+          },
+          eligibilityStatus: c.eligibility_status || 'pending',
+          paymentStatus: c.payment_status || 'pending',
+          applicationFee: c.application_fee || 0,
+        })));
+      }
+
+      // Fetch elections
+      const { data: electionsData } = await supabase
+        .from('elections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (electionsData) {
+        setElections(electionsData.map((e: any) => ({
+          id: e.id,
+          name: e.title,
+          status: e.status,
+          totalVoters: e.total_voters || 0,
+          votedCount: e.voted_count || 0,
+          startDate: e.start_date,
+          endDate: e.end_date,
+          positions: 1, // You can calculate this from election_positions table
+          candidates: 0, // Will be calculated
+          turnoutPercentage: e.turnout_percentage || 0,
+        })));
+      }
+
+      // Fetch system alerts
+      const { data: alertsData } = await supabase
+        .from('system_alerts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (alertsData) {
+        setSystemAlerts(alertsData.map((a: any) => ({
+          id: a.id,
+          type: a.type,
+          title: a.title,
+          message: a.message,
+          timestamp: a.created_at,
+          severity: a.severity,
+          isResolved: a.is_resolved,
+        })));
+      }
+
+      // Fetch fee structures
+      const { data: feesData } = await supabase
+        .from('fee_structures')
+        .select('*')
+        .order('position');
+
+      if (feesData) {
+        setFeeStructures(feesData.map((f: any) => ({
+          id: f.id,
+          position: f.position,
+          amount: f.amount,
+          lastUpdated: f.updated_at,
+        })));
+      }
+
+      // Fetch activity logs
+      const { data: logsData } = await supabase
+        .from('activity_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (logsData) {
+        setActivityLogs(logsData.map((l: any) => ({
+          id: l.id,
+          commissionMember: l.user_name,
+          memberAvatar: l.user_avatar || 'https://via.placeholder.com/150',
+          action: l.action,
+          target: l.target || '',
+          timestamp: l.created_at,
+          actionType: l.action_type,
+        })));
+      }
+
+      // Calculate quick stats
+      const { count: totalApplications } = await supabase
+        .from('candidates')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: pendingApplications } = await supabase
+        .from('candidates')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      const { count: activeElections } = await supabase
+        .from('elections')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
+
+      const { count: totalCandidates } = await supabase
+        .from('candidates')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'approved');
+
+      const { count: unreadAlerts } = await supabase
+        .from('system_alerts')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_resolved', false);
+
+      setQuickStats([
+        {
+          label: 'Pending Applications',
+          value: pendingApplications || 0,
+          icon: 'DocumentTextIcon',
+          color: 'bg-warning/20 text-warning',
+        },
+        {
+          label: 'Active Elections',
+          value: activeElections || 0,
+          icon: 'CheckBadgeIcon',
+          color: 'bg-success/20 text-success',
+        },
+        {
+          label: 'Total Candidates',
+          value: totalCandidates || 0,
+          icon: 'UserGroupIcon',
+          color: 'bg-primary/20 text-primary',
+        },
+        {
+          label: 'System Alerts',
+          value: unreadAlerts || 0,
+          icon: 'ExclamationTriangleIcon',
+          color: 'bg-error/20 text-error',
+        },
+      ]);
+
+      // Load recent reports
+      loadRecentReports();
+    } catch (error) {
+      console.error('Error fetching election management data:', error);
+    }
+  };
 
   const loadRecentReports = async () => {
     try {

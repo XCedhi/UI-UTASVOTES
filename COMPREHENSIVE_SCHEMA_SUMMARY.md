@@ -174,7 +174,7 @@ I've analyzed every page, component, and feature of the UTASVotes application an
 code supabase/schema_comprehensive.sql
 ```
 
-### 2. Test in Development
+### 2. Run the Schema in Supabase
 ```bash
 # Backup current database
 pg_dump your_database > backup.sql
@@ -183,13 +183,32 @@ pg_dump your_database > backup.sql
 # Copy contents of schema_comprehensive.sql and execute
 ```
 
-### 3. Update Application Code
+### 3. Create Test Users
+**Important**: The schema does NOT create default users. You must create them manually.
+
+**Option A - Via Supabase Dashboard** (Recommended):
+1. Go to Authentication → Users
+2. Create 4 test users with these emails:
+   - `student@cktutas.edu.gh` (password: `Student@2026`)
+   - `candidate@cktutas.edu.gh` (password: `Candidate@2026`)
+   - `commission@cktutas.edu.gh` (password: `Commission@2026`)
+   - `admin@cktutas.edu.gh` (password: `Admin@2026`)
+3. Copy their UUIDs
+4. Update `supabase/seed_test_users.sql` with the UUIDs
+5. Run the seed script
+
+**Option B - Programmatically**:
+- Use the script in `SETUP_TEST_USERS_GUIDE.md`
+
+See **`SETUP_TEST_USERS_GUIDE.md`** for detailed instructions.
+
+### 4. Update Application Code
 - Update contexts to use new table structures
 - Update components to use new fields
 - Add support for new features (likes, comments, replies, shares)
 - Implement time-bound access checks
 
-### 4. Migrate Production
+### 5. Migrate Production
 - Follow the migration guide step-by-step
 - Test thoroughly in staging first
 - Schedule migration during low-traffic period
@@ -203,17 +222,26 @@ pg_dump your_database > backup.sql
    - Complete database schema
    - Ready to execute in Supabase
 
-2. **`DATABASE_SCHEMA_DOCUMENTATION.md`**
+2. **`supabase/seed_test_users.sql`**
+   - Test user profile seeding
+   - Must be run after creating auth users
+
+3. **`DATABASE_SCHEMA_DOCUMENTATION.md`**
    - Detailed documentation
    - Table descriptions
    - Usage examples
 
-3. **`SCHEMA_MIGRATION_GUIDE.md`**
+4. **`SCHEMA_MIGRATION_GUIDE.md`**
    - Step-by-step migration
    - Code update examples
    - Testing checklist
 
-4. **`COMPREHENSIVE_SCHEMA_SUMMARY.md`** (this file)
+5. **`SETUP_TEST_USERS_GUIDE.md`**
+   - How to create test users
+   - Default login credentials
+   - Troubleshooting guide
+
+6. **`COMPREHENSIVE_SCHEMA_SUMMARY.md`** (this file)
    - Overview and summary
    - Quick reference
 
