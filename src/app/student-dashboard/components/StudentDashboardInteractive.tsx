@@ -301,6 +301,26 @@ const StudentDashboardInteractive = () => {
                     Campaign Feed
                   </h2>
                   <div className="flex items-center gap-2">
+                    <a
+                      href="/campaign-feed/create"
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 text-sm font-medium flex items-center gap-2"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                      Create Post
+                    </a>
                     <button
                       onClick={() => setActiveTab('all')}
                       className={`px-3 py-1 rounded-md text-sm font-caption transition-all duration-250 ease-smooth ${

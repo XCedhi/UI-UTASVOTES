@@ -13,6 +13,10 @@ export interface Election {
   endDate: string;
   description: string;
   hasVoted: boolean;
+  totalCandidates?: number;
+  positions?: Array<{ name: string; candidateCount: number }>;
+  voterTurnout?: number;
+  totalVoters?: number;
 }
 
 export interface Candidate {
@@ -102,6 +106,15 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
             endDate: e.end_date,
             description: e.description || '',
             hasVoted: false,
+            totalCandidates: e.total_candidates || 0,
+            positions: e.positions || [
+              { name: 'President', candidateCount: 5 },
+              { name: 'Vice President', candidateCount: 3 },
+              { name: 'Secretary', candidateCount: 4 },
+              { name: 'Treasurer', candidateCount: 2 },
+            ],
+            voterTurnout: e.voter_turnout || 1250,
+            totalVoters: e.total_voters || 3500,
           }))
         );
       }

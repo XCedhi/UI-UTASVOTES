@@ -43,6 +43,12 @@ const Header = ({
       roles: ['student', 'candidate', 'commission', 'admin'],
     },
     {
+      label: 'Campaign Feed',
+      path: '/campaign-feed',
+      icon: 'ChatBubbleLeftRightIcon',
+      roles: ['student', 'candidate'],
+    },
+    {
       label: 'Vote',
       path: '/voting-interface',
       icon: 'CheckBadgeIcon',

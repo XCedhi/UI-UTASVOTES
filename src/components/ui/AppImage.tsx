@@ -36,14 +36,13 @@ function AppImage({
   fallbackSrc = '/assets/images/no_image.png',
   ...props
 }: AppImageProps) {
-  const [imageSrc, setImageSrc] = useState(src);
+  const [imageSrc, setImageSrc] = useState(src || fallbackSrc);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  // More reliable external URL detection
-  const isExternal = imageSrc.startsWith('http://') || imageSrc.startsWith('https://');
-  const isLocal =
-    imageSrc.startsWith('/') || imageSrc.startsWith('./') || imageSrc.startsWith('data:');
+  // More reliable external URL detection with null/undefined check
+  const isExternal = imageSrc ? (imageSrc.startsWith('http://') || imageSrc.startsWith('https://')) : false;
+  const isLocal = imageSrc ? (imageSrc.startsWith('/') || imageSrc.startsWith('./') || imageSrc.startsWith('data:')) : false;
 
   const handleError = () => {
     if (!hasError && imageSrc !== fallbackSrc) {

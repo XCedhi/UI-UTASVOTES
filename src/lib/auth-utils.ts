@@ -89,7 +89,16 @@ export const canAccessRoute = (role: UserRole, path: string): boolean => {
 
   // Students and candidates can't access admin or commission routes
   if (role === 'student' || role === 'candidate') {
-    return !path.startsWith('/admin') && !path.startsWith('/electoral-commission-panel');
+    // Block admin routes (but not admin-related public pages)
+    if (path.startsWith('/admin-dashboard') || path.startsWith('/admin-system-control') || path.startsWith('/admin-election-management')) {
+      return false;
+    }
+    // Block commission panel routes
+    if (path.startsWith('/electoral-commission-panel')) {
+      return false;
+    }
+    // Allow all other routes including campaign-feed, voting-interface, etc.
+    return true;
   }
 
   return true;
