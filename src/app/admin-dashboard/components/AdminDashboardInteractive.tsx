@@ -40,11 +40,60 @@ const AdminDashboardInteractive = () => {
   const [systemMetrics, setSystemMetrics] = useState<SystemMetric[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [activeElection, setActiveElection] = useState<any>(null);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchUserProfile();
     fetchDashboardData();
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      // Get current user session
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Fetch user profile
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserProfile(profile);
+        }
+
+        // Fetch unread notifications count
+        const { count } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+
+        setNotificationCount(count || 0);
+      }
+
+      // Fetch active election
+      const now = new Date().toISOString();
+      const { data: elections } = await supabase
+        .from('elections')
+        .select('*')
+        .lte('voting_start', now)
+        .gte('voting_end', now)
+        .order('voting_start', { ascending: false })
+        .limit(1);
+
+      if (elections && elections.length > 0) {
+        setActiveElection(elections[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -338,14 +387,18 @@ const AdminDashboardInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={5}
-        electionStatus={{
-          isActive: true,
-          name: 'Student Council Elections 2026',
-          endTime: '2026-02-15T23:59:59',
-        }}
+        userName={userProfile?.full_name || 'System Administrator'}
+        userAvatar={userProfile?.avatar_url || userProfile?.profile_picture_url}
+        notificationCount={notificationCount}
+        electionStatus={
+          activeElection
+            ? {
+                isActive: true,
+                name: activeElection.name,
+                endTime: activeElection.voting_end,
+              }
+            : undefined
+        }
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

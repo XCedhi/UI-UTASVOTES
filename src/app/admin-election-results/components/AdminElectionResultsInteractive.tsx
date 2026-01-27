@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
 
 interface Election {
   id: string;
@@ -34,13 +35,18 @@ interface Candidate {
 
 const AdminElectionResultsInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [selectedElection, setSelectedElection] = useState('election-1');
+  const [selectedElection, setSelectedElection] = useState<string>('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [elections, setElections] = useState<Election[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [activeElectionStatus, setActiveElectionStatus] = useState<any>(null);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchUserProfile();
     loadElections();
   }, []);
 
@@ -56,143 +62,179 @@ const AdminElectionResultsInteractive = () => {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
-  const loadElections = () => {
-    // Mock data - in production, this would fetch from Supabase
-    const mockElections: Election[] = [
-      {
-        id: 'election-1',
-        name: 'Student Council Elections 2026',
-        status: 'active',
-        startDate: '2026-01-20T08:00:00',
-        endDate: '2026-01-25T18:00:00',
-        totalVoters: 5420,
-        votedCount: 4228,
-        positions: [
-          {
-            id: 'pos-1',
-            title: 'SRC President',
-            totalVotes: 4228,
-            candidates: [
-              {
-                id: 'c1',
-                name: 'Kwame Mensah',
-                department: 'Computer Science',
-                avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-                votes: 1870,
-                percentage: 44.23,
-                isWinner: true,
-              },
-              {
-                id: 'c2',
-                name: 'Ama Osei',
-                department: 'Business Administration',
-                avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2',
-                votes: 1589,
-                percentage: 37.59,
-                isWinner: false,
-              },
-              {
-                id: 'c3',
-                name: 'Kofi Asante',
-                department: 'Engineering',
-                avatar: 'https://images.pixabay.com/photo/2016/11/21/12/42/beard-1845166_1280.jpg',
-                votes: 769,
-                percentage: 18.18,
-                isWinner: false,
-              },
-            ],
-          },
-          {
-            id: 'pos-2',
-            title: 'Vice President',
-            totalVotes: 4228,
-            candidates: [
-              {
-                id: 'c4',
-                name: 'Abena Adjei',
-                department: 'Medicine',
-                avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-                votes: 2114,
-                percentage: 50.02,
-                isWinner: true,
-              },
-              {
-                id: 'c5',
-                name: 'Yaw Owusu',
-                department: 'Law',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
-                votes: 2114,
-                percentage: 49.98,
-                isWinner: false,
-              },
-            ],
-          },
-          {
-            id: 'pos-3',
-            title: 'General Secretary',
-            totalVotes: 4228,
-            candidates: [
-              {
-                id: 'c6',
-                name: 'Akua Boateng',
-                department: 'Economics',
-                avatar: 'https://images.pixabay.com/photo/2017/08/01/08/29/woman-2563491_1280.jpg',
-                votes: 2537,
-                percentage: 60.01,
-                isWinner: true,
-              },
-              {
-                id: 'c7',
-                name: 'Emmanuel Darko',
-                department: 'Political Science',
-                avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-                votes: 1691,
-                percentage: 39.99,
-                isWinner: false,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'election-2',
-        name: 'Faculty Representatives 2026',
-        status: 'completed',
-        startDate: '2026-01-10T08:00:00',
-        endDate: '2026-01-15T18:00:00',
-        totalVoters: 3200,
-        votedCount: 2464,
-        positions: [
-          {
-            id: 'pos-4',
-            title: 'Faculty of Science Rep',
-            totalVotes: 2464,
-            candidates: [
-              {
-                id: 'c8',
-                name: 'Nana Agyeman',
-                department: 'Chemistry',
-                avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a',
-                votes: 1478,
-                percentage: 59.98,
-                isWinner: true,
-              },
-              {
-                id: 'c9',
-                name: 'Efua Mensah',
-                department: 'Physics',
-                avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg',
-                votes: 986,
-                percentage: 40.02,
-                isWinner: false,
-              },
-            ],
-          },
-        ],
-      },
-    ];
+  const fetchUserProfile = async () => {
+    try {
+      // Get current user session
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Fetch user profile
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
 
-    setElections(mockElections);
+        if (profile) {
+          setUserProfile(profile);
+        }
+
+        // Fetch unread notifications count
+        const { count } = await supabase
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+
+        setNotificationCount(count || 0);
+      }
+
+      // Fetch active election for status bar
+      const now = new Date().toISOString();
+      const { data: elections } = await supabase
+        .from('elections')
+        .select('*')
+        .lte('voting_start', now)
+        .gte('voting_end', now)
+        .order('voting_start', { ascending: false })
+        .limit(1);
+
+      if (elections && elections.length > 0) {
+        setActiveElectionStatus({
+          isActive: true,
+          name: elections[0].name,
+          endTime: elections[0].voting_end,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  const loadElections = async () => {
+    try {
+      setIsLoading(true);
+
+      // Fetch all elections
+      const { data: electionsData, error: electionsError } = await supabase
+        .from('elections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (electionsError) {
+        console.error('Error fetching elections:', electionsError);
+        setElections([]);
+        return;
+      }
+
+      if (!electionsData || electionsData.length === 0) {
+        setElections([]);
+        return;
+      }
+
+      // Process each election
+      const processedElections: Election[] = await Promise.all(
+        electionsData.map(async (election) => {
+          // Fetch positions for this election
+          const { data: positionsData, error: positionsError } = await supabase
+            .from('election_positions')
+            .select('*')
+            .eq('election_id', election.id)
+            .order('display_order', { ascending: true });
+
+          if (positionsError) {
+            console.error('Error fetching positions:', positionsError);
+            return null;
+          }
+
+          // Process each position
+          const positions: Position[] = await Promise.all(
+            (positionsData || []).map(async (position) => {
+              // Fetch candidates for this position
+              const { data: candidatesData, error: candidatesError } = await supabase
+                .from('candidates')
+                .select('*')
+                .eq('election_id', election.id)
+                .eq('position_id', position.id)
+                .eq('status', 'approved')
+                .order('votes', { ascending: false });
+
+              if (candidatesError) {
+                console.error('Error fetching candidates:', candidatesError);
+                return null;
+              }
+
+              // Calculate total votes for this position
+              const totalVotes = (candidatesData || []).reduce(
+                (sum, candidate) => sum + (candidate.votes || 0),
+                0
+              );
+
+              // Process candidates
+              const candidates: Candidate[] = (candidatesData || []).map((candidate) => {
+                const votes = candidate.votes || 0;
+                const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
+
+                return {
+                  id: candidate.id,
+                  name: candidate.full_name,
+                  department: candidate.department,
+                  avatar: candidate.avatar || candidate.photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
+                  votes: votes,
+                  percentage: percentage,
+                  isWinner: candidate.is_winner || false,
+                };
+              });
+
+              return {
+                id: position.id,
+                title: position.title,
+                candidates: candidates,
+                totalVotes: totalVotes,
+              };
+            })
+          );
+
+          // Determine election status
+          const now = new Date();
+          const startDate = new Date(election.voting_start);
+          const endDate = new Date(election.voting_end);
+          
+          let status: 'active' | 'completed' | 'scheduled';
+          if (now < startDate) {
+            status = 'scheduled';
+          } else if (now >= startDate && now <= endDate) {
+            status = 'active';
+          } else {
+            status = 'completed';
+          }
+
+          return {
+            id: election.id,
+            name: election.name,
+            status: status,
+            startDate: election.voting_start,
+            endDate: election.voting_end,
+            totalVoters: election.total_voters || 0,
+            votedCount: election.voted_count || 0,
+            positions: positions.filter((p) => p !== null) as Position[],
+          };
+        })
+      );
+
+      const validElections = processedElections.filter((e) => e !== null) as Election[];
+      setElections(validElections);
+
+      // Set first election as selected if none selected
+      if (validElections.length > 0 && !selectedElection) {
+        setSelectedElection(validElections[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading elections:', error);
+      setElections([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleExport = (format: string) => {
@@ -208,7 +250,7 @@ const AdminElectionResultsInteractive = () => {
     ? ((currentElection.votedCount / currentElection.totalVoters) * 100).toFixed(2)
     : '0';
 
-  if (!isHydrated) {
+  if (!isHydrated || isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header userRole="admin" userName="Loading..." notificationCount={0} />
@@ -221,22 +263,54 @@ const AdminElectionResultsInteractive = () => {
     );
   }
 
+  // Show empty state if no elections
+  if (elections.length === 0) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header
+          userRole="admin"
+          userName={userProfile?.full_name || 'System Administrator'}
+          userAvatar={userProfile?.avatar_url || userProfile?.profile_picture_url}
+          notificationCount={notificationCount}
+          electionStatus={activeElectionStatus}
+        />
+        <main className="pt-24 pb-12 px-4 lg:px-6">
+          <div className="max-w-[1400px] mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="font-heading font-bold text-3xl text-foreground mb-2">
+                  Live Election Results
+                </h1>
+                <p className="text-muted-foreground">
+                  Real-time monitoring of all elections with live vote counts
+                </p>
+              </div>
+            </div>
+            <div className="bg-card border border-border rounded-lg p-12 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Icon name="ChartBarIcon" size={32} variant="outline" className="text-muted-foreground" />
+              </div>
+              <h2 className="font-heading font-semibold text-xl text-foreground mb-2">
+                No Elections Found
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                There are no elections in the system yet. Create an election to see results here.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={5}
-        electionStatus={
-          currentElection?.status === 'active'
-            ? {
-                isActive: true,
-                name: currentElection.name,
-                endTime: currentElection.endDate,
-              }
-            : undefined
-        }
+        userName={userProfile?.full_name || 'System Administrator'}
+        userAvatar={userProfile?.avatar_url || userProfile?.profile_picture_url}
+        notificationCount={notificationCount}
+        electionStatus={activeElectionStatus}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">
