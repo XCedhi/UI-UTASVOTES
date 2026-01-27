@@ -14,6 +14,9 @@ interface User {
   status: 'active' | 'inactive' | 'pending';
   invitedAt?: string;
   lastLogin?: string;
+  accessStartDate?: string;
+  accessEndDate?: string;
+  position?: string;
 }
 
 interface InviteFormData {
@@ -37,7 +40,10 @@ const UserManagementInteractive = () => {
   const [editSuccess, setEditSuccess] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [formData, setFormData] = useState<InviteFormData>({
     firstName: '',
     lastName: '',
@@ -54,6 +60,24 @@ const UserManagementInteractive = () => {
     setIsHydrated(true);
     fetchUsers();
   }, []);
+
+  // Filter users based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredUsers(users);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = users.filter(
+      (user) =>
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.role.toLowerCase().includes(query) ||
+        user.status.toLowerCase().includes(query)
+    );
+    setFilteredUsers(filtered);
+  }, [searchQuery, users]);
 
   const fetchUsers = async () => {
     try {
@@ -82,10 +106,16 @@ const UserManagementInteractive = () => {
         status: user.status as 'active' | 'inactive' | 'pending',
         lastLogin: user.last_login,
         invitedAt: user.created_at,
+        accessStartDate: user.access_start_date,
+        accessEndDate: user.access_end_date,
+        position: user.position,
       }));
 
       console.log('✅ Setting users state with', transformedUsers.length, 'users');
+      console.log('📊 User data:', transformedUsers);
       setUsers(transformedUsers);
+      setFilteredUsers(transformedUsers);
+      setRefreshKey(prev => prev + 1); // Force re-render
     } catch (error) {
       console.error('❌ Error fetching users:', error);
     } finally {
@@ -155,27 +185,38 @@ const UserManagementInteractive = () => {
       try {
         console.log('🔄 Deactivating user:', user.id);
         
-        // Update user status to 'inactive' in database
-        const { error } = await supabase
-          .from('user_profiles')
-          .update({ status: 'inactive', updated_at: new Date().toISOString() })
-          .eq('id', user.id);
+        // Call API route to update user status
+        const response = await fetch('/api/admin/update-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            role: user.role, // Keep existing role
+            status: 'inactive', // Change status to inactive
+            accessStartDate: user.accessStartDate || null,
+            accessEndDate: user.accessEndDate || null,
+          }),
+        });
 
-        if (error) {
-          console.error('❌ Error deactivating user:', error);
-          alert('Failed to deactivate user. Please try again.');
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error('❌ API error:', result.error);
+          alert(`Failed to deactivate user: ${result.error}`);
           return;
         }
 
-        console.log('✅ User deactivated successfully');
+        console.log('✅ User deactivated successfully via API');
         
         // Refresh user list
         console.log('🔄 Refreshing user list...');
         await fetchUsers();
         alert(`User ${user.name} has been deactivated successfully!`);
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error deactivating user:', error);
-        alert('Failed to deactivate user. Please try again.');
+        alert(`Failed to deactivate user: ${error.message}`);
       }
     }
   };
@@ -189,27 +230,38 @@ const UserManagementInteractive = () => {
       try {
         console.log('🔄 Activating user:', user.id);
         
-        // Update user status to 'active' in database
-        const { error } = await supabase
-          .from('user_profiles')
-          .update({ status: 'active', updated_at: new Date().toISOString() })
-          .eq('id', user.id);
+        // Call API route to update user status
+        const response = await fetch('/api/admin/update-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            role: user.role, // Keep existing role
+            status: 'active', // Change status to active
+            accessStartDate: user.accessStartDate || null,
+            accessEndDate: user.accessEndDate || null,
+          }),
+        });
 
-        if (error) {
-          console.error('❌ Error activating user:', error);
-          alert('Failed to activate user. Please try again.');
+        const result = await response.json();
+
+        if (!response.ok) {
+          console.error('❌ API error:', result.error);
+          alert(`Failed to activate user: ${result.error}`);
           return;
         }
 
-        console.log('✅ User activated successfully');
+        console.log('✅ User activated successfully via API');
         
         // Refresh user list
         console.log('🔄 Refreshing user list...');
         await fetchUsers();
         alert(`User ${user.name} has been activated successfully!`);
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error activating user:', error);
-        alert('Failed to activate user. Please try again.');
+        alert(`Failed to activate user: ${error.message}`);
       }
     }
   };
@@ -220,44 +272,52 @@ const UserManagementInteractive = () => {
     setIsSubmitting(true);
 
     try {
-      console.log('🔄 Updating user:', selectedUser.id, 'to role:', selectedUser.role, 'status:', selectedUser.status);
+      console.log('🔄 Updating user:', selectedUser.id);
+      console.log('📝 New role:', selectedUser.role);
+      console.log('📝 New status:', selectedUser.status);
+      console.log('📝 Access dates:', selectedUser.accessStartDate, '-', selectedUser.accessEndDate);
       
-      // Update user in database
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
+      // Call API route that uses service role key to bypass RLS
+      const response = await fetch('/api/admin/update-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser.id,
           role: selectedUser.role,
           status: selectedUser.status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedUser.id);
+          accessStartDate: selectedUser.accessStartDate || null,
+          accessEndDate: selectedUser.accessEndDate || null,
+        }),
+      });
 
-      if (error) {
-        console.error('❌ Error updating user:', error);
-        alert('Failed to update user. Please try again.');
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ API error:', result.error);
+        alert(`Failed to update user: ${result.error}`);
         setIsSubmitting(false);
         return;
       }
 
-      console.log('✅ User updated successfully');
+      console.log('✅ User updated successfully via API:', result.user);
 
-      // Success!
-      setIsSubmitting(false);
-      setEditSuccess(true);
-
-      // Refresh user list
-      console.log('🔄 Refreshing user list...');
+      // Refresh user list from database
+      console.log('🔄 Refreshing user list from database...');
       await fetchUsers();
+      
+      console.log('✅ User list refreshed!');
 
-      // Reset after 2 seconds
-      setTimeout(() => {
-        setShowEditModal(false);
-        setEditSuccess(false);
-        setSelectedUser(null);
-      }, 2000);
-    } catch (error) {
-      console.error('❌ Error updating user:', error);
-      alert('Failed to update user. Please try again.');
+      // Close modal and show success
+      setShowEditModal(false);
+      setSelectedUser(null);
+      setIsSubmitting(false);
+      
+      alert('User updated successfully!');
+    } catch (error: any) {
+      console.error('❌ Unexpected error:', error);
+      alert(`Failed to update user: ${error.message}`);
       setIsSubmitting(false);
     }
   };
@@ -445,7 +505,34 @@ const UserManagementInteractive = () => {
 
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <div className="p-6 border-b border-border">
-              <h2 className="font-heading font-semibold text-xl text-foreground">All Users</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-heading font-semibold text-xl text-foreground">All Users</h2>
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredUsers.length} of {users.length} users
+                </div>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Icon name="MagnifyingGlassIcon" size={20} variant="outline" className="text-muted-foreground" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, email, role, or status..."
+                  className="w-full pl-12 pr-4 py-3 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground transition-all duration-250"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                  >
+                    <Icon name="XMarkIcon" size={20} variant="outline" className="text-muted-foreground hover:text-foreground transition-colors" />
+                  </button>
+                )}
+              </div>
             </div>
             
             {isLoading ? (
@@ -455,7 +542,7 @@ const UserManagementInteractive = () => {
                   <p className="text-muted-foreground">Loading users...</p>
                 </div>
               </div>
-            ) : users.length === 0 ? (
+            ) : filteredUsers.length === 0 ? (
               <div className="text-center py-12">
                 <Icon
                   name="UserGroupIcon"
@@ -463,13 +550,23 @@ const UserManagementInteractive = () => {
                   variant="outline"
                   className="mx-auto text-muted-foreground mb-4 opacity-50"
                 />
-                <p className="text-muted-foreground mb-2">No users found</p>
-                <p className="text-sm text-muted-foreground">
-                  Invite users to get started
+                <p className="text-muted-foreground mb-2">
+                  {searchQuery ? 'No users found matching your search' : 'No users found'}
                 </p>
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery ? 'Try a different search term' : 'Invite users to get started'}
+                </p>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250"
+                  >
+                    Clear Search
+                  </button>
+                )}
               </div>
             ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" key={refreshKey}>
               <table className="w-full">
                 <thead className="bg-muted/30">
                   <tr>
@@ -494,7 +591,7 @@ const UserManagementInteractive = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {users.map((user) => (
+                  {filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-muted/20 transition-colors duration-200">
                       <td className="px-6 py-4 text-sm font-medium text-foreground">{user.name}</td>
                       <td className="px-6 py-4 text-sm text-muted-foreground font-data">
@@ -1089,12 +1186,9 @@ const UserManagementInteractive = () => {
                           </label>
                           <input
                             type="date"
-                            value={
-                              selectedUser.invitedAt?.split('T')[0] ||
-                              new Date().toISOString().split('T')[0]
-                            }
+                            value={selectedUser.accessStartDate?.split('T')[0] || ''}
                             onChange={(e) =>
-                              setSelectedUser({ ...selectedUser, invitedAt: e.target.value })
+                              setSelectedUser({ ...selectedUser, accessStartDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })
                             }
                             className="w-full px-4 py-3 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-250"
                             disabled={isSubmitting}
@@ -1106,14 +1200,11 @@ const UserManagementInteractive = () => {
                           </label>
                           <input
                             type="date"
-                            value={selectedUser.lastLogin?.split('T')[0] || ''}
+                            value={selectedUser.accessEndDate?.split('T')[0] || ''}
                             onChange={(e) =>
-                              setSelectedUser({ ...selectedUser, lastLogin: e.target.value })
+                              setSelectedUser({ ...selectedUser, accessEndDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })
                             }
-                            min={
-                              selectedUser.invitedAt?.split('T')[0] ||
-                              new Date().toISOString().split('T')[0]
-                            }
+                            min={selectedUser.accessStartDate?.split('T')[0] || ''}
                             className="w-full px-4 py-3 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground transition-all duration-250"
                             disabled={isSubmitting}
                           />
