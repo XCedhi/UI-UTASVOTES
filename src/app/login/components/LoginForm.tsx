@@ -124,6 +124,17 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
           avatar: matchedUser.avatar,
         });
 
+        // Check for commission expiry (for commission users only)
+        if (matchedUser.role === 'commission') {
+          try {
+            // Note: In mock mode, we don't have real user IDs
+            // This will be properly implemented when using real Supabase auth
+            console.log('⏰ Would check commission expiry here in production');
+          } catch (error) {
+            console.error('Failed to check commission expiry:', error);
+          }
+        }
+
         // Redirect to appropriate dashboard
         router.push(getRoleDashboard(matchedUser.role));
       } else {
