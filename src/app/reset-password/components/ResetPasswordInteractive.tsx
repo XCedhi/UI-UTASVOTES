@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
 
 const ResetPasswordInteractive = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isHydrated, setIsHydrated] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -14,10 +16,34 @@ const ResetPasswordInteractive = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string; auth?: string }>({});
+  const [isValidToken, setIsValidToken] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
 
   useEffect(() => {
     setIsHydrated(true);
+    
+    // Check if user has valid reset token
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          setErrors({ auth: 'Invalid or expired reset link. Please request a new one.' });
+          setIsValidToken(false);
+        } else {
+          setIsValidToken(true);
+        }
+      } catch (err) {
+        console.error('Session check error:', err);
+        setErrors({ auth: 'Failed to verify reset link. Please try again.' });
+        setIsValidToken(false);
+      } finally {
+        setIsCheckingToken(false);
+      }
+    };
+
+    checkSession();
   }, []);
 
   const validatePassword = (password: string): string | null => {
@@ -34,7 +60,7 @@ const ResetPasswordInteractive = () => {
     e.preventDefault();
     setErrors({});
 
-    const newErrors: { password?: string; confirmPassword?: string } = {};
+    const newErrors: { password?: string; confirmPassword?: string; auth?: string } = {};
 
     const passwordError = validatePassword(password);
     if (passwordError) {
@@ -51,15 +77,70 @@ const ResetPasswordInteractive = () => {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    setIsSuccess(true);
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+      });
+
+      if (updateError) {
+        console.error('Password update error:', updateError);
+        setErrors({ 
+          auth: updateError.message || 'Failed to reset password. Please try again.' 
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Sign out after password reset
+      await supabase.auth.signOut();
+      setIsSuccess(true);
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setErrors({ auth: 'An unexpected error occurred. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || isCheckingToken) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-md h-96 bg-muted animate-pulse rounded-lg" />
+      </div>
+    );
+  }
+
+  // Show error if token is invalid
+  if (!isValidToken) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-error/10 rounded-full mb-4">
+              <Icon name="ExclamationCircleIcon" size={32} variant="solid" className="text-error" />
+            </div>
+            <h1 className="font-heading font-bold text-3xl text-foreground mb-2">Invalid Link</h1>
+            <p className="text-muted-foreground">{errors.auth}</p>
+          </div>
+          <div className="bg-card/80 backdrop-blur-md border border-border rounded-lg shadow-lg p-8 text-center space-y-4">
+            <p className="text-muted-foreground">
+              The password reset link is invalid or has expired. Please request a new one.
+            </p>
+            <button
+              onClick={() => router.push('/forgot-password')}
+              className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-all duration-250 ease-smooth"
+            >
+              Request New Link
+            </button>
+            <Link
+              href="/login"
+              className="block text-sm text-primary hover:text-primary/80 font-medium transition-colors duration-250"
+            >
+              Back to Login
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -80,6 +161,15 @@ const ResetPasswordInteractive = () => {
         <div className="bg-card/80 backdrop-blur-md border border-border rounded-lg shadow-lg p-8">
           {!isSuccess ? (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {errors.auth && (
+                <div className="bg-error/10 border border-error rounded-md p-4">
+                  <p className="text-sm text-error flex items-center gap-2">
+                    <Icon name="ExclamationCircleIcon" size={16} variant="solid" />
+                    {errors.auth}
+                  </p>
+                </div>
+              )}
+              
               <div>
                 <label
                   htmlFor="password"
