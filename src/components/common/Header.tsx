@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
-import AppImage from '@/components/ui/AppImage';
 import { clearUserSession } from '@/lib/auth-utils';
 
 interface HeaderProps {
@@ -207,12 +206,11 @@ const Header = ({
                 >
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center overflow-hidden">
                     {userAvatar ? (
-                      <AppImage
+                      <img
                         src={userAvatar}
                         alt={userName}
-                        width={40}
-                        height={40}
                         className="w-full h-full object-cover"
+                        key={userAvatar.substring(0, 100)}
                       />
                     ) : (
                       <Icon

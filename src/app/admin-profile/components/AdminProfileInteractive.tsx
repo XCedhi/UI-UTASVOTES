@@ -62,22 +62,50 @@ const AdminProfileInteractive = () => {
       console.log('🔍 Fetching admin profile from database...');
       setIsLoadingProfile(true);
 
-      // Get current user session
+      // Try to get current user session first
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session?.user) {
-        console.log('❌ No session found');
-        setIsLoadingProfile(false);
-        return;
+      let userId: string | null = null;
+      
+      if (session?.user) {
+        console.log('✅ Session found, user ID:', session.user.id);
+        userId = session.user.id;
+      } else {
+        console.log('⚠️ No session found, trying localStorage fallback');
+        
+        // Fallback: Get user email from localStorage
+        const userEmail = localStorage.getItem('userEmail');
+        
+        if (!userEmail) {
+          console.log('❌ No email in localStorage either');
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        console.log('✅ Using email from localStorage:', userEmail);
+
+        // Get user ID from email
+        const { data: userData, error: userError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .single();
+
+        if (userError || !userData) {
+          console.error('❌ Error getting user ID from email:', userError);
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        userId = userData.id;
+        console.log('✅ Got user ID from email:', userId);
       }
 
-      console.log('👤 Session user ID:', session.user.id);
-
-      // Fetch user profile from database
+      // Fetch user profile from database using userId
       const { data: profileData, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', userId)
         .single();
 
       if (error) {
@@ -86,13 +114,18 @@ const AdminProfileInteractive = () => {
         return;
       }
 
-      console.log('✅ Profile data fetched:', profileData);
-      console.log('🖼️ Avatar URL from database:', profileData.avatar_url ? `${profileData.avatar_url.substring(0, 50)}...` : 'null');
+      console.log('✅ Profile data fetched:', {
+        id: profileData.id,
+        email: profileData.email,
+        full_name: profileData.full_name,
+        avatar_url_length: profileData.avatar_url ? profileData.avatar_url.length : 0,
+        avatar_url_preview: profileData.avatar_url ? profileData.avatar_url.substring(0, 50) + '...' : 'NULL'
+      });
 
       // Update profile state with real data
       const updatedProfile: AdminProfile = {
         name: profileData.full_name || 'System Administrator',
-        email: profileData.email || session.user.email || 'admin@cktutas.edu.gh',
+        email: profileData.email || 'admin@cktutas.edu.gh',
         role: profileData.role === 'admin' ? 'Administrator' : profileData.role,
         department: profileData.department || 'IT & Systems',
         position: profileData.position || 'System Administrator',
@@ -112,7 +145,7 @@ const AdminProfileInteractive = () => {
         ],
       };
 
-      console.log('🖼️ Profile picture set to:', updatedProfile.profilePicture ? 'Image data present' : 'No image');
+      console.log('🖼️ Setting profile picture to:', updatedProfile.profilePicture ? `Image data (${updatedProfile.profilePicture.length} chars)` : 'undefined');
 
       setProfile(updatedProfile);
       setEditForm(updatedProfile);
@@ -228,7 +261,8 @@ const AdminProfileInteractive = () => {
 
   const handleProfilePictureChange = async (croppedImage: string) => {
     try {
-      console.log('📸 Updating profile picture...');
+      console.log('📸 Starting profile picture update...');
+      console.log('📸 Image data length:', croppedImage.length);
 
       // Get user ID from localStorage (since we're using mock auth)
       const userEmail = localStorage.getItem('userEmail');
@@ -258,6 +292,7 @@ const AdminProfileInteractive = () => {
 
       const userId = userData.id;
       console.log('✅ User ID from database:', userId);
+      console.log('📡 Sending update request to API...');
 
       // Call API route to update avatar (bypasses RLS)
       const response = await fetch('/api/admin/update-profile', {
@@ -282,7 +317,8 @@ const AdminProfileInteractive = () => {
         return;
       }
 
-      console.log('✅ Profile picture updated successfully via API');
+      console.log('✅ Profile picture saved to database successfully');
+      console.log('🔄 Updating local state...');
       
       // Update local state immediately with the new image
       setProfile(prev => ({
@@ -290,9 +326,13 @@ const AdminProfileInteractive = () => {
         profilePicture: croppedImage
       }));
       
+      console.log('✅ Local state updated');
+      console.log('🔄 Refreshing from database...');
+      
       // Also refresh from database to ensure sync
       await fetchAdminProfile();
       
+      console.log('✅ Profile picture update complete!');
       alert('Profile picture updated successfully!');
     } catch (error: any) {
       console.error('💥 Error updating profile picture:', error);

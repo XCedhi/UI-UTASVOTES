@@ -55,27 +55,64 @@ const AdminDashboardInteractive = () => {
       // Get current user session
       const { data: { user } } = await supabase.auth.getUser();
       
+      let userId: string | null = null;
+      
       if (user) {
-        // Fetch user profile
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-
-        if (profile) {
-          setUserProfile(profile);
+        console.log('✅ Dashboard: User session found:', user.id);
+        userId = user.id;
+      } else {
+        console.log('⚠️ Dashboard: No session, using localStorage fallback');
+        
+        // Fallback to localStorage
+        const userEmail = localStorage.getItem('userEmail');
+        
+        if (!userEmail) {
+          console.log('❌ Dashboard: No email in localStorage');
+          return;
         }
 
-        // Fetch unread notifications count
-        const { count } = await supabase
-          .from('notifications')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .eq('is_read', false);
+        console.log('✅ Dashboard: Using email from localStorage:', userEmail);
 
-        setNotificationCount(count || 0);
+        // Get user ID from email
+        const { data: userData, error: userError } = await supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .single();
+
+        if (userError || !userData) {
+          console.error('❌ Dashboard: Error getting user ID from email:', userError);
+          return;
+        }
+
+        userId = userData.id;
+        console.log('✅ Dashboard: Got user ID from email:', userId);
       }
+
+      // Fetch user profile using userId
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (profile) {
+        console.log('✅ Dashboard: Profile loaded:', {
+          id: profile.id,
+          full_name: profile.full_name,
+          avatar_url_length: profile.avatar_url ? profile.avatar_url.length : 0
+        });
+        setUserProfile(profile);
+      }
+
+      // Fetch unread notifications count
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+      setNotificationCount(count || 0);
 
       // Fetch active election
       const now = new Date().toISOString();

@@ -26,7 +26,7 @@ export function useAdminProfile() {
           table: 'user_profiles',
         },
         (payload) => {
-          console.log('🔄 Profile updated:', payload);
+          console.log('🔄 Profile updated via real-time subscription:', payload);
           // Refetch profile when it changes
           fetchAdminData();
         }
@@ -45,7 +45,12 @@ export function useAdminProfile() {
       // Get current user from Supabase auth (primary method)
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (authError || !user) {
+      let userId: string | null = null;
+      
+      if (!authError && user) {
+        console.log('✅ Authenticated user ID:', user.id);
+        userId = user.id;
+      } else {
         console.log('⚠️ No authenticated user, falling back to localStorage');
         
         // Fallback to localStorage for backward compatibility
@@ -57,40 +62,30 @@ export function useAdminProfile() {
           return;
         }
 
-        // Fetch profile using email
-        const { data: profile, error: profileError } = await supabase
+        console.log('✅ Using email from localStorage:', userEmail);
+
+        // Fetch user ID using email
+        const { data: userData, error: userError } = await supabase
           .from('user_profiles')
-          .select('full_name, avatar_url, email, id')
+          .select('id')
           .eq('email', userEmail)
           .single();
 
-        if (!profileError && profile) {
-          console.log('✅ Profile loaded from database (via email):', profile);
-          setUserProfile(profile);
-
-          // Fetch notification count
-          const { count } = await supabase
-            .from('notifications')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', profile.id)
-            .eq('is_read', false);
-
-          if (count !== null) {
-            setNotificationCount(count);
-          }
+        if (userError || !userData) {
+          console.error('❌ Error getting user ID from email:', userError);
+          setIsLoading(false);
+          return;
         }
 
-        setIsLoading(false);
-        return;
+        userId = userData.id;
+        console.log('✅ Got user ID from email:', userId);
       }
 
-      console.log('✅ Authenticated user ID:', user.id);
-
-      // Fetch user profile from database using user ID (preferred method)
+      // Fetch user profile from database using user ID
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('full_name, avatar_url, email, id')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
 
       if (profileError) {
@@ -100,7 +95,12 @@ export function useAdminProfile() {
       }
 
       if (profile) {
-        console.log('✅ Profile loaded from database (via user ID):', profile);
+        console.log('✅ Profile loaded from database (via user ID):', {
+          id: profile.id,
+          email: profile.email,
+          full_name: profile.full_name,
+          avatar_url_length: profile.avatar_url ? profile.avatar_url.length : 0
+        });
         setUserProfile(profile);
 
         // Fetch notification count
