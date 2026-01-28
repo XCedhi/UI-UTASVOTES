@@ -13,6 +13,7 @@ import QuickStatsGrid from '@/app/electoral-commission-panel/components/QuickSta
 import CommissionActivityLog from '@/app/electoral-commission-panel/components/CommissionActivityLog';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 
 interface Notification {
   id: string;
@@ -116,6 +117,7 @@ const ElectionManagementInteractive = () => {
     size: string;
     downloadUrl?: string;
   }>>([]);
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
 
   useEffect(() => {
     setIsHydrated(true);
@@ -779,9 +781,9 @@ const ElectionManagementInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={unreadNotificationCount}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
         electionStatus={
           activeElection
             ? {

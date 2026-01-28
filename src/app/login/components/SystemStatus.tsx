@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface SystemMetric {
   label: string;
@@ -54,8 +54,6 @@ const SystemStatus = ({ className = '' }: SystemStatusProps) => {
 
   const fetchSystemMetrics = async () => {
     try {
-      const supabase = createClient();
-
       // Fetch active elections count
       const { count: activeElectionsCount } = await supabase
         .from('elections')

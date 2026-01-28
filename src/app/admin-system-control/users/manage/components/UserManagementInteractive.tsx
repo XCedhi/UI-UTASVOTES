@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 
 interface User {
   id: string;
@@ -32,6 +33,10 @@ interface InviteFormData {
 
 const UserManagementInteractive = () => {
   const router = useRouter();
+  
+  // Use the admin profile hook to get real data from database
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
+  
   const [isHydrated, setIsHydrated] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -433,9 +438,9 @@ const UserManagementInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={5}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 
 interface Application {
   id: string;
@@ -43,6 +44,7 @@ const ApplicationDetailsInteractive = () => {
   const [selectedDocument, setSelectedDocument] = useState<{ name: string; url: string } | null>(
     null
   );
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
 
   useEffect(() => {
     setIsHydrated(true);
@@ -163,10 +165,10 @@ const ApplicationDetailsInteractive = () => {
     setShowDocumentModal(true);
   };
 
-  if (!isHydrated || !application) {
+  if (!isHydrated || !application || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="admin" userName="Loading..." notificationCount={0} />
+        <Header userRole="admin" userName={userName} userAvatar={userAvatar} notificationCount={notificationCount} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -191,9 +193,9 @@ const ApplicationDetailsInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={3}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Icon from '@/components/ui/AppIcon';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 interface Announcement {
   id: number;
@@ -24,8 +24,6 @@ const ElectionAnnouncements = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const supabase = createClient();
-      
       const { data, error } = await supabase
         .from('announcements')
         .select('*')

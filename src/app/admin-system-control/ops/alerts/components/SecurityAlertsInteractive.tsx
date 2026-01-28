@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 import { supabase } from '@/lib/supabase';
 
 interface SecurityAlert {
@@ -23,6 +24,7 @@ const SecurityAlertsInteractive = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'critical' | 'warning' | 'info'>('all');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
 
   useEffect(() => {
     setIsHydrated(true);
@@ -231,10 +233,10 @@ const SecurityAlertsInteractive = () => {
   const warningCount = alerts.filter(a => a.type === 'warning').length;
   const infoCount = alerts.filter(a => a.type === 'info').length;
 
-  if (!isHydrated) {
+  if (!isHydrated || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="admin" userName="Loading..." notificationCount={0} />
+        <Header userRole="admin" userName={userName} userAvatar={userAvatar} notificationCount={notificationCount} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-7xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -248,9 +250,9 @@ const SecurityAlertsInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={5}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

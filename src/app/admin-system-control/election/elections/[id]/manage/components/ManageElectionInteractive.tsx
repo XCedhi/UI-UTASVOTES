@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 
 interface Position {
   id: string;
@@ -19,6 +20,7 @@ const ManageElectionInteractive = () => {
   const [activeTab, setActiveTab] = useState<'settings' | 'positions' | 'candidates' | 'control'>(
     'settings'
   );
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
   const [electionData, setElectionData] = useState({
     name: 'Student Council 2026',
     status: 'active' as 'active' | 'scheduled' | 'completed' | 'paused',
@@ -90,9 +92,9 @@ const ManageElectionInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={0}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
         electionStatus={{
           isActive: electionData.status === 'active',
           name: electionData.name,

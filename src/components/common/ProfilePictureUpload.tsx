@@ -172,7 +172,12 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
         <div className="relative group">
           <div className="w-32 h-32 rounded-full overflow-hidden bg-muted border-4 border-border">
             {currentImage ? (
-              <img src={currentImage} alt={userName} className="w-full h-full object-cover" />
+              <img 
+                src={currentImage} 
+                alt={userName} 
+                className="w-full h-full object-cover"
+                key={currentImage.substring(0, 100)} // Force re-render when image changes
+              />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-primary/10">
                 <Icon name="UserIcon" size={48} variant="outline" className="text-primary" />
@@ -208,10 +213,10 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
 
       {/* Crop Modal */}
       {isOpen && imageSrc && (
-        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[1300] flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-md w-full max-w-2xl">
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[1300] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-card border border-border rounded-md w-full max-w-2xl my-8 max-h-[90vh] flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center justify-between p-6 border-b border-border flex-shrink-0">
               <h3 className="text-xl font-heading font-semibold text-foreground">
                 Crop Profile Picture
               </h3>
@@ -224,7 +229,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
             </div>
 
             {/* Cropper */}
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto flex-1">
               <div className="relative w-full h-96 bg-muted rounded-md overflow-hidden">
                 <Cropper
                   image={imageSrc}
@@ -326,7 +331,7 @@ const ProfilePictureUpload = ({ currentImage, onSave, userName }: ProfilePicture
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-border">
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-border flex-shrink-0">
               <button
                 onClick={handleCancel}
                 disabled={isProcessing}

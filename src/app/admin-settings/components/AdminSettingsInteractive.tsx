@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 
 interface SystemSettings {
   siteName: string;
@@ -46,6 +47,7 @@ const AdminSettingsInteractive = () => {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
 
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
     siteName: 'UTASVotes',
@@ -96,10 +98,10 @@ const AdminSettingsInteractive = () => {
     }, 1500);
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="admin" userName="Loading..." notificationCount={0} />
+        <Header userRole="admin" userName={userName} userAvatar={userAvatar} notificationCount={notificationCount} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -113,9 +115,9 @@ const AdminSettingsInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName="System Administrator"
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={5}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

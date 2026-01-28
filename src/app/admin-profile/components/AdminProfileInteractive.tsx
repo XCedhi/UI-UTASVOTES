@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import ProfilePictureUpload from '@/components/common/ProfilePictureUpload';
-import { getUserSession } from '@/lib/auth-utils';
+import { supabase } from '@/lib/supabase';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 
 interface AdminProfile {
   name: string;
@@ -25,6 +26,8 @@ const AdminProfileInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
   const [profile, setProfile] = useState<AdminProfile>({
     name: 'System Administrator',
     email: 'admin@cktutas.edu.gh',
@@ -34,8 +37,7 @@ const AdminProfileInteractive = () => {
     phone: '+233 24 123 4567',
     joinedDate: '2024-01-15',
     lastLogin: new Date().toISOString(),
-    profilePicture:
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
+    profilePicture: undefined,
     permissions: [
       'Manage Users',
       'Manage Elections',
@@ -52,20 +54,74 @@ const AdminProfileInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-    const session = getUserSession();
-    if (session) {
-      setProfile((prev) => ({
-        ...prev,
-        name: session.name,
-        email: session.email,
-      }));
-      setEditForm((prev) => ({
-        ...prev,
-        name: session.name,
-        email: session.email,
-      }));
-    }
+    fetchAdminProfile();
   }, []);
+
+  const fetchAdminProfile = async () => {
+    try {
+      console.log('🔍 Fetching admin profile from database...');
+      setIsLoadingProfile(true);
+
+      // Get current user session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        console.log('❌ No session found');
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      console.log('👤 Session user ID:', session.user.id);
+
+      // Fetch user profile from database
+      const { data: profileData, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('❌ Error fetching profile:', error);
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      console.log('✅ Profile data fetched:', profileData);
+      console.log('🖼️ Avatar URL from database:', profileData.avatar_url ? `${profileData.avatar_url.substring(0, 50)}...` : 'null');
+
+      // Update profile state with real data
+      const updatedProfile: AdminProfile = {
+        name: profileData.full_name || 'System Administrator',
+        email: profileData.email || session.user.email || 'admin@cktutas.edu.gh',
+        role: profileData.role === 'admin' ? 'Administrator' : profileData.role,
+        department: profileData.department || 'IT & Systems',
+        position: profileData.position || 'System Administrator',
+        phone: profileData.phone || '+233 24 123 4567',
+        joinedDate: profileData.created_at || '2024-01-15',
+        lastLogin: profileData.last_login || new Date().toISOString(),
+        profilePicture: profileData.avatar_url || undefined,
+        permissions: [
+          'Manage Users',
+          'Manage Elections',
+          'View All Results',
+          'System Configuration',
+          'Import Student Data',
+          'Generate Reports',
+          'Access Audit Logs',
+          'Manage Commission Members',
+        ],
+      };
+
+      console.log('🖼️ Profile picture set to:', updatedProfile.profilePicture ? 'Image data present' : 'No image');
+
+      setProfile(updatedProfile);
+      setEditForm(updatedProfile);
+      setIsLoadingProfile(false);
+    } catch (error) {
+      console.error('💥 Error in fetchAdminProfile:', error);
+      setIsLoadingProfile(false);
+    }
+  };
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -80,29 +136,174 @@ const AdminProfileInteractive = () => {
   const handleSave = async () => {
     setIsSaving(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      console.log('💾 Saving profile changes...');
+
+      // Get user ID from localStorage (since we're using mock auth)
+      const userEmail = localStorage.getItem('userEmail');
+      
+      if (!userEmail) {
+        console.log('❌ No user email in localStorage');
+        alert('Session expired. Please log in again.');
+        setIsSaving(false);
+        router.push('/login');
+        return;
+      }
+
+      console.log('✅ User email from localStorage:', userEmail);
+
+      // Get the actual Supabase user ID from the database using email
+      const { data: userData, error: userError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('email', userEmail)
+        .single();
+
+      if (userError || !userData) {
+        console.error('❌ Error getting user ID:', userError);
+        alert('Failed to get user information. Please log in again.');
+        setIsSaving(false);
+        router.push('/login');
+        return;
+      }
+
+      const userId = userData.id;
+      console.log('✅ User ID from database:', userId);
+      console.log('📝 Updating profile with data:', {
+        fullName: editForm.name,
+        phone: editForm.phone,
+        department: editForm.department,
+        position: editForm.position,
+      });
+
+      // Call API route to update profile (bypasses RLS)
+      const response = await fetch('/api/admin/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          fullName: editForm.name,
+          phone: editForm.phone,
+          department: editForm.department,
+          position: editForm.position,
+        }),
+      });
+
+      console.log('📡 API response status:', response.status);
+
+      const result = await response.json();
+      console.log('📡 API response data:', result);
+
+      if (!response.ok) {
+        console.error('❌ API error:', result.error);
+        alert(`Failed to update profile: ${result.error}`);
+        setIsSaving(false);
+        return;
+      }
+
+      console.log('✅ Profile updated successfully via API');
+      
+      // Update local state with the saved values
       setProfile(editForm);
       setIsEditing(false);
       setIsSaving(false);
-    }, 1500);
+      
+      // Refresh profile data from database to ensure everything is in sync
+      console.log('🔄 Refreshing profile data from database...');
+      await fetchAdminProfile();
+      
+      alert('Profile updated successfully!');
+    } catch (error: any) {
+      console.error('💥 Error saving profile:', error);
+      alert(`Failed to update profile: ${error.message}`);
+      setIsSaving(false);
+    }
   };
 
   const handleInputChange = (field: keyof AdminProfile, value: string) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleProfilePictureChange = (croppedImage: string) => {
-    setProfile((prev) => ({ ...prev, profilePicture: croppedImage }));
-    setEditForm((prev) => ({ ...prev, profilePicture: croppedImage }));
-    console.log('Profile picture updated');
-    // In production, upload to Supabase Storage here
+  const handleProfilePictureChange = async (croppedImage: string) => {
+    try {
+      console.log('📸 Updating profile picture...');
+
+      // Get user ID from localStorage (since we're using mock auth)
+      const userEmail = localStorage.getItem('userEmail');
+      
+      if (!userEmail) {
+        console.log('❌ No user email in localStorage');
+        alert('Session expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      console.log('✅ User email from localStorage:', userEmail);
+
+      // Get the actual Supabase user ID from the database using email
+      const { data: userData, error: userError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('email', userEmail)
+        .single();
+
+      if (userError || !userData) {
+        console.error('❌ Error getting user ID:', userError);
+        alert('Failed to get user information. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      const userId = userData.id;
+      console.log('✅ User ID from database:', userId);
+
+      // Call API route to update avatar (bypasses RLS)
+      const response = await fetch('/api/admin/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          avatarUrl: croppedImage,
+        }),
+      });
+
+      console.log('📡 API response status:', response.status);
+
+      const result = await response.json();
+      console.log('📡 API response data:', result);
+
+      if (!response.ok) {
+        console.error('❌ API error:', result.error);
+        alert(`Failed to update profile picture: ${result.error}`);
+        return;
+      }
+
+      console.log('✅ Profile picture updated successfully via API');
+      
+      // Update local state immediately with the new image
+      setProfile(prev => ({
+        ...prev,
+        profilePicture: croppedImage
+      }));
+      
+      // Also refresh from database to ensure sync
+      await fetchAdminProfile();
+      
+      alert('Profile picture updated successfully!');
+    } catch (error: any) {
+      console.error('💥 Error updating profile picture:', error);
+      alert(`Failed to update profile picture: ${error.message}`);
+    }
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || profileLoading || isLoadingProfile) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="admin" userName="Loading..." notificationCount={0} />
+        <Header userRole="admin" userName={userName} userAvatar={userAvatar} notificationCount={notificationCount} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-5xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -116,9 +317,9 @@ const AdminProfileInteractive = () => {
     <div className="min-h-screen bg-background">
       <Header
         userRole="admin"
-        userName={profile.name}
-        userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={5}
+        userName={userName}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

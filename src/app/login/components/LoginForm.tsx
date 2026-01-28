@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { setUserSession, getRoleDashboard, type UserRole } from '@/lib/auth-utils';
+import { supabase } from '@/lib/supabase';
 
 interface LoginFormProps {
   onSubmit?: (email: string, password: string) => void;
@@ -66,84 +67,110 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const mockCredentials: Record<
-        string,
-        { email: string; password: string; role: UserRole; name: string; avatar?: string }
-      > = {
-        student: {
-          email: 'student@cktutas.edu.gh',
-          password: 'Student@2026',
-          role: 'student',
-          name: 'John Mensah',
-          avatar:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-        },
-        candidate: {
-          email: 'candidate@cktutas.edu.gh',
-          password: 'Candidate@2026',
-          role: 'candidate',
-          name: 'Ama Osei',
-          avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-        },
-        commission: {
-          email: 'commission@cktutas.edu.gh',
-          password: 'Commission@2026',
-          role: 'commission',
-          name: 'Dr. Kwame Nkrumah',
-          avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop',
-        },
-        admin: {
-          email: 'admin@cktutas.edu.gh',
-          password: 'Admin@2026',
-          role: 'admin',
-          name: 'System Administrator',
-          avatar:
-            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop',
-        },
-      };
-
-      let matchedUser: (typeof mockCredentials)[string] | null = null;
-
-      Object.values(mockCredentials).forEach((creds) => {
-        if (email === creds.email && password === creds.password) {
-          matchedUser = creds;
-        }
+    try {
+      // Attempt to sign in with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      if (matchedUser) {
-        if (onSubmit) {
-          onSubmit(email, password);
-        }
-
-        // Set user session
-        setUserSession({
-          email: matchedUser.email,
-          role: matchedUser.role,
-          name: matchedUser.name,
-          avatar: matchedUser.avatar,
-        });
-
-        // Check for commission expiry (for commission users only)
-        if (matchedUser.role === 'commission') {
-          try {
-            // Note: In mock mode, we don't have real user IDs
-            // This will be properly implemented when using real Supabase auth
-            console.log('⏰ Would check commission expiry here in production');
-          } catch (error) {
-            console.error('Failed to check commission expiry:', error);
-          }
-        }
-
-        // Redirect to appropriate dashboard
-        router.push(getRoleDashboard(matchedUser.role));
-      } else {
+      if (authError) {
+        console.error('❌ Authentication error:', authError);
         setErrors({
           general: 'Invalid email or password. Please check your credentials and try again.',
         });
         setIsLoading(false);
+        return;
       }
-    }, 1500);
+
+      if (!authData.user) {
+        setErrors({
+          general: 'Authentication failed. Please try again.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ User authenticated:', authData.user.id);
+
+      // Fetch user profile from database
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+
+      if (profileError || !profile) {
+        console.error('❌ Profile fetch error:', profileError);
+        setErrors({
+          general: 'Failed to load user profile. Please contact support.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ User profile loaded:', profile);
+
+      // Track login in database
+      try {
+        await fetch('/api/auth/track-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: authData.user.id,
+            ipAddress: null, // Can be obtained from request headers in production
+            userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+          }),
+        });
+        console.log('✅ Login tracked in database');
+      } catch (trackError) {
+        console.error('⚠️ Failed to track login (non-critical):', trackError);
+        // Don't fail login if tracking fails
+      }
+
+      if (onSubmit) {
+        onSubmit(email, password);
+      }
+
+      // Store minimal session data in localStorage (for backward compatibility)
+      // The actual data will come from AuthContext/database
+      setUserSession({
+        email: profile.email,
+        role: profile.role as UserRole,
+        name: profile.full_name || 'User',
+        avatar: profile.avatar_url,
+        accessEndDate: profile.access_end_date,
+        originalRole: profile.role as UserRole,
+      });
+
+      // Check for commission expiry
+      if (profile.role === 'commission' && profile.access_end_date) {
+        try {
+          await fetch('/api/check-commission-expiry', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: authData.user.id,
+            }),
+          });
+        } catch (error) {
+          console.error('Failed to check commission expiry:', error);
+        }
+      }
+
+      // Redirect to appropriate dashboard
+      router.push(getRoleDashboard(profile.role as UserRole));
+    } catch (error: any) {
+      console.error('❌ Login error:', error);
+      setErrors({
+        general: 'An unexpected error occurred. Please try again.',
+      });
+      setIsLoading(false);
+    }
   };
 
   const handleOAuthLogin = (provider: string) => {

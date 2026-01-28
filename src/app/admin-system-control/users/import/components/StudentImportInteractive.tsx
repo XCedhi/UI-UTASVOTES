@@ -6,6 +6,7 @@ import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { downloadStudentImportTemplate } from '@/lib/excel-utils';
 import { getUserSession } from '@/lib/auth-utils';
+import { useAdminProfile } from '@/hooks/useAdminProfile';
 import * as XLSX from 'xlsx';
 
 interface StudentData {
@@ -36,13 +37,13 @@ const StudentImportInteractive = () => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [userRole, setUserRole] = useState<'admin' | 'commission'>('admin');
-  const [userName, setUserName] = useState('Administrator');
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<StudentData[]>([]);
+  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
 
   useEffect(() => {
     setIsHydrated(true);
@@ -51,7 +52,6 @@ const StudentImportInteractive = () => {
     const session = getUserSession();
     if (session) {
       setUserRole(session.role as 'admin' | 'commission');
-      setUserName(session.name);
     }
   }, []);
 
@@ -389,10 +389,10 @@ const StudentImportInteractive = () => {
     setImportResult(null);
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole={userRole} userName="Loading..." notificationCount={0} />
+        <Header userRole={userRole} userName={userName} userAvatar={userAvatar} notificationCount={notificationCount} />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-7xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -407,12 +407,8 @@ const StudentImportInteractive = () => {
       <Header
         userRole={userRole}
         userName={userName}
-        userAvatar={
-          userRole === 'admin'
-            ? 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop'
-            : 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg'
-        }
-        notificationCount={5}
+        userAvatar={userAvatar}
+        notificationCount={notificationCount}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">

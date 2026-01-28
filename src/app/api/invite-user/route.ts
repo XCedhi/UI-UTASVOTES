@@ -28,23 +28,62 @@ export async function POST(request: Request) {
     // Generate invitation link
     const redirectUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:4028'}/reset-password`;
     
+    console.log('📧 Inviting user:', email);
+    
     // Invite user via Supabase Auth
     // This will automatically send an email using Supabase's email templates
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: {
         full_name: `${firstName} ${lastName}`,
         role,
+        status: 'pending',
         access_start_date: accessStartDate || null,
         access_end_date: accessEndDate || null,
+        position: role === 'commission' ? 'Electoral Commission Member' : 'Administrator',
         invited_at: new Date().toISOString()
       },
       redirectTo: redirectUrl
     });
     
     if (error) {
-      console.error('Supabase invite error:', error);
+      console.error('❌ Supabase invite error:', error);
       throw error;
     }
+    
+    console.log('✅ Auth user created:', data.user?.id);
+    
+    // CRITICAL: Manually create the user_profiles record
+    // Since we can't create a trigger on auth.users, we do it here
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('user_profiles')
+      .insert({
+        id: data.user?.id,
+        email: email,
+        full_name: `${firstName} ${lastName}`,
+        role: role,
+        status: 'pending',
+        access_start_date: accessStartDate || null,
+        access_end_date: accessEndDate || null,
+        position: role === 'commission' ? 'Electoral Commission Member' : 'Administrator',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (profileError) {
+      console.error('❌ Error creating user profile:', profileError);
+      // Try to clean up the auth user if profile creation failed
+      try {
+        await supabaseAdmin.auth.admin.deleteUser(data.user?.id || '');
+        console.log('🧹 Cleaned up auth user after profile creation failure');
+      } catch (cleanupError) {
+        console.error('❌ Failed to cleanup auth user:', cleanupError);
+      }
+      throw new Error(`Database error creating new user: ${profileError.message}`);
+    }
+    
+    console.log('✅ User profile created successfully:', profile);
     
     // Create invitation record in database
     const { error: dbError } = await supabaseAdmin
