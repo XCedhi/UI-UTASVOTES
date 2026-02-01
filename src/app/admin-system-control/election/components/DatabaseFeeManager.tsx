@@ -38,13 +38,18 @@ const DatabaseFeeManager = () => {
     try {
       setLoading(true);
 
-      // Fetch all elections
+      // Fetch all elections - support both old and new column names
       const { data: electionsData, error: electionsError } = await supabase
         .from('elections')
-        .select('id, name, election_type, department')
+        .select('id, name, title, election_type, type, department')
         .order('created_at', { ascending: false });
 
-      if (electionsError) throw electionsError;
+      if (electionsError) {
+        console.error('Error fetching elections:', electionsError);
+        throw electionsError;
+      }
+
+      console.log('✅ Fetched elections:', electionsData);
 
       // Fetch all positions
       const { data: positionsData, error: positionsError } = await supabase
@@ -52,14 +57,23 @@ const DatabaseFeeManager = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (positionsError) throw positionsError;
+      if (positionsError) {
+        console.error('Error fetching positions:', positionsError);
+        throw positionsError;
+      }
+
+      console.log('✅ Fetched positions:', positionsData);
 
       // Group positions by election
       const electionsWithPositions: ElectionWithPositions[] = (electionsData || []).map(election => ({
-        ...election,
+        id: election.id,
+        name: election.name || election.title || 'Unnamed Election',
+        election_type: election.election_type || election.type || 'university-wide',
+        department: election.department,
         positions: (positionsData || []).filter(pos => pos.election_id === election.id),
       }));
 
+      console.log('✅ Elections with positions:', electionsWithPositions);
       setElections(electionsWithPositions);
     } catch (error) {
       console.error('Error fetching elections and positions:', error);

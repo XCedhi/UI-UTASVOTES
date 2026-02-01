@@ -5,47 +5,125 @@ import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { useAdminProfile } from '@/hooks/useAdminProfile';
+import { supabase } from '@/lib/supabase';
 
 interface Position {
   id: string;
-  name: string;
+  title: string;
   candidateCount: number;
   status: 'open' | 'closed';
+}
+
+interface ElectionData {
+  id: string;
+  name: string;
+  description: string;
+  status: 'active' | 'scheduled' | 'completed' | 'paused' | 'upcoming';
+  election_type: string;
+  department: string | null;
+  nomination_start: string;
+  nomination_end: string;
+  voting_start: string;
+  voting_end: string;
+  allowLateVoting: boolean;
+  requireVerification: boolean;
+  anonymousVoting: boolean;
 }
 
 const ManageElectionInteractive = () => {
   const router = useRouter();
   const params = useParams();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'settings' | 'positions' | 'candidates' | 'control'>(
     'settings'
   );
-  const { userName, userAvatar, notificationCount, isLoading: profileLoading } = useAdminProfile();
-  const [electionData, setElectionData] = useState({
-    name: 'Student Council 2026',
-    status: 'active' as 'active' | 'scheduled' | 'completed' | 'paused',
-    startDate: '2026-01-20',
-    endDate: '2026-01-23',
-    votingStartTime: '08:00',
-    votingEndTime: '18:00',
-    allowLateVoting: false,
-    requireVerification: true,
-    anonymousVoting: true,
-  });
-  const [positions, setPositions] = useState<Position[]>([
-    { id: '1', name: 'SRC President', candidateCount: 4, status: 'open' },
-    { id: '2', name: 'Vice President', candidateCount: 3, status: 'open' },
-    { id: '3', name: 'General Secretary', candidateCount: 5, status: 'open' },
-    { id: '4', name: 'Financial Secretary', candidateCount: 2, status: 'open' },
-  ]);
+  const { userName, userAvatar, notificationCount } = useAdminProfile();
+  const [electionData, setElectionData] = useState<ElectionData | null>(null);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
-  }, []);
+    if (params.id) {
+      fetchElectionData();
+    }
+  }, [params.id]);
 
-  if (!isHydrated) {
+  const fetchElectionData = async () => {
+    try {
+      setLoading(true);
+      const electionId = params.id as string;
+
+      // Fetch election details
+      const { data: election, error: electionError } = await supabase
+        .from('elections')
+        .select('*')
+        .eq('id', electionId)
+        .single();
+
+      if (electionError) {
+        console.error('Error fetching election:', electionError);
+        throw electionError;
+      }
+
+      console.log('✅ Fetched election:', election);
+
+      setElectionData({
+        id: election.id,
+        name: election.name || election.title || 'Election',
+        description: election.description || '',
+        status: election.status || 'upcoming',
+        election_type: election.election_type || election.type || 'university-wide',
+        department: election.department,
+        nomination_start: election.nomination_start || election.start_date || '',
+        nomination_end: election.nomination_end || '',
+        voting_start: election.voting_start || election.start_date || '',
+        voting_end: election.voting_end || election.end_date || '',
+        allowLateVoting: election.allow_late_voting || false,
+        requireVerification: election.require_verification !== false,
+        anonymousVoting: election.anonymous_voting !== false,
+      });
+
+      // Fetch positions for this election
+      const { data: positionsData, error: positionsError } = await supabase
+        .from('positions')
+        .select('*')
+        .eq('election_id', electionId);
+
+      if (!positionsError && positionsData) {
+        console.log('✅ Fetched positions:', positionsData);
+        
+        // Fetch candidate counts for each position
+        const positionsWithCounts = await Promise.all(
+          positionsData.map(async (pos) => {
+            const { count } = await supabase
+              .from('candidates')
+              .select('*', { count: 'exact', head: true })
+              .eq('election_id', electionId)
+              .eq('position', pos.title);
+
+            return {
+              id: pos.id,
+              title: pos.title,
+              candidateCount: count || 0,
+              status: (pos.is_open !== false ? 'open' : 'closed') as 'open' | 'closed',
+            };
+          })
+        );
+
+        setPositions(positionsWithCounts);
+      }
+
+    } catch (error) {
+      console.error('Error fetching election data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isHydrated || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -56,36 +134,146 @@ const ManageElectionInteractive = () => {
     );
   }
 
-  const handleSaveSettings = () => {
-    console.log('Saving election settings:', electionData);
-    alert('Election settings updated successfully!');
-  };
-
-  const handlePauseElection = () => {
-    setElectionData({ ...electionData, status: 'paused' });
-    setShowPauseModal(false);
-    alert('Election paused successfully');
-  };
-
-  const handleResumeElection = () => {
-    setElectionData({ ...electionData, status: 'active' });
-    alert('Election resumed successfully');
-  };
-
-  const handleEndElection = () => {
-    setElectionData({ ...electionData, status: 'completed' });
-    setShowEndModal(false);
-    alert('Election ended successfully');
-  };
-
-  const handleTogglePosition = (id: string) => {
-    setPositions(
-      positions.map((p) =>
-        p.id === id
-          ? { ...p, status: p.status === 'open' ? ('closed' as const) : ('open' as const) }
-          : p
-      )
+  if (!electionData) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="ExclamationTriangleIcon" size={48} variant="outline" className="mx-auto text-error mb-4" />
+          <p className="text-foreground font-semibold mb-2">Election Not Found</p>
+          <p className="text-muted-foreground mb-4">The election you're looking for doesn't exist.</p>
+          <button
+            onClick={() => router.back()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
     );
+  }
+
+  const handleSaveSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({
+          name: electionData.name,
+          description: electionData.description,
+          status: electionData.status,
+          nomination_start: electionData.nomination_start,
+          nomination_end: electionData.nomination_end,
+          voting_start: electionData.voting_start,
+          voting_end: electionData.voting_end,
+          allow_late_voting: electionData.allowLateVoting,
+          require_verification: electionData.requireVerification,
+          anonymous_voting: electionData.anonymousVoting,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', electionData.id);
+
+      if (error) {
+        console.error('Error updating election:', error);
+        alert('Failed to update election settings. Please try again.');
+        return;
+      }
+
+      console.log('✅ Election settings updated successfully');
+      alert('Election settings updated successfully!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      alert('Failed to update election settings. Please try again.');
+    }
+  };
+
+  const handlePauseElection = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({ status: 'paused', updated_at: new Date().toISOString() })
+        .eq('id', electionData.id);
+
+      if (error) throw error;
+
+      setElectionData({ ...electionData, status: 'paused' });
+      setShowPauseModal(false);
+      alert('Election paused successfully');
+    } catch (error) {
+      console.error('Error pausing election:', error);
+      alert('Failed to pause election. Please try again.');
+    }
+  };
+
+  const handleResumeElection = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({ status: 'active', updated_at: new Date().toISOString() })
+        .eq('id', electionData.id);
+
+      if (error) throw error;
+
+      setElectionData({ ...electionData, status: 'active' });
+      alert('Election resumed successfully');
+    } catch (error) {
+      console.error('Error resuming election:', error);
+      alert('Failed to resume election. Please try again.');
+    }
+  };
+
+  const handleEndElection = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({ status: 'completed', updated_at: new Date().toISOString() })
+        .eq('id', electionData.id);
+
+      if (error) throw error;
+
+      setElectionData({ ...electionData, status: 'completed' });
+      setShowEndModal(false);
+      alert('Election ended successfully');
+    } catch (error) {
+      console.error('Error ending election:', error);
+      alert('Failed to end election. Please try again.');
+    }
+  };
+
+  const handleTogglePosition = async (id: string) => {
+    try {
+      const position = positions.find(p => p.id === id);
+      if (!position) return;
+
+      const newStatus = position.status === 'open' ? false : true;
+
+      const { error } = await supabase
+        .from('positions')
+        .update({ is_open: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setPositions(
+        positions.map((p) =>
+          p.id === id
+            ? { ...p, status: p.status === 'open' ? ('closed' as const) : ('open' as const) }
+            : p
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling position:', error);
+      alert('Failed to update position status. Please try again.');
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    return dateString.split('T')[0];
+  };
+
+  const formatTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toTimeString().slice(0, 5);
   };
 
   return (
@@ -98,7 +286,7 @@ const ManageElectionInteractive = () => {
         electionStatus={{
           isActive: electionData.status === 'active',
           name: electionData.name,
-          endTime: '2026-01-23T18:00:00',
+          endTime: electionData.voting_end,
         }}
       />
 
@@ -200,13 +388,13 @@ const ManageElectionInteractive = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        Start Date
+                        Nomination Start Date
                       </label>
                       <input
                         type="date"
-                        value={electionData.startDate}
+                        value={formatDate(electionData.nomination_start)}
                         onChange={(e) =>
-                          setElectionData({ ...electionData, startDate: e.target.value })
+                          setElectionData({ ...electionData, nomination_start: e.target.value })
                         }
                         className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       />
@@ -214,13 +402,41 @@ const ManageElectionInteractive = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-2">
-                        End Date
+                        Nomination End Date
                       </label>
                       <input
                         type="date"
-                        value={electionData.endDate}
+                        value={formatDate(electionData.nomination_end)}
                         onChange={(e) =>
-                          setElectionData({ ...electionData, endDate: e.target.value })
+                          setElectionData({ ...electionData, nomination_end: e.target.value })
+                        }
+                        className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Voting Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formatDate(electionData.voting_start)}
+                        onChange={(e) =>
+                          setElectionData({ ...electionData, voting_start: e.target.value })
+                        }
+                        className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-2">
+                        Voting End Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formatDate(electionData.voting_end)}
+                        onChange={(e) =>
+                          setElectionData({ ...electionData, voting_end: e.target.value })
                         }
                         className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       />
@@ -232,10 +448,13 @@ const ManageElectionInteractive = () => {
                       </label>
                       <input
                         type="time"
-                        value={electionData.votingStartTime}
-                        onChange={(e) =>
-                          setElectionData({ ...electionData, votingStartTime: e.target.value })
-                        }
+                        value={formatTime(electionData.voting_start)}
+                        onChange={(e) => {
+                          const date = new Date(electionData.voting_start);
+                          const [hours, minutes] = e.target.value.split(':');
+                          date.setHours(parseInt(hours), parseInt(minutes));
+                          setElectionData({ ...electionData, voting_start: date.toISOString() });
+                        }}
                         className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
@@ -246,10 +465,13 @@ const ManageElectionInteractive = () => {
                       </label>
                       <input
                         type="time"
-                        value={electionData.votingEndTime}
-                        onChange={(e) =>
-                          setElectionData({ ...electionData, votingEndTime: e.target.value })
-                        }
+                        value={formatTime(electionData.voting_end)}
+                        onChange={(e) => {
+                          const date = new Date(electionData.voting_end);
+                          const [hours, minutes] = e.target.value.split(':');
+                          date.setHours(parseInt(hours), parseInt(minutes));
+                          setElectionData({ ...electionData, voting_end: date.toISOString() });
+                        }}
                         className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
@@ -342,7 +564,7 @@ const ManageElectionInteractive = () => {
                         className="flex items-center justify-between p-4 bg-muted rounded-md"
                       >
                         <div className="flex-1">
-                          <p className="font-medium text-foreground">{position.name}</p>
+                          <p className="font-medium text-foreground">{position.title}</p>
                           <p className="text-sm text-muted-foreground mt-1">
                             {position.candidateCount} candidates
                           </p>
