@@ -93,6 +93,9 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
 
       console.log('✅ User authenticated:', authData.user.id);
 
+      // Wait a moment for the session to be fully established
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       // Fetch user profile from database
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')

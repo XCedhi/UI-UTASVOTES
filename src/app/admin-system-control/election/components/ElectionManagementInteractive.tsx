@@ -8,7 +8,7 @@ import NotificationCenter from '@/components/common/NotificationCenter';
 import CandidateApplicationCard from '@/app/electoral-commission-panel/components/CandidateApplicationCard';
 import ElectionMonitoringCard from '@/app/electoral-commission-panel/components/ElectionMonitoringCard';
 import SystemAlertCard from '@/app/electoral-commission-panel/components/SystemAlertCard';
-import FeeStructureManager from '@/app/electoral-commission-panel/components/FeeStructureManager';
+import DatabaseFeeManager from './DatabaseFeeManager';
 import QuickStatsGrid from '@/app/electoral-commission-panel/components/QuickStatsGrid';
 import CommissionActivityLog from '@/app/electoral-commission-panel/components/CommissionActivityLog';
 import Icon from '@/components/ui/AppIcon';
@@ -181,12 +181,12 @@ const ElectionManagementInteractive = () => {
       if (electionsData) {
         setElections(electionsData.map((e: any) => ({
           id: e.id,
-          name: e.title,
+          name: e.name || e.title, // Support both old and new column names
           status: e.status,
           totalVoters: e.total_voters || 0,
           votedCount: e.voted_count || 0,
-          startDate: e.start_date,
-          endDate: e.end_date,
+          startDate: e.voting_start || e.start_date, // Support both old and new column names
+          endDate: e.voting_end || e.end_date, // Support both old and new column names
           positions: 1, // You can calculate this from election_positions table
           candidates: 0, // Will be calculated
           turnoutPercentage: e.turnout_percentage || 0,
@@ -953,7 +953,10 @@ const ElectionManagementInteractive = () => {
                         <h2 className="font-heading font-semibold text-xl text-foreground">
                           Election Monitoring
                         </h2>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth">
+                        <button 
+                          onClick={() => router.push('/admin-system-control/election/new')}
+                          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth"
+                        >
                           <Icon name="PlusIcon" size={16} variant="outline" />
                           <span className="text-sm font-medium">Create Election</span>
                         </button>
@@ -971,12 +974,7 @@ const ElectionManagementInteractive = () => {
                   )}
 
                   {activeTab === 'fees' && (
-                    <FeeStructureManager
-                      feeStructures={feeStructures}
-                      onUpdateFee={handleUpdateFee}
-                      onAddFee={handleAddFee}
-                      onDeleteFee={handleDeleteFee}
-                    />
+                    <DatabaseFeeManager />
                   )}
 
                   {activeTab === 'reports' && (
