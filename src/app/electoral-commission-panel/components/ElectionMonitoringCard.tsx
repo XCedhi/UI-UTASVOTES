@@ -20,12 +20,14 @@ interface ElectionMonitoringCardProps {
   election: ElectionData;
   onViewAnalytics: (id: string) => void;
   onManageElection: (id: string) => void;
+  onDeleteElection?: (id: string) => void;
 }
 
 const ElectionMonitoringCard = ({
   election,
   onViewAnalytics,
   onManageElection,
+  onDeleteElection,
 }: ElectionMonitoringCardProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -184,6 +186,20 @@ const ElectionMonitoringCard = ({
           <Icon name="Cog6ToothIcon" size={16} variant="outline" />
           <span className="text-sm font-medium">Manage</span>
         </button>
+
+        {onDeleteElection && (
+          <button
+            onClick={() => {
+              if (confirm(`Are you sure you want to delete "${election.name}"? This action cannot be undone.`)) {
+                onDeleteElection(election.id);
+              }
+            }}
+            className="px-4 py-2 bg-error/10 text-error border border-error/20 rounded-md hover:bg-error/20 transition-all duration-250 ease-smooth"
+            title="Delete Election"
+          >
+            <Icon name="TrashIcon" size={16} variant="outline" />
+          </button>
+        )}
       </div>
     </div>
   );

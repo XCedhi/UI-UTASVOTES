@@ -172,14 +172,48 @@ const ElectionManagementInteractive = () => {
         })));
       }
 
-      // Fetch elections
+      // Fetch elections and auto-update their status
       const { data: electionsData } = await supabase
         .from('elections')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (electionsData) {
-        setElections(electionsData.map((e: any) => ({
+        const now = new Date();
+        
+        // Update status for each election based on dates
+        const updatedElections = await Promise.all(
+          electionsData.map(async (e: any) => {
+            const votingStart = new Date(e.voting_start || e.start_date);
+            const votingEnd = new Date(e.voting_end || e.end_date);
+            
+            let correctStatus = e.status;
+            
+            // Determine correct status based on dates
+            if (now < votingStart) {
+              correctStatus = 'upcoming';
+            } else if (now >= votingStart && now <= votingEnd) {
+              correctStatus = 'active';
+            } else if (now > votingEnd) {
+              correctStatus = 'completed';
+            }
+            
+            // Update in database if status is different
+            if (correctStatus !== e.status) {
+              console.log(`📅 Auto-updating election "${e.name}" status from "${e.status}" to "${correctStatus}"`);
+              await supabase
+                .from('elections')
+                .update({ status: correctStatus, updated_at: new Date().toISOString() })
+                .eq('id', e.id);
+              
+              return { ...e, status: correctStatus };
+            }
+            
+            return e;
+          })
+        );
+
+        setElections(updatedElections.map((e: any) => ({
           id: e.id,
           name: e.name || e.title, // Support both old and new column names
           status: e.status,
@@ -462,6 +496,51 @@ const ElectionManagementInteractive = () => {
 
   const handleManageElection = (id: string) => {
     router.push(`/admin-system-control/election/elections/${id}/manage`);
+  };
+
+  const handleDeleteElection = async (id: string) => {
+    try {
+      // Delete related positions first
+      const { error: positionsError } = await supabase
+        .from('positions')
+        .delete()
+        .eq('election_id', id);
+
+      if (positionsError) {
+        console.error('Error deleting positions:', positionsError);
+      }
+
+      // Delete related candidates
+      const { error: candidatesError } = await supabase
+        .from('candidates')
+        .delete()
+        .eq('election_id', id);
+
+      if (candidatesError) {
+        console.error('Error deleting candidates:', candidatesError);
+      }
+
+      // Delete the election
+      const { error: electionError } = await supabase
+        .from('elections')
+        .delete()
+        .eq('id', id);
+
+      if (electionError) {
+        console.error('Error deleting election:', electionError);
+        alert('Failed to delete election. Please try again.');
+        return;
+      }
+
+      console.log('✅ Election deleted successfully');
+      alert('Election deleted successfully!');
+      
+      // Refresh the elections list
+      await fetchElectionManagementData();
+    } catch (error) {
+      console.error('Error deleting election:', error);
+      alert('Failed to delete election. Please try again.');
+    }
   };
 
   const handleUpdateFee = async (id: string, newAmount: number, newPosition?: string) => {
@@ -968,6 +1047,7 @@ const ElectionManagementInteractive = () => {
                           election={election}
                           onViewAnalytics={handleViewElectionAnalytics}
                           onManageElection={handleManageElection}
+                          onDeleteElection={handleDeleteElection}
                         />
                       ))}
                     </div>

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import ContactAdminInteractive from './components/ContactAdminInteractive';
-import ProtectedRoute from '@/components/common/ProtectedRoute';
 
 export const metadata: Metadata = {
   title: 'Contact Admin - UTASVotes',
@@ -9,9 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ContactAdminPage() {
-  return (
-    <ProtectedRoute>
-      <ContactAdminInteractive />
-    </ProtectedRoute>
-  );
+  return <ContactAdminInteractive />;
 }

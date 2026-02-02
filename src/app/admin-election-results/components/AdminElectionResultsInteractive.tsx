@@ -36,7 +36,7 @@ interface Candidate {
 const AdminElectionResultsInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [selectedElection, setSelectedElection] = useState<string>('');
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false); // Changed from true to false
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [elections, setElections] = useState<Election[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,14 +50,14 @@ const AdminElectionResultsInteractive = () => {
     loadElections();
   }, []);
 
-  // Auto-refresh every 5 seconds for live results
+  // Auto-refresh every 30 seconds for live results (when enabled)
   useEffect(() => {
     if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       loadElections();
       setLastUpdated(new Date());
-    }, 5000);
+    }, 30000); // Changed from 5000 (5 seconds) to 30000 (30 seconds)
 
     return () => clearInterval(interval);
   }, [autoRefresh]);
@@ -174,10 +174,10 @@ const AdminElectionResultsInteractive = () => {
         electionsData.map(async (election) => {
           // Fetch positions for this election
           const { data: positionsData, error: positionsError } = await supabase
-            .from('election_positions')
+            .from('positions')
             .select('*')
             .eq('election_id', election.id)
-            .order('display_order', { ascending: true });
+            .order('created_at', { ascending: true });
 
           if (positionsError) {
             console.error('Error fetching positions:', positionsError);
@@ -192,8 +192,7 @@ const AdminElectionResultsInteractive = () => {
                 .from('candidates')
                 .select('*')
                 .eq('election_id', election.id)
-                .eq('position_id', position.id)
-                .eq('status', 'approved')
+                .eq('position', position.title)
                 .order('votes', { ascending: false });
 
               if (candidatesError) {
