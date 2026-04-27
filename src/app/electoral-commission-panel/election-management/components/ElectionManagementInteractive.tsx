@@ -213,53 +213,18 @@ const ElectionManagementInteractive = () => {
           })
         );
 
-        // Fetch positions and candidates counts for each election
-        const electionsWithCounts = await Promise.all(
-          updatedElections.map(async (e: any) => {
-            // Count positions for this election
-            const { count: positionsCount } = await supabase
-              .from('positions')
-              .select('*', { count: 'exact', head: true })
-              .eq('election_id', e.id);
-
-            // Count candidates for this election
-            const { count: candidatesCount } = await supabase
-              .from('candidates')
-              .select('*', { count: 'exact', head: true })
-              .eq('election_id', e.id);
-
-            // Count total voters (all students)
-            const { count: totalVotersCount } = await supabase
-              .from('user_profiles')
-              .select('*', { count: 'exact', head: true })
-              .eq('role', 'student');
-
-            // Count votes cast for this election
-            const { count: votedCount } = await supabase
-              .from('votes')
-              .select('*', { count: 'exact', head: true })
-              .eq('election_id', e.id);
-
-            const uniqueVoters = votedCount || 0;
-            const totalVoters = totalVotersCount || 0;
-            const turnout = totalVoters > 0 ? ((uniqueVoters / totalVoters) * 100).toFixed(1) : 0;
-
-            return {
-              id: e.id,
-              name: e.name || e.title,
-              status: e.status,
-              totalVoters: totalVoters,
-              votedCount: uniqueVoters,
-              startDate: e.voting_start || e.start_date,
-              endDate: e.voting_end || e.end_date,
-              positions: positionsCount || 0,
-              candidates: candidatesCount || 0,
-              turnoutPercentage: parseFloat(turnout.toString()),
-            };
-          })
-        );
-
-        setElections(electionsWithCounts);
+        setElections(updatedElections.map((e: any) => ({
+          id: e.id,
+          name: e.name || e.title, // Support both old and new column names
+          status: e.status,
+          totalVoters: e.total_voters || 0,
+          votedCount: e.voted_count || 0,
+          startDate: e.voting_start || e.start_date, // Support both old and new column names
+          endDate: e.voting_end || e.end_date, // Support both old and new column names
+          positions: 1, // You can calculate this from election_positions table
+          candidates: 0, // Will be calculated
+          turnoutPercentage: e.turnout_percentage || 0,
+        })));
       }
 
       // Fetch system alerts
@@ -453,7 +418,7 @@ const ElectionManagementInteractive = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading Admin Election Management...</p>
+          <p className="text-muted-foreground">Loading Electoral Commission Election Management...</p>
         </div>
       </div>
     );
@@ -522,15 +487,15 @@ const ElectionManagementInteractive = () => {
   };
 
   const handleViewApplicationDetails = (id: string) => {
-    router.push(`/admin-system-control/election/applications/${id}`);
+    router.push(`/electoral-commission-panel/applications/${id}`);
   };
 
   const handleViewElectionAnalytics = (id: string) => {
-    router.push(`/admin-system-control/election/elections/${id}/analytics`);
+    router.push(`/electoral-commission-panel/elections/${id}/analytics`);
   };
 
   const handleManageElection = (id: string) => {
-    router.push(`/admin-system-control/election/elections/${id}/manage`);
+    router.push(`/electoral-commission-panel/elections/${id}/manage`);
   };
 
   const handleDeleteElection = async (id: string) => {
@@ -894,7 +859,7 @@ const ElectionManagementInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole="admin"
+        userRole="commission"
         userName={userName}
         userAvatar={userAvatar}
         notificationCount={notificationCount}
@@ -914,7 +879,7 @@ const ElectionManagementInteractive = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-heading font-semibold text-foreground mb-2">
-                Admin Election Management
+                Electoral Commission Election Management
               </h1>
               <p className="text-muted-foreground">
                 Full administrative control over elections, candidates, and electoral processes
@@ -1068,7 +1033,7 @@ const ElectionManagementInteractive = () => {
                           Election Monitoring
                         </h2>
                         <button 
-                          onClick={() => router.push('/admin-system-control/election/new')}
+                          onClick={() => router.push('/electoral-commission-panel/elections/create')}
                           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth"
                         >
                           <Icon name="PlusIcon" size={16} variant="outline" />

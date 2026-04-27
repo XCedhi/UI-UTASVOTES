@@ -147,10 +147,16 @@ const AdminDashboardInteractive = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // Fetch total votes
-      const { count: totalVotes } = await supabase
-        .from('votes')
-        .select('*', { count: 'exact', head: true });
+      // Fetch total votes (handle if table doesn't exist)
+      let totalVotes = 0;
+      try {
+        const { count } = await supabase
+          .from('votes')
+          .select('*', { count: 'exact', head: true });
+        totalVotes = count || 0;
+      } catch (error) {
+        console.log('⚠️ Votes table not found, using default value');
+      }
 
       // Fetch pending applications
       const { count: pendingApplications } = await supabase
@@ -158,11 +164,17 @@ const AdminDashboardInteractive = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
-      // Fetch security alerts
-      const { count: securityAlerts } = await supabase
-        .from('system_alerts')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_resolved', false);
+      // Fetch security alerts (handle if table doesn't exist)
+      let securityAlerts = 0;
+      try {
+        const { count } = await supabase
+          .from('system_alerts')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_resolved', false);
+        securityAlerts = count || 0;
+      } catch (error) {
+        console.log('⚠️ System alerts table not found, using default value');
+      }
 
       // Update system metrics with real data
       setSystemMetrics([
@@ -216,12 +228,18 @@ const AdminDashboardInteractive = () => {
         },
       ]);
 
-      // Fetch recent activity logs
-      const { data: activityLogs } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Fetch recent activity logs (handle if table doesn't exist)
+      let activityLogs = null;
+      try {
+        const { data } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+        activityLogs = data;
+      } catch (error) {
+        console.log('⚠️ Activity logs table not found, using placeholder');
+      }
 
       if (activityLogs && activityLogs.length > 0) {
         const activities: RecentActivity[] = activityLogs.map((log: any) => ({

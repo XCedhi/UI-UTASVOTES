@@ -8,6 +8,7 @@ import CampaignFeedItem from './CampaignFeedItem';
 import VotingHistoryCard from './VotingHistoryCard';
 import UpcomingDeadlinesCard from './UpcomingDeadlinesCard';
 import QuickActionsCard from './QuickActionsCard';
+import Icon from '@/components/ui/AppIcon';
 import { useElectionContext, Election } from '@/contexts/ElectionContext';
 import { supabase } from '@/lib/supabase';
 
@@ -72,10 +73,65 @@ const StudentDashboardInteractive = () => {
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
+  
+  // Real user data from database
+  const [userData, setUserData] = useState<{
+    full_name: string;
+    email: string;
+    student_id: string;
+    department: string;
+    avatar_url?: string;
+  } | null>(null);
+  const [realElections, setRealElections] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchUserDataAndElections();
   }, []);
+
+  const fetchUserDataAndElections = async () => {
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error('No user found');
+        setLoadingData(false);
+        return;
+      }
+
+      // Fetch user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+      } else {
+        setUserData(profile);
+      }
+
+      // Fetch active elections
+      const { data: electionsData, error: electionsError } = await supabase
+        .from('elections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (electionsError) {
+        console.error('Error fetching elections:', electionsError);
+      } else {
+        setRealElections(electionsData || []);
+      }
+
+      setLoadingData(false);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoadingData(false);
+    }
+  };
 
   const electionsToShow: Election[] = elections;
 
@@ -223,7 +279,7 @@ const StudentDashboardInteractive = () => {
       : feed.filter((item) => item.type === activeTab)
     : [];
 
-  if (!isHydrated) {
+  if (!isHydrated || loadingData) {
     return (
       <div className="min-h-screen bg-background">
         <Header
@@ -248,18 +304,24 @@ const StudentDashboardInteractive = () => {
     );
   }
 
+  // Get first name from full name
+  const firstName = userData?.full_name?.split(' ')[0] || 'Student';
+  
+  // Get active election if any
+  const activeElection = realElections.find(e => e.status === 'active');
+
   return (
     <div className="min-h-screen bg-background">
       <Header
         userRole="student"
-        userName="Kwabena Osei"
-        userAvatar="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg"
+        userName={userData?.full_name || 'Student'}
+        userAvatar={userData?.avatar_url}
         notificationCount={notifications.length}
-        electionStatus={{
+        electionStatus={activeElection ? {
           isActive: true,
-          name: 'Student Council President 2026',
-          endTime: '2026-01-25T23:59:59',
-        }}
+          name: activeElection.title,
+          endTime: activeElection.end_date,
+        } : undefined}
       />
 
       <main className="pt-20">
@@ -269,18 +331,20 @@ const StudentDashboardInteractive = () => {
               Student Dashboard
             </h1>
             <p className="text-muted-foreground">
-              Welcome back, Kwabena! Stay updated with ongoing elections and campaign activities.
+              Welcome back, {firstName}! Stay updated with ongoing elections and campaign activities.
             </p>
           </div>
 
-          <div className="mb-6">
-            <ElectionStatusIndicator
-              isActive={true}
-              electionName="Student Council President 2026"
-              endTime="2026-01-25T23:59:59"
-              className="w-full"
-            />
-          </div>
+          {activeElection && (
+            <div className="mb-6">
+              <ElectionStatusIndicator
+                isActive={true}
+                electionName={activeElection.title}
+                endTime={activeElection.end_date}
+                className="w-full"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
@@ -288,11 +352,32 @@ const StudentDashboardInteractive = () => {
                 <h2 className="font-heading text-2xl font-semibold text-foreground mb-4">
                   Active Elections
                 </h2>
-                <div className="grid grid-cols-1 gap-4">
-                  {electionsToShow.map((election) => (
-                    <ElectionCard key={election.id} {...election} />
-                  ))}
-                </div>
+                {realElections.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {realElections.map((election) => (
+                      <ElectionCard 
+                        key={election.id} 
+                        id={election.id}
+                        title={election.title}
+                        type={election.type || 'departmental'}
+                        status={election.status || 'upcoming'}
+                        startDate={election.start_date}
+                        endDate={election.end_date}
+                        totalCandidates={0}
+                        positions={[]}
+                        hasVoted={false}
+                        description={election.description || ''}
+                        voterTurnout={0}
+                        totalVoters={0}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-card border border-border rounded-lg p-8 text-center">
+                    <Icon name="InformationCircleIcon" size={48} variant="outline" className="text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No elections available at the moment.</p>
+                  </div>
+                )}
               </div>
 
               <div>

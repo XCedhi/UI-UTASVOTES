@@ -52,8 +52,9 @@ Access:   Apply for positions, campaign, vote
 ```
 Email:    commission@cktutas.edu.gh
 Password: Commission@2026
-Role:     Electoral Commission
+Role:     Electoral Commission (commission)
 Access:   Manage elections, verify candidates, monitor results
+User ID:  8f238550-8265-4476-8650-65a2863ccd1f
 ```
 
 **Dashboard**: `/electoral-commission-panel`

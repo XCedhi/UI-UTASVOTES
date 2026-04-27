@@ -210,14 +210,15 @@ const Header = ({
                         src={userAvatar}
                         alt={userName}
                         className="w-full h-full object-cover"
-                        key={userAvatar.substring(0, 100)}
+                        onError={(e) => {
+                          e.currentTarget.src = '/assets/images/no_image.png';
+                        }}
                       />
                     ) : (
-                      <Icon
-                        name="UserIcon"
-                        size={24}
-                        variant="solid"
-                        className="text-primary-foreground"
+                      <img
+                        src="/assets/images/no_image.png"
+                        alt={userName}
+                        className="w-full h-full object-cover"
                       />
                     )}
                   </div>

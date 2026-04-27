@@ -126,7 +126,7 @@ const ElectionCard = ({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-heading font-bold text-xl text-foreground mb-1">{title}</h3>
-            <p className="text-sm text-muted-foreground capitalize">{type.replace('-', ' ')}</p>
+            <p className="text-sm text-muted-foreground capitalize">{type?.replace('-', ' ') || 'Election'}</p>
           </div>
         </div>
         <span className={`px-4 py-1.5 rounded-full text-xs font-semibold ${getStatusColor()} flex-shrink-0`}>

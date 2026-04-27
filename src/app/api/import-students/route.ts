@@ -12,17 +12,46 @@ interface StudentData {
   phoneNumber?: string;
 }
 
-// Generate a secure random password
+// Generate a secure random password that meets all Supabase requirements
 function generateSecurePassword(): string {
-  const length = 12;
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const numbers = '0123456789';
+  const special = '!@#$%^&*';
+  
+  // Ensure at least one character from each required set
   let password = '';
-  const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  for (let i = 0; i < length; i++) {
-    password += charset[array[i] % charset.length];
+  
+  // Add one random character from each required set
+  const getRandomChar = (charset: string): string => {
+    const array = new Uint8Array(1);
+    crypto.getRandomValues(array);
+    return charset[array[0] % charset.length];
+  };
+  
+  password += getRandomChar(lowercase);
+  password += getRandomChar(uppercase);
+  password += getRandomChar(numbers);
+  password += getRandomChar(special);
+  
+  // Fill the rest with random characters from all sets
+  const allChars = lowercase + uppercase + numbers + special;
+  const remainingLength = 12 - 4; // Total length 12, already have 4 chars
+  
+  for (let i = 0; i < remainingLength; i++) {
+    password += getRandomChar(allChars);
   }
-  return password;
+  
+  // Shuffle the password to avoid predictable pattern
+  const passwordArray = password.split('');
+  for (let i = passwordArray.length - 1; i > 0; i--) {
+    const array = new Uint8Array(1);
+    crypto.getRandomValues(array);
+    const j = array[0] % (i + 1);
+    [passwordArray[i], passwordArray[j]] = [passwordArray[j], passwordArray[i]];
+  }
+  
+  return passwordArray.join('');
 }
 
 export async function POST(request: Request) {
@@ -108,7 +137,7 @@ export async function POST(request: Request) {
           continue;
         }
 
-        // Create user profile
+        // Create user profile with password change requirement
         const { error: profileError } = await supabaseAdmin
           .from('user_profiles')
           .insert({
@@ -121,6 +150,7 @@ export async function POST(request: Request) {
             level: student.level,
             role: 'student',
             status: 'active',
+            requires_password_change: true, // Force password change on first login
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           });
@@ -145,16 +175,38 @@ export async function POST(request: Request) {
           continue;
         }
 
-        // TODO: Send welcome email with password
-        // For now, we'll just log it (in production, use an email service)
-        console.log(`Created account for ${student.email} with password: ${password}`);
+        // Send welcome email with temporary password
+        try {
+          const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4028'}/api/send-welcome-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: student.email,
+              fullName: `${student.firstName} ${student.lastName}`,
+              studentId: student.studentId,
+              department: student.department,
+              temporaryPassword: password
+            })
+          });
+
+          if (!emailResponse.ok) {
+            console.warn(`⚠️ Failed to send welcome email to ${student.email}`);
+          } else {
+            console.log(`✅ Welcome email sent to ${student.email}`);
+          }
+        } catch (emailError) {
+          console.warn(`⚠️ Error sending welcome email to ${student.email}:`, emailError);
+          // Don't fail the import if email fails
+        }
+
+        console.log(`✅ Created account for ${student.email} with temporary password`);
 
         results.success++;
         results.createdStudents.push({
           studentId: student.studentId,
           email: student.email,
           name: `${student.firstName} ${student.lastName}`,
-          password: password // In production, don't return this - send via email instead
+          password: password // In production, don't return this - only send via email
         });
 
       } catch (error: any) {

@@ -114,6 +114,25 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
 
       console.log('✅ User profile loaded:', profile);
 
+      // Check if password change is required
+      if (profile.requires_password_change) {
+        console.log('⚠️ Password change required for user');
+        
+        // Store session data first
+        setUserSession({
+          email: profile.email,
+          role: profile.role as UserRole,
+          name: profile.full_name || 'User',
+          avatar: profile.avatar_url,
+          accessEndDate: profile.access_end_date,
+          originalRole: profile.role as UserRole,
+        });
+
+        // Redirect to password change page
+        router.push('/change-password');
+        return;
+      }
+
       // Track login in database
       try {
         await fetch('/api/auth/track-login', {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
+import { supabase } from '@/lib/supabase';
 
 interface Reply {
   id: string;
@@ -49,6 +50,8 @@ interface FeedItem {
 const CampaignFeedInteractive = () => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [activeFilter, setActiveFilter] = useState<
     'all' | 'manifesto' | 'video' | 'announcement' | 'qa' | 'discussion'
   >('all');
@@ -56,68 +59,116 @@ const CampaignFeedInteractive = () => {
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
   const [showReplyForm, setShowReplyForm] = useState<string | null>(null);
-  const [feedItems, setFeedItems] = useState<FeedItem[]>([
-    {
-      id: '1',
-      authorName: 'Kwame Mensah',
-      authorAvatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-      authorRole: 'candidate',
-      position: 'Student Union President',
-      department: 'Computer Science',
-      type: 'manifesto',
-      title: 'My Vision for UTAS 2026',
-      content:
-        'I pledge to improve student welfare, enhance campus facilities, and ensure every voice is heard. Together, we can build a better UTAS!',
-      hashtags: ['#UTAS2026', '#StudentWelfare', '#ComputerScience'],
-      timestamp: '2026-01-25T10:30:00',
-      likes: 234,
-      comments: [
-        {
-          id: 'c1',
-          authorName: 'Ama Osei',
-          authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2',
-          content: 'Great vision! How do you plan to improve the library facilities?',
-          timestamp: '2026-01-25T11:00:00',
-          likes: 12,
-          isLiked: false,
-          replies: [
-            {
-              id: 'r1',
-              authorName: 'Kwame Mensah',
-              authorAvatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-              content: 'Thanks! I plan to extend library hours and add more study spaces.',
-              timestamp: '2026-01-25T11:30:00',
-              likes: 8,
-              isLiked: false,
-            },
-          ],
-        },
-      ],
-      shares: 45,
-      isLiked: false,
-    },
-    {
-      id: '2',
-      authorName: 'Kofi Asante',
-      authorAvatar: 'https://images.pixabay.com/photo/2016/11/21/12/42/beard-1845166_1280.jpg',
-      authorRole: 'student',
-      department: 'Engineering',
-      type: 'discussion',
-      title: 'Engineering Department Needs Better Lab Equipment',
-      content:
-        'Our lab equipment is outdated. We need modern tools to compete globally. What do you all think?',
-      hashtags: ['#Engineering', '#LabEquipment', '#UTAS'],
-      timestamp: '2026-01-25T09:15:00',
-      likes: 156,
-      comments: [],
-      shares: 23,
-      isLiked: true,
-    },
-  ]);
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchCurrentUser();
+    fetchFeedItems();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        setCurrentUser(profile);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
+
+  const fetchFeedItems = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Fetch feed items with user profiles
+      const { data: feedData, error } = await supabase
+        .from('feed_items')
+        .select(`
+          *,
+          user_profiles!inner(
+            full_name,
+            avatar_url,
+            student_id,
+            department,
+            role
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching feed items:', error);
+        setFeedItems([]);
+        return;
+      }
+
+      if (!feedData || feedData.length === 0) {
+        setFeedItems([]);
+        return;
+      }
+
+      // Transform database data to match FeedItem interface
+      const transformedItems: FeedItem[] = await Promise.all(
+        feedData.map(async (item: any) => {
+          // Fetch comments count
+          const { count: commentsCount } = await supabase
+            .from('comments')
+            .select('*', { count: 'exact', head: true })
+            .eq('feed_id', item.id);
+
+          // Fetch likes count
+          const { count: likesCount } = await supabase
+            .from('likes')
+            .select('*', { count: 'exact', head: true })
+            .eq('feed_id', item.id);
+
+          // Check if current user liked this post
+          let isLiked = false;
+          if (currentUser) {
+            const { data: userLike } = await supabase
+              .from('likes')
+              .select('id')
+              .eq('feed_id', item.id)
+              .eq('user_id', currentUser.id)
+              .single();
+            isLiked = !!userLike;
+          }
+
+          return {
+            id: item.id,
+            authorName: item.user_profiles.full_name,
+            authorAvatar: item.user_profiles.avatar_url || '/assets/images/no_image.png',
+            authorRole: item.user_profiles.role === 'candidate' ? 'candidate' : 'student',
+            position: item.position || undefined,
+            department: item.user_profiles.department,
+            type: item.type || 'discussion',
+            title: item.title || '',
+            content: item.content || '',
+            hashtags: item.hashtags || [],
+            timestamp: item.created_at,
+            likes: likesCount || 0,
+            comments: [], // Will be loaded when expanded
+            shares: item.shares || 0,
+            isLiked,
+            imageUrl: item.image_url || undefined,
+          };
+        })
+      );
+
+      setFeedItems(transformedItems);
+    } catch (error) {
+      console.error('Error in fetchFeedItems:', error);
+      setFeedItems([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
