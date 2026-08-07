@@ -92,25 +92,43 @@ const StudentDashboardInteractive = () => {
 
   const fetchUserDataAndElections = async () => {
     try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get userId from localStorage
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
       
-      if (!user) {
-        console.error('No user found');
+      if (!userId && !userEmail) {
         setLoadingData(false);
         return;
       }
 
-      // Fetch user profile
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      // Fetch user profile using userId or email
+      let profile = null;
+      if (userId) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (!error && data) {
+          profile = data;
+        }
+      }
+      
+      // Fallback to email if userId didn't work
+      if (!profile && userEmail) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', userEmail)
+          .single();
+        
+        if (!error && data) {
+          profile = data;
+        }
+      }
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-      } else {
+      if (profile) {
         setUserData(profile);
       }
 
@@ -120,10 +138,8 @@ const StudentDashboardInteractive = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (electionsError) {
-        console.error('Error fetching elections:', electionsError);
-      } else {
-        setRealElections(electionsData || []);
+      if (!electionsError && electionsData) {
+        setRealElections(electionsData);
       }
 
       setLoadingData(false);
@@ -446,14 +462,14 @@ const StudentDashboardInteractive = () => {
                       id={item.id}
                       candidateName={item.candidateName}
                       candidateAvatar={item.candidateAvatar}
-                      candidateAvatarAlt={item.candidateAvatarAlt}
+                      candidateAvatarAlt={item.candidateAvatarAlt || item.candidateName || 'Candidate avatar'}
                       position={'Candidate'}
                       contentType={item.type}
                       title={item.title}
                       content={item.content}
                       mediaUrl={item.mediaUrl}
-                      mediaAlt={item.mediaAlt}
-                      timestamp={item.timestamp}
+                      mediaAlt={item.mediaAlt || item.title || 'Campaign content'}
+                      timestamp={item.createdAt}
                       likes={item.likes}
                       comments={item.comments}
                       isLiked={item.isLiked}

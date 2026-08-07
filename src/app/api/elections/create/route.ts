@@ -113,6 +113,33 @@ export async function POST(request: NextRequest) {
       // Don't fail the whole request if positions fail
     }
 
+    // Create announcement for the election
+    const announcementTitle = election_type === 'departmental' 
+      ? `New Departmental Election: ${name}`
+      : `New University-Wide Election: ${name}`;
+    
+    const announcementMessage = election_type === 'departmental'
+      ? `${name} has been scheduled for ${department}. Nominations open on ${new Date(nomination_start).toLocaleDateString()} and close on ${new Date(nomination_end).toLocaleDateString()}. Voting starts ${new Date(voting_start).toLocaleDateString()}.`
+      : `${name} has been scheduled for all students. Nominations open on ${new Date(nomination_start).toLocaleDateString()} and close on ${new Date(nomination_end).toLocaleDateString()}. Voting starts ${new Date(voting_start).toLocaleDateString()}.`;
+
+    const { error: announcementError } = await supabaseAdmin
+      .from('announcements')
+      .insert({
+        type: 'election',
+        title: announcementTitle,
+        message: announcementMessage,
+        priority: 'high',
+        is_active: true,
+        published_at: new Date().toISOString(),
+      });
+
+    if (announcementError) {
+      console.error('⚠️ Error creating announcement:', announcementError);
+      // Don't fail the whole request if announcement fails
+    } else {
+      console.log('✅ Announcement created for election');
+    }
+
     // Create notifications for all users
     const { data: users } = await supabaseAdmin
       .from('user_profiles')
@@ -125,11 +152,15 @@ export async function POST(request: NextRequest) {
         message: `${name} has been scheduled. Nominations open on ${new Date(nomination_start).toLocaleDateString()}.`,
         type: 'election',
         is_read: false,
-        related_id: election.id,
       }));
 
-      await supabaseAdmin.from('notifications').insert(notifications);
-      console.log('✅ Notifications sent to all users');
+      const { error: notifError } = await supabaseAdmin.from('notifications').insert(notifications);
+      
+      if (notifError) {
+        console.error('⚠️ Error creating notifications:', notifError);
+      } else {
+        console.log('✅ Notifications sent to all users');
+      }
     }
 
     return NextResponse.json({

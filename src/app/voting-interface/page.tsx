@@ -1,23 +1,42 @@
+'use client';
+
 import React from 'react';
-import type { Metadata } from 'next';
 import Header from '@/components/common/Header';
 import VotingInterfaceInteractive from './components/VotingInterfaceInteractive';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
-
-export const metadata: Metadata = {
-  title: 'Voting Interface - UTASVotes',
-  description:
-    'Cast your secure ballot for departmental and university-wide elections at University of Technical and Applied Sciences with complete transparency and verification.',
-};
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 export default function VotingInterfacePage() {
+  const { profile, loading } = useUserProfile();
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-background">
+          <Header
+            userRole="student"
+            userName="Loading..."
+            notificationCount={0}
+          />
+          <main className="pt-24 pb-12">
+            <div className="mx-4 lg:mx-6">
+              <div className="max-w-7xl mx-auto">
+                <div className="h-96 bg-muted animate-pulse rounded-lg" />
+              </div>
+            </div>
+          </main>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
         <Header
-          userRole="student"
-          userName="John Mensah"
-          userAvatar="https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg"
+          userRole={(profile?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'}
+          userName={profile?.full_name || 'Student'}
+          userAvatar={profile?.avatar_url}
           notificationCount={3}
           electionStatus={{
             isActive: true,

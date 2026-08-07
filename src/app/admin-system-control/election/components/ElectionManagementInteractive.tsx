@@ -145,7 +145,7 @@ const ElectionManagementInteractive = () => {
         })));
       }
 
-      // Fetch candidate applications
+      // Fetch candidate applications (pending ones first)
       const { data: candidatesData } = await supabase
         .from('candidates')
         .select('*')
@@ -154,20 +154,20 @@ const ElectionManagementInteractive = () => {
       if (candidatesData) {
         setApplications(candidatesData.map((c: any) => ({
           id: c.id,
-          candidateName: c.full_name,
-          studentId: c.student_id,
-          email: c.email,
-          position: c.position,
-          department: c.department,
-          avatar: c.avatar || 'https://via.placeholder.com/150',
-          submittedAt: c.created_at,
+          candidateName: c.name || c.full_name || 'Unknown',
+          studentId: c.student_id || 'N/A',
+          email: c.email || 'N/A',
+          position: c.position || 'N/A',
+          department: c.department || 'N/A',
+          avatar: c.avatar || c.photo_url || 'https://via.placeholder.com/150',
+          submittedAt: c.submitted_at || c.created_at,
           documents: {
             idCard: !!c.student_id_doc_url,
             transcript: !!c.transcript_url,
-            manifesto: !!c.manifesto_doc_url,
+            manifesto: !!(c.manifesto || c.manifesto_url || c.manifesto_doc_url),
           },
-          eligibilityStatus: c.eligibility_status || 'pending',
-          paymentStatus: c.payment_status || 'pending',
+          eligibilityStatus: c.status === 'pending' ? 'pending' : c.status === 'approved' ? 'verified' : 'rejected',
+          paymentStatus: c.transaction_id ? 'completed' : 'pending',
           applicationFee: c.application_fee || 0,
         })));
       }

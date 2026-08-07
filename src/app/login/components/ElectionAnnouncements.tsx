@@ -24,21 +24,32 @@ const ElectionAnnouncements = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const { data, error } = await supabase
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000)
+      );
+
+      const fetchPromise = supabase
         .from('announcements')
         .select('*')
         .eq('is_active', true)
         .order('published_at', { ascending: false })
         .limit(10);
 
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
+
       if (error) {
         console.error('Error fetching announcements:', error);
+        // Don't throw, just set empty array
+        setAnnouncements([]);
         return;
       }
 
       setAnnouncements(data || []);
     } catch (error) {
       console.error('Error fetching announcements:', error);
+      // Set empty array on error to prevent UI breaking
+      setAnnouncements([]);
     } finally {
       setIsLoading(false);
     }

@@ -1,23 +1,42 @@
-import type { Metadata } from 'next';
+'use client';
+
+import React from 'react';
 import Header from '@/components/common/Header';
 import CandidateRegistrationInteractive from './components/CandidateRegistrationInteractive';
 import ApplicationGuidelines from './components/ApplicationGuidelines';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
-
-export const metadata: Metadata = {
-  title: 'Candidate Registration - UTASVotes',
-  description:
-    'Apply for electoral positions through our comprehensive candidate registration system with constitutional requirement verification, document submission, and secure payment processing.',
-};
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 export default function CandidateRegistrationPage() {
+  const { profile, loading } = useUserProfile();
+  const [applicationDeadline, setApplicationDeadline] = React.useState<string>('');
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-background">
+          <Header
+            userRole="student"
+            userName="Loading..."
+            notificationCount={0}
+          />
+          <main className="pt-24 pb-16 px-4">
+            <div className="max-w-7xl mx-auto">
+              <div className="h-96 bg-muted animate-pulse rounded-lg" />
+            </div>
+          </main>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
         <Header
-          userRole="student"
-          userName="John Mensah"
-          userAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
+          userRole={(profile?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'}
+          userName={profile?.full_name || 'Student'}
+          userAvatar={profile?.avatar_url}
           notificationCount={3}
           electionStatus={{
             isActive: true,
@@ -75,9 +94,27 @@ export default function CandidateRegistrationPage() {
                 <div>
                   <p className="text-sm text-foreground font-medium">Application Deadline</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Submit your application before{' '}
-                    <span className="font-medium text-primary">25th January 2026, 11:59 PM</span>.
-                    Late applications will not be accepted.
+                    {applicationDeadline ? (
+                      <>
+                        Submit your application before{' '}
+                        <span className="font-medium text-primary">
+                          {new Date(applicationDeadline).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}{' '}
+                          at{' '}
+                          {new Date(applicationDeadline).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
+                        </span>
+                        . Late applications will not be accepted.
+                      </>
+                    ) : (
+                      'Loading deadline information...'
+                    )}
                   </p>
                 </div>
               </div>
@@ -86,12 +123,14 @@ export default function CandidateRegistrationPage() {
 
           <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <CandidateRegistrationInteractive />
+              <CandidateRegistrationInteractive 
+                onDeadlineLoad={(deadline) => setApplicationDeadline(deadline)}
+              />
             </div>
 
             <div>
               <ApplicationGuidelines
-                deadline="2026-01-25T23:59:59"
+                deadline={applicationDeadline || '2026-01-25T23:59:59'}
                 supportEmail="electoral.commission@cktutas.edu.gh"
                 supportPhone="+233 24 123 4567"
               />

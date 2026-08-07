@@ -9,18 +9,30 @@ import EligibilityChecklistForm from './EligibilityChecklistForm';
 import DocumentUploadForm from './DocumentUploadForm';
 import PaymentForm from './PaymentForm';
 import ApplicationReview from './ApplicationReview';
+import { supabase } from '@/lib/supabase';
 
 interface Position {
   id: string;
+  electionId: string; // The actual election ID for foreign key
   title: string;
   description: string;
   fee: number;
   requirements: string[];
 }
 
-const CandidateRegistrationInteractive = () => {
+interface CandidateRegistrationInteractiveProps {
+  onDeadlineLoad?: (deadline: string) => void;
+}
+
+const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrationInteractiveProps) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingPositions, setLoadingPositions] = useState(true);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [elections, setElections] = useState<any[]>([]);
+  const [selectedElectionId, setSelectedElectionId] = useState('');
+  const [applicationDeadline, setApplicationDeadline] = useState<string>('');
   const [formData, setFormData] = useState({
     fullName: '',
     studentId: '',
@@ -48,7 +60,156 @@ const CandidateRegistrationInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
+    loadUserProfile();
+    loadAvailablePositions();
   }, []);
+
+  const loadAvailablePositions = async () => {
+    try {
+      // Fetch active elections with their positions
+      const { data: electionsData, error: electionsError } = await supabase
+        .from('elections')
+        .select('*')
+        .in('status', ['active', 'upcoming']);
+
+      if (electionsError) {
+        console.error('Error fetching elections:', electionsError);
+        setLoadingPositions(false);
+        return;
+      }
+
+      if (!electionsData || electionsData.length === 0) {
+        setPositions([]);
+        setLoadingPositions(false);
+        return;
+      }
+
+      // Set application deadline from the first active election
+      if (electionsData[0]) {
+        const deadline = electionsData[0].nomination_deadline || 
+                        electionsData[0].application_deadline || 
+                        electionsData[0].start_date;
+        if (deadline) {
+          setApplicationDeadline(deadline);
+          if (onDeadlineLoad) {
+            onDeadlineLoad(deadline);
+          }
+        }
+      }
+
+      // Fetch all positions for these elections
+      const electionIds = electionsData.map((e: any) => e.id);
+      const { data: positionsData, error: positionsError } = await supabase
+        .from('positions')
+        .select('*')
+        .in('election_id', electionIds);
+
+      if (positionsError) {
+        console.error('Error fetching positions:', positionsError);
+      }
+
+      // Group positions by election
+      const electionsWithPositions = electionsData.map((election: any) => {
+        const electionPositions = (positionsData || [])
+          .filter((p: any) => p.election_id === election.id)
+          .map((p: any) => ({
+            id: p.id,
+            electionId: p.election_id,
+            title: p.name || p.title || 'Position',
+            description: p.description || `Apply for ${p.name || 'this position'}`,
+            fee: p.application_fee || p.fee || 100,
+            requirements: p.requirements || [
+              'Must be a registered UTAS student',
+              'Minimum CGPA of 2.5 required',
+              'No active disciplinary actions',
+              'Valid student ID and institutional email',
+            ],
+            electionName: election.name || election.title,
+          }));
+
+        return {
+          id: election.id,
+          name: election.name || election.title || 'Election',
+          election_type: election.election_type || 'university-wide',
+          department: election.department,
+          status: election.status,
+          voting_start: election.voting_start || election.start_date,
+          voting_end: election.voting_end || election.end_date,
+          positions: electionPositions,
+        };
+      });
+
+      // Store elections for the position selection form
+      setElections(electionsWithPositions);
+
+      // Also create a flat list of all positions for backward compatibility
+      const allPositions = electionsWithPositions.flatMap((e: any) => e.positions);
+      setPositions(allPositions);
+
+      setLoadingPositions(false);
+    } catch (error) {
+      console.error('Error loading positions:', error);
+      setLoadingPositions(false);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      // Get user credentials from localStorage
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+
+      if (!userId && !userEmail) {
+        setLoadingProfile(false);
+        return;
+      }
+
+      // Fetch user profile
+      let profile = null;
+      if (userId) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (!error && data) {
+          profile = data;
+        }
+      }
+
+      // Fallback to email if userId didn't work
+      if (!profile && userEmail) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', userEmail)
+          .single();
+
+        if (!error && data) {
+          profile = data;
+        }
+      }
+
+      // Auto-fill form with user profile data
+      if (profile) {
+        setFormData({
+          fullName: profile.full_name || '',
+          studentId: profile.student_id || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          department: profile.department || '',
+          level: profile.level || '',
+          cgpa: profile.cgpa || '',
+        });
+      }
+
+      setLoadingProfile(false);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      setLoadingProfile(false);
+    }
+  };
 
   const steps = [
     { id: 1, label: 'Personal Information', description: 'Basic details and contact information' },
@@ -63,81 +224,6 @@ const CandidateRegistrationInteractive = () => {
     { id: 6, label: 'Review & Submit', description: 'Final review before submission' },
   ];
 
-  const positions: Position[] = [
-    {
-      id: 'president',
-      title: 'Student Union President',
-      description: 'Lead the entire student body and represent students at the highest level',
-      fee: 150,
-      requirements: [
-        'Minimum CGPA of 3.0',
-        'Level 300 or above',
-        'Previous leadership experience',
-        'No disciplinary record',
-      ],
-    },
-    {
-      id: 'vicepresident',
-      title: 'Vice President',
-      description: 'Support the President and oversee specific portfolios',
-      fee: 120,
-      requirements: [
-        'Minimum CGPA of 2.8',
-        'Level 200 or above',
-        'Strong organizational skills',
-        'Clean academic record',
-      ],
-    },
-    {
-      id: 'secretary',
-      title: 'General Secretary',
-      description: 'Manage administrative affairs and official communications',
-      fee: 100,
-      requirements: [
-        'Minimum CGPA of 2.5',
-        'Level 200 or above',
-        'Excellent communication skills',
-        'Good standing with university',
-      ],
-    },
-    {
-      id: 'treasurer',
-      title: 'Financial Secretary',
-      description: 'Oversee student union finances and budget management',
-      fee: 100,
-      requirements: [
-        'Minimum CGPA of 2.5',
-        'Level 200 or above',
-        'Financial management knowledge',
-        'Transparent record keeping',
-      ],
-    },
-    {
-      id: 'welfare',
-      title: 'Welfare Officer',
-      description: 'Address student welfare concerns and quality of life issues',
-      fee: 80,
-      requirements: [
-        'Minimum CGPA of 2.5',
-        'Level 100 or above',
-        'Empathy and problem-solving skills',
-        'Active student engagement',
-      ],
-    },
-    {
-      id: 'sports',
-      title: 'Sports Director',
-      description: 'Coordinate sports activities and inter-university competitions',
-      fee: 80,
-      requirements: [
-        'Minimum CGPA of 2.5',
-        'Level 100 or above',
-        'Sports background preferred',
-        'Event management experience',
-      ],
-    },
-  ];
-
   const handleFormChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
     if (errors[field]) {
@@ -145,10 +231,14 @@ const CandidateRegistrationInteractive = () => {
     }
   };
 
-  const handlePositionChange = (positionId: string) => {
+  const handlePositionChange = (positionId: string, electionId: string) => {
     setSelectedPosition(positionId);
+    setSelectedElectionId(electionId);
     if (errors.position) {
       setErrors({ ...errors, position: '' });
+    }
+    if (errors.election) {
+      setErrors({ ...errors, election: '' });
     }
   };
 
@@ -248,16 +338,99 @@ const CandidateRegistrationInteractive = () => {
     }
   };
 
-  const handleSubmit = () => {
-    console.log('Application submitted:', {
-      formData,
-      selectedPosition,
-      eligibilityChecklist,
-      uploads,
-      transactionId,
-    });
+  const handleSubmit = async () => {
+    try {
+      // Get user ID from localStorage
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
 
-    alert('Application submitted successfully! You will receive a confirmation email shortly.');
+      console.log('=== STARTING APPLICATION SUBMISSION ===');
+      console.log('User ID:', userId);
+      console.log('Selected Position ID:', selectedPosition);
+      console.log('Selected Election ID:', selectedElectionId);
+
+      if (!userId) {
+        alert('User session not found. Please log in again.');
+        return;
+      }
+
+      // Get the selected position data
+      const selectedPositionData = positions.find((p) => p.id === selectedPosition);
+      console.log('Selected Position Data:', selectedPositionData);
+      
+      if (!selectedPositionData) {
+        alert('Selected position not found.');
+        return;
+      }
+
+      // Check if payment was completed
+      if (!transactionId) {
+        alert('Payment not completed. Please complete the payment step first.');
+        return;
+      }
+
+      // Prepare application data
+      const applicationData = {
+        userId,
+        electionId: selectedElectionId || selectedPositionData.electionId, // Use the selected election ID
+        positionId: selectedPosition, // This is the position ID
+        positionTitle: selectedPositionData.title,
+        fullName: formData.fullName,
+        studentId: formData.studentId,
+        email: formData.email,
+        phone: formData.phone,
+        department: formData.department,
+        level: formData.level,
+        cgpa: formData.cgpa,
+        transactionId,
+        applicationFee: selectedPositionData.fee,
+        // For now, we'll store file names. In production, these would be uploaded to storage
+        photoUrl: uploads.photo?.name || null,
+        manifestoUrl: uploads.manifesto?.name || null,
+        studentIdUrl: uploads.studentId?.name || null,
+        transcriptUrl: uploads.transcript?.name || null,
+      };
+
+      console.log('📤 Submitting application data:', JSON.stringify(applicationData, null, 2));
+
+      // Submit application to API
+      const response = await fetch('/api/candidate-application/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(applicationData),
+      });
+
+      const result = await response.json();
+
+      console.log('📥 API Response Status:', response.status);
+      console.log('📥 API Response Data:', result);
+
+      if (!response.ok) {
+        console.error('❌ API Error Response:', result);
+        alert(`Failed to submit application: ${result.error || result.details || 'Unknown error'}\n\nPlease check the console for more details.`);
+        throw new Error(result.error || result.details || 'Failed to submit application');
+      }
+
+      console.log('✅ Application submitted successfully:', result);
+
+      // Success!
+      alert(
+        'Application submitted successfully! Your application is now under review by the Electoral Commission. You will receive a confirmation email shortly.'
+      );
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/student-dashboard';
+        }
+      }, 2000);
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      alert(
+        'Failed to submit application. Please try again or contact support if the problem persists.'
+      );
+    }
   };
 
   if (!isHydrated) {
@@ -313,6 +486,8 @@ const CandidateRegistrationInteractive = () => {
             <PositionSelectionForm
               selectedPosition={selectedPosition}
               positions={positions}
+              elections={elections}
+              studentDepartment={formData.department}
               errors={errors}
               onChange={handlePositionChange}
             />
@@ -341,6 +516,7 @@ const CandidateRegistrationInteractive = () => {
               positionTitle={selectedPositionData.title}
               onPaymentComplete={handlePaymentComplete}
               errors={errors}
+              userPhone={formData.phone}
             />
           )}
 

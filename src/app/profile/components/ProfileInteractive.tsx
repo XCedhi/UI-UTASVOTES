@@ -20,23 +20,94 @@ interface ProfileData {
 const ProfileInteractive = () => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
   const [profileData, setProfileData] = useState<ProfileData>({
-    fullName: 'John Mensah',
-    studentId: 'UTAS/2023/001234',
-    email: 'john.mensah@cktutas.edu.gh',
-    phone: '+233 24 123 4567',
-    department: 'Computer Science',
-    level: '300',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    fullName: '',
+    studentId: '',
+    email: '',
+    phone: '',
+    department: '',
+    level: '',
+    avatar: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setIsHydrated(true);
+    fetchUserProfile();
   }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get userId from localStorage
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+      
+      if (!userId && !userEmail) {
+        console.error('No user credentials found');
+        setIsLoading(false);
+        return;
+      }
+
+      // Import supabase
+      const { supabase } = await import('@/lib/supabase');
+
+      // Fetch user profile
+      let profile = null;
+      if (userId) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching profile by ID:', error);
+        } else {
+          profile = data;
+        }
+      }
+      
+      // Fallback to email if userId didn't work
+      if (!profile && userEmail) {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', userEmail)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching profile by email:', error);
+        } else {
+          profile = data;
+        }
+      }
+
+      if (profile) {
+        setProfileData({
+          fullName: profile.full_name || '',
+          studentId: profile.student_id || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+          department: profile.department || '',
+          level: profile.level || '',
+          avatar: profile.avatar_url || '/assets/images/no_image.png',
+        });
+      } else {
+        console.error('No profile found');
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setIsLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -57,7 +128,7 @@ const ProfileInteractive = () => {
     // In production, upload to Supabase Storage here
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header userRole="student" userName="Loading..." notificationCount={0} />

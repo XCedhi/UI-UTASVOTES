@@ -8,7 +8,7 @@ import NotificationCenter from '@/components/common/NotificationCenter';
 import CandidateApplicationCard from './CandidateApplicationCard';
 import ElectionMonitoringCard from './ElectionMonitoringCard';
 import SystemAlertCard from './SystemAlertCard';
-import FeeStructureManager from './FeeStructureManager';
+import ElectionBasedFeeManager from '../election-management/components/ElectionBasedFeeManager';
 import QuickStatsGrid from './QuickStatsGrid';
 import CommissionActivityLog from './CommissionActivityLog';
 import Icon from '@/components/ui/AppIcon';
@@ -120,6 +120,20 @@ const ElectoralCommissionInteractive = () => {
 
   const fetchDashboardData = async () => {
     try {
+      console.log('🔍 Starting fetchDashboardData...');
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Session check:', session ? 'Authenticated' : 'Not authenticated');
+      console.log('User ID:', session?.user?.id);
+      console.log('User email:', session?.user?.email);
+      
+      if (!session) {
+        console.error('❌ No active session - user not authenticated');
+        alert('Authentication error: Please log out and log back in');
+        return;
+      }
+      
       // Fetch elections from database
       const { data: electionsData, error: electionsError } = await supabase
         .from('elections')
@@ -127,7 +141,7 @@ const ElectoralCommissionInteractive = () => {
         .order('created_at', { ascending: false });
 
       if (electionsError) {
-        console.error('Error fetching elections:', electionsError);
+        console.error('Error fetching elections:', electionsError.message || electionsError);
       } else if (electionsData) {
         // Transform database elections to match component interface
         const transformedElections: ElectionData[] = electionsData.map((election) => ({
@@ -190,27 +204,42 @@ const ElectoralCommissionInteractive = () => {
 
       if (candidatesError) {
         console.error('Error fetching candidates:', candidatesError);
+        console.error('Full error details:', JSON.stringify(candidatesError, null, 2));
+        alert(`Error loading applications: ${candidatesError.message}`);
       } else if (candidatesData) {
+        console.log('✅ Fetched candidates data:', candidatesData);
+        console.log('✅ Number of applications found:', candidatesData.length);
+        console.log('✅ First candidate:', candidatesData[0]);
+        
+        if (candidatesData.length === 0) {
+          console.warn('⚠️ No candidates found in database');
+        }
+        
         // Transform database candidates to match component interface
-        const transformedApplications: CandidateApplication[] = candidatesData.map((candidate) => ({
-          id: candidate.id.toString(),
-          candidateName: candidate.full_name || candidate.name || 'Unknown',
-          studentId: candidate.student_id || 'N/A',
-          email: candidate.email || 'N/A',
-          position: candidate.position || 'N/A',
-          department: candidate.department || 'N/A',
-          avatar: candidate.avatar_url || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-          submittedAt: candidate.created_at || new Date().toISOString(),
-          documents: {
-            idCard: !!candidate.id_card_url,
-            transcript: !!candidate.transcript_url,
-            manifesto: !!candidate.manifesto_url,
-          },
-          eligibilityStatus: (candidate.status || 'pending') as 'pending' | 'verified' | 'rejected',
-          paymentStatus: (candidate.payment_status || 'pending') as 'pending' | 'completed',
-          applicationFee: candidate.application_fee || 0,
-        }));
+        const transformedApplications: CandidateApplication[] = candidatesData.map((candidate) => {
+          console.log('Transforming candidate:', candidate.name || candidate.full_name);
+          return {
+            id: candidate.id.toString(),
+            candidateName: candidate.name || candidate.full_name || 'Unknown',
+            studentId: candidate.student_id || 'N/A',
+            email: candidate.email || 'N/A',
+            position: candidate.position || 'N/A',
+            department: candidate.department || 'N/A',
+            avatar: candidate.avatar || candidate.photo_url || 'https://via.placeholder.com/150',
+            submittedAt: candidate.submitted_at || candidate.created_at,
+            documents: {
+              idCard: !!candidate.student_id_doc_url,
+              transcript: !!candidate.transcript_url,
+              manifesto: !!(candidate.manifesto || candidate.manifesto_url || candidate.manifesto_doc_url),
+            },
+            eligibilityStatus: candidate.status === 'pending' ? 'pending' : candidate.status === 'approved' ? 'verified' : 'rejected',
+            paymentStatus: candidate.transaction_id ? 'completed' : 'pending',
+            applicationFee: candidate.application_fee || 0,
+          };
+        });
 
+        console.log('✅ Transformed applications:', transformedApplications);
+        console.log('✅ Setting applications state with', transformedApplications.length, 'items');
         setApplications(transformedApplications);
       }
 
@@ -723,12 +752,7 @@ const ElectoralCommissionInteractive = () => {
                   )}
 
                   {activeTab === 'fees' && (
-                    <FeeStructureManager
-                      feeStructures={feeStructures}
-                      onUpdateFee={handleUpdateFee}
-                      onAddFee={handleAddFee}
-                      onDeleteFee={handleDeleteFee}
-                    />
+                    <ElectionBasedFeeManager />
                   )}
 
                   {activeTab === 'reports' && (

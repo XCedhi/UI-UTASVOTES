@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { supabase } from '@/lib/supabase';
+import { useElectionContext } from '@/contexts/ElectionContext';
 
 interface ManageElectionInteractiveProps {
   electionId: string;
@@ -14,11 +16,15 @@ interface Position {
   name: string;
   candidateCount: number;
   status: 'open' | 'closed';
+  description?: string;
+  applicationFee?: number;
 }
 
 const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProps) => {
   const router = useRouter();
+  const { refreshData } = useElectionContext();
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'settings' | 'positions' | 'candidates' | 'control'>(
     'settings'
   );
@@ -33,18 +39,88 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
     requireVerification: true,
     anonymousVoting: true,
   });
-  const [positions, setPositions] = useState<Position[]>([
-    { id: '1', name: 'SRC President', candidateCount: 4, status: 'open' },
-    { id: '2', name: 'Vice President', candidateCount: 3, status: 'open' },
-    { id: '3', name: 'General Secretary', candidateCount: 5, status: 'open' },
-    { id: '4', name: 'Financial Secretary', candidateCount: 2, status: 'open' },
-  ]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [showPauseModal, setShowPauseModal] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showEditPositionModal, setShowEditPositionModal] = useState(false);
+  const [editingPosition, setEditingPosition] = useState<Position | null>(null);
+  const [editPositionForm, setEditPositionForm] = useState({
+    name: '',
+    description: '',
+    applicationFee: 0,
+  });
 
+  // Load election data from database
   useEffect(() => {
+    const loadElectionData = async () => {
+      try {
+        // Fetch election details
+        const { data: electionData, error: electionError } = await supabase
+          .from('elections')
+          .select('*')
+          .eq('id', electionId)
+          .single();
+
+        if (electionError) {
+          console.error('Error loading election:', electionError);
+          alert('Failed to load election data. Please try again.');
+          return;
+        }
+
+        if (electionData) {
+          setElectionData({
+            name: electionData.name || electionData.title || 'Election',
+            status: electionData.status || 'scheduled',
+            startDate: electionData.voting_start || electionData.start_date || '2026-01-20',
+            endDate: electionData.voting_end || electionData.end_date || '2026-01-23',
+            votingStartTime: '08:00',
+            votingEndTime: '18:00',
+            allowLateVoting: false,
+            requireVerification: true,
+            anonymousVoting: true,
+          });
+        }
+
+        // Fetch positions for this election
+        const { data: positionsData, error: positionsError } = await supabase
+          .from('positions')
+          .select('*')
+          .eq('election_id', electionId);
+
+        if (positionsError) {
+          console.error('Error loading positions:', positionsError);
+        } else if (positionsData) {
+          // For each position, count candidates
+          const positionsWithCounts = await Promise.all(
+            positionsData.map(async (pos: any) => {
+              const { count: candidateCount } = await supabase
+                .from('candidates')
+                .select('*', { count: 'exact', head: true })
+                .eq('election_id', electionId)
+                .eq('position', pos.title);
+
+              return {
+                id: pos.id,
+                name: pos.title,
+                candidateCount: candidateCount || 0,
+                status: 'open' as const,
+                description: pos.description || '',
+                applicationFee: pos.application_fee || 0,
+              };
+            })
+          );
+
+          setPositions(positionsWithCounts);
+        }
+      } catch (error) {
+        console.error('Error loading election data:', error);
+        alert('An error occurred while loading election data.');
+      }
+    };
+
+    loadElectionData();
     setIsHydrated(true);
-  }, []);
+  }, [electionId]);
 
   if (!isHydrated) {
     return (
@@ -57,36 +133,183 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
     );
   }
 
-  const handleSaveSettings = () => {
-    console.log('Saving election settings:', electionData);
-    alert('Election settings updated successfully!');
+  const handleSaveSettings = async () => {
+    try {
+      setIsSaving(true);
+
+      // Update election in database - only use columns that exist
+      const { error } = await supabase
+        .from('elections')
+        .update({
+          title: electionData.name,
+          status: electionData.status,
+          start_date: electionData.startDate,
+          end_date: electionData.endDate,
+        })
+        .eq('id', electionId);
+
+      if (error) {
+        console.error('Error saving election:', error);
+        alert(`Failed to save election settings: ${error.message}`);
+        return;
+      }
+
+      // Refresh election data across the app
+      await refreshData();
+
+      alert('Election settings updated successfully!');
+    } catch (error: any) {
+      console.error('Error saving election settings:', error);
+      alert(`An error occurred while saving: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handlePauseElection = () => {
-    setElectionData({ ...electionData, status: 'paused' });
-    setShowPauseModal(false);
-    alert('Election paused successfully');
+  const handlePauseElection = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({ status: 'paused' })
+        .eq('id', electionId);
+
+      if (error) {
+        console.error('Error pausing election:', error);
+        alert('Failed to pause election. Please try again.');
+        return;
+      }
+
+      setElectionData({ ...electionData, status: 'paused' });
+      setShowPauseModal(false);
+      await refreshData();
+      alert('Election paused successfully');
+    } catch (error) {
+      console.error('Error pausing election:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
-  const handleResumeElection = () => {
-    setElectionData({ ...electionData, status: 'active' });
-    alert('Election resumed successfully');
+  const handleResumeElection = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({ status: 'active' })
+        .eq('id', electionId);
+
+      if (error) {
+        console.error('Error resuming election:', error);
+        alert('Failed to resume election. Please try again.');
+        return;
+      }
+
+      setElectionData({ ...electionData, status: 'active' });
+      await refreshData();
+      alert('Election resumed successfully');
+    } catch (error) {
+      console.error('Error resuming election:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
-  const handleEndElection = () => {
-    setElectionData({ ...electionData, status: 'completed' });
-    setShowEndModal(false);
-    alert('Election ended successfully');
+  const handleEndElection = async () => {
+    try {
+      const { error } = await supabase
+        .from('elections')
+        .update({ status: 'completed' })
+        .eq('id', electionId);
+
+      if (error) {
+        console.error('Error ending election:', error);
+        alert('Failed to end election. Please try again.');
+        return;
+      }
+
+      setElectionData({ ...electionData, status: 'completed' });
+      setShowEndModal(false);
+      await refreshData();
+      alert('Election ended successfully');
+    } catch (error) {
+      console.error('Error ending election:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
-  const handleTogglePosition = (id: string) => {
-    setPositions(
-      positions.map((p) =>
-        p.id === id
-          ? { ...p, status: p.status === 'open' ? ('closed' as const) : ('open' as const) }
-          : p
-      )
-    );
+  const handleTogglePosition = async (id: string) => {
+    const position = positions.find(p => p.id === id);
+    if (!position) return;
+
+    const newStatus = position.status === 'open' ? 'closed' : 'open';
+
+    try {
+      // Update in database - you can add a status column to positions table if needed
+      // For now, we'll just update the local state
+      setPositions(
+        positions.map((p) =>
+          p.id === id
+            ? { ...p, status: newStatus }
+            : p
+        )
+      );
+
+      alert(`Position "${position.name}" is now ${newStatus}`);
+    } catch (error) {
+      console.error('Error toggling position:', error);
+      alert('Failed to update position status. Please try again.');
+    }
+  };
+
+  const handleEditPosition = (position: Position) => {
+    setEditingPosition(position);
+    setEditPositionForm({
+      name: position.name,
+      description: position.description || '',
+      applicationFee: position.applicationFee || 0,
+    });
+    setShowEditPositionModal(true);
+  };
+
+  const handleSavePositionEdit = async () => {
+    if (!editingPosition) return;
+
+    try {
+      // Update position in database
+      const { error } = await supabase
+        .from('positions')
+        .update({
+          title: editPositionForm.name,
+          description: editPositionForm.description,
+          application_fee: editPositionForm.applicationFee,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editingPosition.id);
+
+      if (error) {
+        console.error('Error updating position:', error);
+        alert('Failed to update position. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setPositions(
+        positions.map((p) =>
+          p.id === editingPosition.id
+            ? {
+                ...p,
+                name: editPositionForm.name,
+                description: editPositionForm.description,
+                applicationFee: editPositionForm.applicationFee,
+              }
+            : p
+        )
+      );
+
+      setShowEditPositionModal(false);
+      setEditingPosition(null);
+      alert('Position updated successfully!');
+    } catch (error) {
+      console.error('Error saving position:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
   return (
@@ -316,10 +539,20 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
 
                   <button
                     onClick={handleSaveSettings}
-                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth"
+                    disabled={isSaving}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Icon name="CheckCircleIcon" size={20} variant="outline" />
-                    <span className="font-medium">Save Settings</span>
+                    {isSaving ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                        <span className="font-medium">Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="CheckCircleIcon" size={20} variant="outline" />
+                        <span className="font-medium">Save Settings</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
@@ -361,6 +594,7 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
                           <button
                             onClick={() => handleTogglePosition(position.id)}
                             className="p-2 hover:bg-background rounded-md transition-all duration-250 ease-smooth"
+                            title={position.status === 'open' ? 'Close position' : 'Open position'}
                           >
                             <Icon
                               name={position.status === 'open' ? 'LockClosedIcon' : 'LockOpenIcon'}
@@ -369,7 +603,11 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
                               className="text-muted-foreground"
                             />
                           </button>
-                          <button className="p-2 hover:bg-background rounded-md transition-all duration-250 ease-smooth">
+                          <button
+                            onClick={() => handleEditPosition(position)}
+                            className="p-2 hover:bg-background rounded-md transition-all duration-250 ease-smooth"
+                            title="Edit position"
+                          >
                             <Icon
                               name="PencilIcon"
                               size={20}
@@ -563,6 +801,97 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
                 className="flex-1 px-4 py-2 bg-error text-error-foreground rounded-md hover:bg-error/90 transition-all duration-250 ease-smooth"
               >
                 End Election
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Position Modal */}
+      {showEditPositionModal && editingPosition && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[1200] flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-md p-6 max-w-lg w-full">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-heading font-semibold text-foreground">Edit Position</h3>
+              <button
+                onClick={() => {
+                  setShowEditPositionModal(false);
+                  setEditingPosition(null);
+                }}
+                className="p-2 hover:bg-muted rounded-md transition-all duration-250 ease-smooth"
+              >
+                <Icon name="XMarkIcon" size={20} variant="outline" className="text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Position Name *
+                </label>
+                <input
+                  type="text"
+                  value={editPositionForm.name}
+                  onChange={(e) => setEditPositionForm({ ...editPositionForm, name: e.target.value })}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="e.g., President"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={editPositionForm.description}
+                  onChange={(e) => setEditPositionForm({ ...editPositionForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Brief description of the position"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Application Fee (GHS)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editPositionForm.applicationFee}
+                  onChange={(e) => setEditPositionForm({ ...editPositionForm, applicationFee: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-4 py-2 bg-background border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="bg-muted/30 border border-border rounded-md p-3">
+                <div className="flex items-start gap-2">
+                  <Icon name="InformationCircleIcon" size={20} variant="solid" className="text-primary flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium text-foreground mb-1">Note:</p>
+                    <p>Changes to the application fee will only affect new applications. Existing candidates will not be affected.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditPositionModal(false);
+                  setEditingPosition(null);
+                }}
+                className="flex-1 px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-all duration-250 ease-smooth"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePositionEdit}
+                className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth"
+              >
+                Save Changes
               </button>
             </div>
           </div>

@@ -6,6 +6,7 @@ import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { supabase } from '@/lib/supabase';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface Reply {
   id: string;
@@ -51,7 +52,7 @@ const CampaignFeedInteractive = () => {
   const router = useRouter();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { profile: currentUser, loading: profileLoading } = useUserProfile();
   const [activeFilter, setActiveFilter] = useState<
     'all' | 'manifesto' | 'video' | 'announcement' | 'qa' | 'discussion'
   >('all');
@@ -63,109 +64,86 @@ const CampaignFeedInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-    fetchCurrentUser();
     fetchFeedItems();
   }, []);
 
-  const fetchCurrentUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        setCurrentUser(profile);
-      }
-    } catch (error) {
-      console.error('Error fetching current user:', error);
+  useEffect(() => {
+    if (currentUser) {
+      fetchFeedItems();
     }
-  };
+  }, [currentUser]);
 
   const fetchFeedItems = async () => {
     try {
       setIsLoading(true);
       
-      // Fetch feed items with user profiles
+      // Fetch feed items - they already have author info denormalized
       const { data: feedData, error } = await supabase
         .from('feed_items')
-        .select(`
-          *,
-          user_profiles!inner(
-            full_name,
-            avatar_url,
-            student_id,
-            department,
-            role
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching feed items:', error);
+        // Don't throw error, just set empty array
         setFeedItems([]);
+        setIsLoading(false);
         return;
       }
 
       if (!feedData || feedData.length === 0) {
+        console.log('No feed items found in database');
         setFeedItems([]);
+        setIsLoading(false);
         return;
       }
 
       // Transform database data to match FeedItem interface
       const transformedItems: FeedItem[] = await Promise.all(
         feedData.map(async (item: any) => {
-          // Fetch comments count
-          const { count: commentsCount } = await supabase
-            .from('comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('feed_id', item.id);
-
-          // Fetch likes count
-          const { count: likesCount } = await supabase
-            .from('likes')
-            .select('*', { count: 'exact', head: true })
-            .eq('feed_id', item.id);
-
           // Check if current user liked this post
           let isLiked = false;
           if (currentUser) {
-            const { data: userLike } = await supabase
-              .from('likes')
-              .select('id')
-              .eq('feed_id', item.id)
-              .eq('user_id', currentUser.id)
-              .single();
-            isLiked = !!userLike;
+            try {
+              const { data: userLike } = await supabase
+                .from('post_likes')
+                .select('id')
+                .eq('post_id', item.id)
+                .eq('user_id', currentUser.id)
+                .single();
+              isLiked = !!userLike;
+            } catch (likeError) {
+              // Ignore like check errors
+              isLiked = false;
+            }
           }
 
           return {
             id: item.id,
-            authorName: item.user_profiles.full_name,
-            authorAvatar: item.user_profiles.avatar_url || '/assets/images/no_image.png',
-            authorRole: item.user_profiles.role === 'candidate' ? 'candidate' : 'student',
+            authorName: item.author_name || 'Unknown',
+            authorAvatar: item.author_avatar || '/assets/images/no_image.png',
+            authorRole: item.author_role || 'student',
             position: item.position || undefined,
-            department: item.user_profiles.department,
+            department: item.department || 'Unknown',
             type: item.type || 'discussion',
             title: item.title || '',
             content: item.content || '',
             hashtags: item.hashtags || [],
             timestamp: item.created_at,
-            likes: likesCount || 0,
+            likes: item.likes_count || 0,
             comments: [], // Will be loaded when expanded
-            shares: item.shares || 0,
+            shares: item.shares_count || 0,
             isLiked,
-            imageUrl: item.image_url || undefined,
+            imageUrl: item.media_url || undefined,
           };
         })
       );
 
       setFeedItems(transformedItems);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error in fetchFeedItems:', error);
       setFeedItems([]);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -183,18 +161,59 @@ const CampaignFeedInteractive = () => {
     return `${days}d ago`;
   };
 
-  const handleLike = (id: string) => {
-    setFeedItems((items) =>
-      items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              isLiked: !item.isLiked,
-              likes: item.isLiked ? item.likes - 1 : item.likes + 1,
-            }
-          : item
-      )
-    );
+  const handleLike = async (id: string) => {
+    if (!currentUser) {
+      alert('Please login to like posts');
+      return;
+    }
+
+    try {
+      const item = feedItems.find((i) => i.id === id);
+      if (!item) return;
+
+      if (item.isLiked) {
+        // Unlike: Remove from database
+        await supabase
+          .from('post_likes')
+          .delete()
+          .eq('post_id', id)
+          .eq('user_id', currentUser.id);
+
+        setFeedItems((items) =>
+          items.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  isLiked: false,
+                  likes: item.likes - 1,
+                }
+              : item
+          )
+        );
+      } else {
+        // Like: Add to database
+        await supabase
+          .from('post_likes')
+          .insert({
+            post_id: id,
+            user_id: currentUser.id,
+          });
+
+        setFeedItems((items) =>
+          items.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  isLiked: true,
+                  likes: item.likes + 1,
+                }
+              : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    }
   };
 
   const handleAddComment = (postId: string) => {
@@ -329,10 +348,15 @@ const CampaignFeedInteractive = () => {
     alert('Post shared successfully!');
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || isLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="student" userName="Loading..." notificationCount={0} />
+        <Header 
+          userRole={currentUser?.role || 'student'} 
+          userName={currentUser?.full_name || 'Loading...'} 
+          userAvatar={currentUser?.avatar_url}
+          notificationCount={0} 
+        />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-4xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -348,9 +372,9 @@ const CampaignFeedInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole="student"
-        userName="John Mensah"
-        userAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
+        userRole={currentUser?.role || 'student'}
+        userName={currentUser?.full_name || 'Guest User'}
+        userAvatar={currentUser?.avatar_url}
         notificationCount={3}
         electionStatus={{
           isActive: true,
@@ -405,7 +429,29 @@ const CampaignFeedInteractive = () => {
 
           {/* Feed Items */}
           <div className="space-y-6">
-            {filteredItems.map((item) => (
+            {filteredItems.length === 0 ? (
+              <div className="bg-card border border-border rounded-lg p-12 text-center">
+                <Icon
+                  name="ChatBubbleLeftRightIcon"
+                  size={64}
+                  variant="outline"
+                  className="mx-auto text-muted-foreground mb-4"
+                />
+                <h3 className="font-heading font-semibold text-xl text-foreground mb-2">
+                  No posts yet
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  Be the first to share your thoughts and start a discussion!
+                </p>
+                <button
+                  onClick={() => router.push('/campaign-feed/create')}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 shadow-md"
+                >
+                  Create First Post
+                </button>
+              </div>
+            ) : (
+              filteredItems.map((item) => (
               <div key={item.id} className="bg-card border border-border rounded-lg p-6">
                 {/* Post Header */}
                 <div className="flex items-start gap-4 mb-4">
@@ -489,7 +535,7 @@ const CampaignFeedInteractive = () => {
                     <div className="flex gap-3">
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
                         <AppImage
-                          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
+                          src={currentUser?.avatar_url || '/assets/images/no_image.png'}
                           alt="You"
                           className="w-full h-full object-cover"
                         />
@@ -628,7 +674,8 @@ const CampaignFeedInteractive = () => {
                   </div>
                 )}
               </div>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </main>

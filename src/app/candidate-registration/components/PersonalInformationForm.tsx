@@ -18,16 +18,65 @@ interface PersonalInformationFormProps {
 }
 
 const PersonalInformationForm = ({ formData, errors, onChange }: PersonalInformationFormProps) => {
-  const departments = [
-    'Computer Science',
-    'Information Technology',
-    'Software Engineering',
-    'Electrical Engineering',
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Business Administration',
-    'Accounting',
-  ];
+  // UTAS Schools and Departments
+  const departmentsBySchool = {
+    'School of Environment and Life Sciences': [
+      'Department of Environmental Science',
+      'Department of Applied Biology',
+    ],
+    'School of Physical Sciences': [
+      'Department of Applied Physics',
+      'Department of Earth Science',
+      'Department of Material Science',
+      'Department of Geo-Informatics and Spatial Development',
+    ],
+    'School of Chemical and Biochemical Sciences': [
+      'Department of Applied Chemistry',
+      'Department of Biochemistry and Forensic Sciences',
+      'Department of Pharmaceutical Technology',
+      'Department of Industrial Chemistry & Laboratory Technology',
+    ],
+    'School of Mathematical Sciences': [
+      'Department of Mathematics',
+      'Department of Statistics & Actuarial Science',
+      'Department of Industrial Mathematics',
+      'Department of Biometry',
+    ],
+    'School of Computing and Information Sciences': [
+      'Department of Computer Science',
+      'Department of Information Systems and Technology',
+      'Department of Business Computing',
+      'Department of Cyber Security and Computer Engineering Technology',
+    ],
+    'School of Public Health': [
+      'Department of Population, Family & Reproductive Health (PFR)',
+      'Department of Epidemiology and Biostatistics (EPB)',
+    ],
+    'School of Science, Mathematics & Technology Education': [
+      'Department of Mathematics & ICT Education',
+      'Department of Basic Education',
+      'Department of Science Education',
+    ],
+    'School of Medical Sciences': [
+      'Department of Anaesthesia & Intensive Care',
+      'Department of Clinical Microbiology & Immunology',
+    ],
+    'School of Nursing & Midwifery': [
+      'Department of Maternal and Child Health Nursing',
+      'Department of General and Preventive Health Nursing',
+    ],
+    'School of Agriculture': [
+      'Department of Crop Science and Biotechnology',
+      'Department of Fisheries and Aquaculture',
+    ],
+  };
+
+  // Flatten all departments for the dropdown
+  const allDepartments: string[] = [];
+  Object.entries(departmentsBySchool).forEach(([school, depts]) => {
+    allDepartments.push(school); // Add school as optgroup label
+    depts.forEach(dept => allDepartments.push(dept));
+  });
 
   const levels = ['100', '200', '300', '400'];
 
@@ -156,10 +205,14 @@ const PersonalInformationForm = ({ formData, errors, onChange }: PersonalInforma
               }`}
             >
               <option value="">Select your department</option>
-              {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
+              {Object.entries(departmentsBySchool).map(([school, depts]) => (
+                <optgroup key={school} label={school}>
+                  {depts.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <Icon

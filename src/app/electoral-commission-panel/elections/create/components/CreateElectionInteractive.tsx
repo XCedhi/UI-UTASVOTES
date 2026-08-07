@@ -42,16 +42,58 @@ const CreateElectionInteractive = () => {
     setIsHydrated(true);
   }, []);
 
-  const departments = [
-    'Computer Science',
-    'Information Technology',
-    'Software Engineering',
-    'Cyber Security',
-    'Data Science',
-    'Business Administration',
-    'Accounting',
-    'Marketing',
-  ];
+  // UTAS Schools and Departments
+  const departmentsBySchool = {
+    'School of Environment and Life Sciences': [
+      'Department of Environmental Science',
+      'Department of Applied Biology',
+    ],
+    'School of Physical Sciences': [
+      'Department of Applied Physics',
+      'Department of Earth Science',
+      'Department of Material Science',
+      'Department of Geo-Informatics and Spatial Development',
+    ],
+    'School of Chemical and Biochemical Sciences': [
+      'Department of Applied Chemistry',
+      'Department of Biochemistry and Forensic Sciences',
+      'Department of Pharmaceutical Technology',
+      'Department of Industrial Chemistry & Laboratory Technology',
+    ],
+    'School of Mathematical Sciences': [
+      'Department of Mathematics',
+      'Department of Statistics & Actuarial Science',
+      'Department of Industrial Mathematics',
+      'Department of Biometry',
+    ],
+    'School of Computing and Information Sciences': [
+      'Department of Computer Science',
+      'Department of Information Systems and Technology',
+      'Department of Business Computing',
+      'Department of Cyber Security and Computer Engineering Technology',
+    ],
+    'School of Public Health': [
+      'Department of Population, Family & Reproductive Health (PFR)',
+      'Department of Epidemiology and Biostatistics (EPB)',
+    ],
+    'School of Science, Mathematics & Technology Education': [
+      'Department of Mathematics & ICT Education',
+      'Department of Basic Education',
+      'Department of Science Education',
+    ],
+    'School of Medical Sciences': [
+      'Department of Anaesthesia & Intensive Care',
+      'Department of Clinical Microbiology & Immunology',
+    ],
+    'School of Nursing & Midwifery': [
+      'Department of Maternal and Child Health Nursing',
+      'Department of General and Preventive Health Nursing',
+    ],
+    'School of Agriculture': [
+      'Department of Crop Science and Biotechnology',
+      'Department of Fisheries and Aquaculture',
+    ],
+  };
 
   const handleInputChange = (field: keyof ElectionFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -350,10 +392,14 @@ const CreateElectionInteractive = () => {
                       } rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground`}
                     >
                       <option value="">Select Department</option>
-                      {departments.map((dept) => (
-                        <option key={dept} value={dept}>
-                          {dept}
-                        </option>
+                      {Object.entries(departmentsBySchool).map(([school, depts]) => (
+                        <optgroup key={school} label={school}>
+                          {depts.map((dept) => (
+                            <option key={dept} value={dept}>
+                              {dept}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                     {errors.department && <p className="mt-1 text-sm text-error">{errors.department}</p>}

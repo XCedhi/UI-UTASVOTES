@@ -68,17 +68,34 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      // Attempt to sign in with Supabase
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      // Add timeout wrapper for authentication
+      const authTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Authentication timeout - please check your internet connection')), 15000)
+      );
+
+      const authPromise = supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      // Attempt to sign in with Supabase with timeout
+      const { data: authData, error: authError } = await Promise.race([authPromise, authTimeout]) as any;
+
       if (authError) {
         console.error('❌ Authentication error:', authError);
-        setErrors({
-          general: 'Invalid email or password. Please check your credentials and try again.',
-        });
+        
+        // Provide more specific error messages
+        let errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        
+        if (authError.message?.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials.';
+        } else if (authError.message?.includes('Email not confirmed')) {
+          errorMessage = 'Please verify your email address before logging in.';
+        } else if (authError.message?.includes('network')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        }
+        
+        setErrors({ general: errorMessage });
         setIsLoading(false);
         return;
       }
@@ -92,21 +109,67 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
       }
 
       console.log('✅ User authenticated:', authData.user.id);
+      console.log('Auth data:', {
+        userId: authData.user.id,
+        email: authData.user.email,
+        emailConfirmed: authData.user.email_confirmed_at,
+        session: authData.session ? 'exists' : 'missing'
+      });
 
       // Wait a moment for the session to be fully established
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Fetch user profile from database
+      // Get the current session to ensure it's active
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('Session check:', sessionData.session ? 'Active' : 'Inactive');
+
+      // Fetch user profile from database with better error handling
+      console.log('Fetching profile for user:', authData.user.id);
+      
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to avoid PGRST116 error
 
-      if (profileError || !profile) {
+      console.log('Profile fetch result:', {
+        hasProfile: !!profile,
+        hasError: !!profileError,
+        errorCode: profileError?.code,
+        errorMessage: profileError?.message
+      });
+
+      if (profileError) {
         console.error('❌ Profile fetch error:', profileError);
+        console.error('Error details:', {
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+          code: profileError.code
+        });
+        
+        // Provide specific error message based on error type
+        let errorMessage = 'Failed to load user profile. ';
+        
+        if (profileError.code === 'PGRST116') {
+          errorMessage += 'No profile found for this user. Please contact support to set up your account.';
+        } else if (profileError.message?.includes('permission denied') || profileError.message?.includes('RLS')) {
+          errorMessage += 'Permission denied. Please contact support to fix your account permissions.';
+        } else if (profileError.message?.includes('JWT')) {
+          errorMessage += 'Session error. Please try logging in again.';
+        } else {
+          errorMessage += 'Please contact support. Error: ' + profileError.message;
+        }
+        
+        setErrors({ general: errorMessage });
+        setIsLoading(false);
+        return;
+      }
+
+      if (!profile) {
+        console.error('❌ No profile data returned');
         setErrors({
-          general: 'Failed to load user profile. Please contact support.',
+          general: 'No profile found for this user. Please contact support.',
         });
         setIsLoading(false);
         return;
@@ -126,6 +189,7 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
           avatar: profile.avatar_url,
           accessEndDate: profile.access_end_date,
           originalRole: profile.role as UserRole,
+          userId: authData.user.id,
         });
 
         // Redirect to password change page
@@ -165,6 +229,7 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
         avatar: profile.avatar_url,
         accessEndDate: profile.access_end_date,
         originalRole: profile.role as UserRole,
+        userId: authData.user.id,
       });
 
       // Check for commission expiry
@@ -188,9 +253,19 @@ const LoginForm = ({ onSubmit }: LoginFormProps) => {
       router.push(getRoleDashboard(profile.role as UserRole));
     } catch (error: any) {
       console.error('❌ Login error:', error);
-      setErrors({
-        general: 'An unexpected error occurred. Please try again.',
-      });
+      
+      // Provide specific error messages based on error type
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.message?.includes('timeout')) {
+        errorMessage = 'Connection timeout. Please check your internet connection and try again.';
+      } else if (error.message?.includes('fetch') || error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error.message?.includes('Failed to fetch')) {
+        errorMessage = 'Unable to connect to the server. Please check your internet connection or try again later.';
+      }
+      
+      setErrors({ general: errorMessage });
       setIsLoading(false);
     }
   };

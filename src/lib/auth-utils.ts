@@ -9,6 +9,7 @@ export interface UserSession {
   avatar?: string;
   accessEndDate?: string | null;
   originalRole?: UserRole | null;
+  userId?: string;
 }
 
 export const getUserSession = (): UserSession | null => {
@@ -21,6 +22,7 @@ export const getUserSession = (): UserSession | null => {
     const avatar = localStorage.getItem('userAvatar');
     const accessEndDate = localStorage.getItem('userAccessEndDate');
     const originalRole = localStorage.getItem('userOriginalRole') as UserRole | null;
+    const userId = localStorage.getItem('userId');
 
     if (!role || !email) return null;
 
@@ -34,10 +36,10 @@ export const getUserSession = (): UserSession | null => {
       localStorage.removeItem('userAccessEndDate');
       localStorage.removeItem('userOriginalRole');
 
-      return { email, role: effectiveRole, name, avatar };
+      return { email, role: effectiveRole, name, avatar, userId: userId || undefined };
     }
 
-    return { email, role, name, avatar, accessEndDate, originalRole };
+    return { email, role, name, avatar, accessEndDate, originalRole, userId: userId || undefined };
   } catch {
     return null;
   }
@@ -52,6 +54,7 @@ export const setUserSession = (session: UserSession) => {
   if (session.avatar) localStorage.setItem('userAvatar', session.avatar);
   if (session.accessEndDate) localStorage.setItem('userAccessEndDate', session.accessEndDate);
   if (session.originalRole) localStorage.setItem('userOriginalRole', session.originalRole);
+  if (session.userId) localStorage.setItem('userId', session.userId);
 };
 
 export const clearUserSession = () => {
@@ -63,6 +66,7 @@ export const clearUserSession = () => {
   localStorage.removeItem('userAvatar');
   localStorage.removeItem('userAccessEndDate');
   localStorage.removeItem('userOriginalRole');
+  localStorage.removeItem('userId');
 };
 
 export const getRoleDashboard = (role: UserRole): string => {

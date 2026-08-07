@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface IssueForm {
   title: string;
@@ -22,6 +23,7 @@ const ReportIssueInteractive = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [ticketNumber, setTicketNumber] = useState('');
+  const { profile, loading: profileLoading } = useUserProfile();
   const [formData, setFormData] = useState<IssueForm>({
     title: '',
     category: 'bug',
@@ -78,10 +80,15 @@ const ReportIssueInteractive = () => {
     setIsSuccess(true);
   };
 
-  if (!isHydrated) {
+  if (!isHydrated || profileLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="student" userName="Loading..." notificationCount={0} />
+        <Header 
+          userRole={(profile?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'} 
+          userName={profile?.full_name || 'Loading...'} 
+          userAvatar={profile?.avatar_url}
+          notificationCount={0} 
+        />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-5xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -94,9 +101,9 @@ const ReportIssueInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole="student"
-        userName="John Mensah"
-        userAvatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop"
+        userRole={(profile?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'}
+        userName={profile?.full_name || 'Student'}
+        userAvatar={profile?.avatar_url}
         notificationCount={3}
         electionStatus={{
           isActive: true,

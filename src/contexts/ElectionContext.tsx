@@ -130,7 +130,7 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
           candidatesData.map((c: any) => ({
             id: c.id,
             electionId: c.election_id,
-            name: c.name,
+            name: c.full_name || c.name, // Use full_name from database
             position: c.position,
             status: c.status,
             manifesto: c.manifesto || '',

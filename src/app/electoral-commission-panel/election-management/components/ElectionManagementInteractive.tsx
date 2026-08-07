@@ -8,7 +8,7 @@ import NotificationCenter from '@/components/common/NotificationCenter';
 import CandidateApplicationCard from '@/app/electoral-commission-panel/components/CandidateApplicationCard';
 import ElectionMonitoringCard from '@/app/electoral-commission-panel/components/ElectionMonitoringCard';
 import SystemAlertCard from '@/app/electoral-commission-panel/components/SystemAlertCard';
-import DatabaseFeeManager from './DatabaseFeeManager';
+import ElectionBasedFeeManager from './ElectionBasedFeeManager';
 import QuickStatsGrid from '@/app/electoral-commission-panel/components/QuickStatsGrid';
 import CommissionActivityLog from '@/app/electoral-commission-panel/components/CommissionActivityLog';
 import Icon from '@/components/ui/AppIcon';
@@ -181,7 +181,7 @@ const ElectionManagementInteractive = () => {
       if (electionsData) {
         const now = new Date();
         
-        // Update status for each election based on dates
+        // Update status for each election based on dates and fetch related data
         const updatedElections = await Promise.all(
           electionsData.map(async (e: any) => {
             const votingStart = new Date(e.voting_start || e.start_date);
@@ -205,24 +205,70 @@ const ElectionManagementInteractive = () => {
                 .from('elections')
                 .update({ status: correctStatus, updated_at: new Date().toISOString() })
                 .eq('id', e.id);
-              
-              return { ...e, status: correctStatus };
             }
             
-            return e;
+            // Fetch positions count for this election
+            const { count: positionsCount } = await supabase
+              .from('positions')
+              .select('*', { count: 'exact', head: true })
+              .eq('election_id', e.id);
+            
+            // Fetch candidates count for this election
+            const { count: candidatesCount } = await supabase
+              .from('candidates')
+              .select('*', { count: 'exact', head: true })
+              .eq('election_id', e.id);
+            
+            // Fetch total eligible voters for this election
+            // For departmental elections, count users in that department
+            // For university-wide, count all students
+            let totalVoters = 0;
+            if (e.election_type === 'departmental' && e.department) {
+              const { count: deptVoters } = await supabase
+                .from('user_profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('role', 'student')
+                .eq('department', e.department);
+              totalVoters = deptVoters || 0;
+            } else {
+              const { count: allVoters } = await supabase
+                .from('user_profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('role', 'student');
+              totalVoters = allVoters || 0;
+            }
+            
+            // Fetch voted count (from votes table if it exists)
+            const { count: votedCount } = await supabase
+              .from('votes')
+              .select('user_id', { count: 'exact', head: true })
+              .eq('election_id', e.id);
+            
+            // Calculate turnout percentage
+            const turnoutPercentage = totalVoters > 0 ? (votedCount || 0) / totalVoters * 100 : 0;
+            
+            return {
+              ...e,
+              status: correctStatus,
+              positions_count: positionsCount || 0,
+              candidates_count: candidatesCount || 0,
+              total_voters: totalVoters,
+              voted_count: votedCount || 0,
+              turnout_percentage: turnoutPercentage,
+            };
           })
         );
 
         setElections(updatedElections.map((e: any) => ({
           id: e.id,
-          name: e.name || e.title, // Support both old and new column names
+          name: e.name || e.title,
           status: e.status,
           totalVoters: e.total_voters || 0,
           votedCount: e.voted_count || 0,
-          startDate: e.voting_start || e.start_date, // Support both old and new column names
-          endDate: e.voting_end || e.end_date, // Support both old and new column names
-          positions: 1, // You can calculate this from election_positions table
-          candidates: 0, // Will be calculated
+          startDate: e.voting_start || e.start_date,
+          endDate: e.voting_end || e.end_date,
+          positions: e.positions_count || 0,
+          candidates: e.candidates_count || 0,
           turnoutPercentage: e.turnout_percentage || 0,
         })));
       }
@@ -1054,7 +1100,7 @@ const ElectionManagementInteractive = () => {
                   )}
 
                   {activeTab === 'fees' && (
-                    <DatabaseFeeManager />
+                    <ElectionBasedFeeManager />
                   )}
 
                   {activeTab === 'reports' && (

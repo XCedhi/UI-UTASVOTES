@@ -62,22 +62,26 @@ const VotingInterfaceInteractive = () => {
     setIsHydrated(true);
   }, []);
 
-  // Map global elections to local structure
-  const elections: LocalElection[] = globalElections.map((e) => ({
-    id: e.id,
-    name: e.title,
-    category: e.type,
-    positions: 1, // Simplified for now
-    votingDeadline: e.endDate,
-    description: e.description,
-    isCompleted: e.hasVoted,
-  }));
+  // Map global elections to local structure - ONLY ACTIVE ELECTIONS
+  const elections: LocalElection[] = globalElections
+    .filter((e) => e.status === 'active') // Only show active elections
+    .map((e) => ({
+      id: e.id,
+      name: e.title,
+      category: e.type,
+      positions: 1, // Simplified for now
+      votingDeadline: e.endDate,
+      description: e.description,
+      isCompleted: e.hasVoted,
+    }));
 
   // Generate positions (simplified: 1 position per election based on election.position)
-  const positions: Position[] = globalElections.map((e) => ({
-    id: `pos-${e.id}`,
-    name: e.position,
-    electionId: e.id,
+  const positions: Position[] = globalElections
+    .filter((e) => e.status === 'active') // Only active elections
+    .map((e) => ({
+      id: `pos-${e.id}`,
+      name: e.position,
+      electionId: e.id,
     isCompleted:
       selectedCandidateIds.size > 0 &&
       Array.from(selectedCandidateIds).some(
@@ -92,7 +96,7 @@ const VotingInterfaceInteractive = () => {
       id: c.id,
       name: c.name,
       photo: c.avatar || 'https://via.placeholder.com/150',
-      photoAlt: c.name,
+      photoAlt: c.name || 'Candidate photo',
       position: c.position,
       positionId: `pos-${c.electionId}`,
       department: c.department || 'N/A',

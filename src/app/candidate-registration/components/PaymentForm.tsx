@@ -8,9 +8,10 @@ interface PaymentFormProps {
   positionTitle: string;
   onPaymentComplete: (transactionId: string) => void;
   errors: Record<string, string>;
+  userPhone?: string; // Add user's phone number from profile
 }
 
-const PaymentForm = ({ amount, positionTitle, onPaymentComplete, errors }: PaymentFormProps) => {
+const PaymentForm = ({ amount, positionTitle, onPaymentComplete, errors, userPhone }: PaymentFormProps) => {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'mobilemoney' | ''>('');
   const [cardDetails, setCardDetails] = useState({
     number: '',
@@ -20,18 +21,109 @@ const PaymentForm = ({ amount, positionTitle, onPaymentComplete, errors }: Payme
   });
   const [mobileMoneyDetails, setMobileMoneyDetails] = useState({
     network: '',
-    number: '',
+    number: userPhone || '', // Auto-fill with user's phone number
   });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'success' | 'failed'>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
 
-  const handlePayment = () => {
+  // Auto-fill phone number when userPhone prop changes
+  React.useEffect(() => {
+    if (userPhone && !mobileMoneyDetails.number) {
+      setMobileMoneyDetails(prev => ({ ...prev, number: userPhone }));
+    }
+  }, [userPhone]);
+
+  const handlePayment = async () => {
     setIsProcessing(true);
+    setPaymentStatus('pending');
+    setStatusMessage('');
 
-    setTimeout(() => {
-      const mockTransactionId = `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
-      onPaymentComplete(mockTransactionId);
+    try {
+      if (paymentMethod === 'mobilemoney') {
+        // Validate MoMo details
+        if (!mobileMoneyDetails.network || !mobileMoneyDetails.number) {
+          setStatusMessage('Please select network and enter mobile number');
+          setPaymentStatus('failed');
+          setIsProcessing(false);
+          return;
+        }
+
+        // Initiate MoMo payment
+        setStatusMessage('Initiating payment request...');
+        
+        const response = await fetch('/api/payment/momo/initiate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount,
+            network: mobileMoneyDetails.network,
+            phoneNumber: mobileMoneyDetails.number,
+            description: `Application fee for ${positionTitle}`,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Payment initiation failed');
+        }
+
+        // Show prompt sent message
+        setStatusMessage('Payment prompt sent to your phone. Please check your phone and approve the transaction.');
+        
+        // Poll for payment status
+        const checkPaymentStatus = async (transactionId: string, attempts = 0) => {
+          if (attempts >= 30) { // 30 attempts = 1 minute
+            setStatusMessage('Payment timeout. Please try again.');
+            setPaymentStatus('failed');
+            setIsProcessing(false);
+            return;
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+
+          const statusResponse = await fetch(`/api/payment/momo/status?transactionId=${transactionId}`);
+          const statusResult = await statusResponse.json();
+
+          if (statusResult.status === 'success') {
+            setStatusMessage('Payment successful!');
+            setPaymentStatus('success');
+            setIsProcessing(false);
+            onPaymentComplete(transactionId);
+          } else if (statusResult.status === 'failed') {
+            setStatusMessage('Payment failed. Please try again.');
+            setPaymentStatus('failed');
+            setIsProcessing(false);
+          } else {
+            // Still pending, check again
+            setStatusMessage(`Waiting for payment approval... (${attempts + 1}/30)`);
+            await checkPaymentStatus(transactionId, attempts + 1);
+          }
+        };
+
+        await checkPaymentStatus(result.transactionId);
+
+      } else if (paymentMethod === 'card') {
+        // Card payment simulation (replace with actual Stripe integration)
+        setStatusMessage('Processing card payment...');
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const mockTransactionId = `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
+        setStatusMessage('Payment successful!');
+        setPaymentStatus('success');
+        setIsProcessing(false);
+        onPaymentComplete(mockTransactionId);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      setStatusMessage(error instanceof Error ? error.message : 'Payment failed. Please try again.');
+      setPaymentStatus('failed');
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
   const formatCardNumber = (value: string) => {
@@ -235,16 +327,23 @@ const PaymentForm = ({ amount, positionTitle, onPaymentComplete, errors }: Payme
             >
               Mobile Number <span className="text-error">*</span>
             </label>
-            <input
-              type="tel"
-              id="mobileNumber"
-              value={mobileMoneyDetails.number}
-              onChange={(e) =>
-                setMobileMoneyDetails({ ...mobileMoneyDetails, number: e.target.value })
-              }
-              placeholder="024 XXX XXXX"
-              className="w-full px-4 py-3 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-250 ease-smooth"
-            />
+            <div className="relative">
+              <input
+                type="tel"
+                id="mobileNumber"
+                value={mobileMoneyDetails.number}
+                onChange={(e) =>
+                  setMobileMoneyDetails({ ...mobileMoneyDetails, number: e.target.value })
+                }
+                placeholder="024 XXX XXXX"
+                className="w-full px-4 py-3 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all duration-250 ease-smooth"
+              />
+              {userPhone && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Auto-filled from your profile. You can edit if needed.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="bg-warning/10 border border-warning/20 rounded-md p-4">
@@ -263,6 +362,33 @@ const PaymentForm = ({ amount, positionTitle, onPaymentComplete, errors }: Payme
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Status Message */}
+      {statusMessage && (
+        <div className={`rounded-md p-4 ${
+          paymentStatus === 'success' ? 'bg-success/10 border border-success/20' :
+          paymentStatus === 'failed' ? 'bg-error/10 border border-error/20' :
+          'bg-primary/10 border border-primary/20'
+        }`}>
+          <div className="flex items-start gap-3">
+            <Icon
+              name={
+                paymentStatus === 'success' ? 'CheckCircleIcon' :
+                paymentStatus === 'failed' ? 'XCircleIcon' :
+                'InformationCircleIcon'
+              }
+              size={20}
+              variant="solid"
+              className={
+                paymentStatus === 'success' ? 'text-success' :
+                paymentStatus === 'failed' ? 'text-error' :
+                'text-primary'
+              }
+            />
+            <p className="text-sm text-foreground">{statusMessage}</p>
           </div>
         </div>
       )}

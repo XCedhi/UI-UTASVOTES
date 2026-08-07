@@ -208,7 +208,7 @@ const Header = ({
                     {userAvatar ? (
                       <img
                         src={userAvatar}
-                        alt={userName}
+                        alt={userName || 'User profile'}
                         className="w-full h-full object-cover"
                         onError={(e) => {
                           e.currentTarget.src = '/assets/images/no_image.png';
@@ -217,7 +217,7 @@ const Header = ({
                     ) : (
                       <img
                         src="/assets/images/no_image.png"
-                        alt={userName}
+                        alt={userName || 'User profile'}
                         className="w-full h-full object-cover"
                       />
                     )}
