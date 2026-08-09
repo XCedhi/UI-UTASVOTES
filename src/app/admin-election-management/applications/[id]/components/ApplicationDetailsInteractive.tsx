@@ -161,7 +161,7 @@ const ApplicationDetailsInteractive = () => {
   if (!isHydrated || !application) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="admin" userName="Loading..." notificationCount={0} />
+        <Header userRole="admin" userName="Loading..." />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-6xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
@@ -188,7 +188,6 @@ const ApplicationDetailsInteractive = () => {
         userRole="admin"
         userName="System Administrator"
         userAvatar="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop"
-        notificationCount={3}
       />
 
       <main className="pt-24 pb-12 px-4 lg:px-6">
@@ -347,4 +346,263 @@ const ApplicationDetailsInteractive = () => {
 
               {/* Documents */}
               <div className="bg-card border border-border rounded-lg p-6">
-                <h3 className="font-heading font-semibol
+                <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
+                  Submitted Documents
+                </h3>
+                <div className="space-y-3">
+                  {Object.entries(application.documents).map(([key, doc]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-4 bg-muted/30 rounded-md"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          name={doc.uploaded ? 'DocumentCheckIcon' : 'DocumentIcon'}
+                          size={24}
+                          variant="outline"
+                          className={doc.uploaded ? 'text-success' : 'text-muted-foreground'}
+                        />
+                        <div>
+                          <p className="font-medium text-foreground capitalize">
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {doc.verified
+                              ? 'Verified'
+                              : doc.uploaded
+                                ? 'Pending Verification'
+                                : 'Not Uploaded'}
+                          </p>
+                        </div>
+                      </div>
+                      {doc.uploaded && (
+                        <button
+                          onClick={() => handleViewDocument(key, doc.url || '')}
+                          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250"
+                        >
+                          <Icon name="EyeIcon" size={16} variant="outline" />
+                          View
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Manifesto */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
+                  Candidate Manifesto
+                </h3>
+                <p className="text-foreground leading-relaxed whitespace-pre-wrap">
+                  {application.manifesto}
+                </p>
+              </div>
+
+              {/* Verification Notes */}
+              {application.verificationNotes && (
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h3 className="font-heading font-semibold text-lg text-foreground mb-4">
+                    Verification Notes
+                  </h3>
+                  <p className="text-foreground">{application.verificationNotes}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Approve Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center">
+                <Icon name="CheckCircleIcon" size={24} variant="solid" className="text-success" />
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-xl text-foreground">
+                  Approve Application
+                </h3>
+                <p className="text-sm text-muted-foreground">Confirm candidate eligibility</p>
+              </div>
+            </div>
+            <p className="text-foreground mb-6">
+              Are you sure you want to approve this application? The candidate will be notified and
+              added to the ballot.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-all duration-250"
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApprove}
+                disabled={isProcessing}
+                className="flex items-center gap-2 px-6 py-2 bg-success text-success-foreground rounded-md hover:bg-success/90 transition-all duration-250 disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-success-foreground/30 border-t-success-foreground rounded-full animate-spin" />
+                    <span>Approving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="CheckIcon" size={20} variant="outline" />
+                    <span>Approve</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-error/10 rounded-full flex items-center justify-center">
+                <Icon name="XCircleIcon" size={24} variant="solid" className="text-error" />
+              </div>
+              <div>
+                <h3 className="font-heading font-semibold text-xl text-foreground">
+                  Reject Application
+                </h3>
+                <p className="text-sm text-muted-foreground">Provide reason for rejection</p>
+              </div>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Rejection Reason <span className="text-error">*</span>
+              </label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+                placeholder="Explain why this application is being rejected..."
+                className="w-full px-4 py-3 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectionReason('');
+                }}
+                className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-all duration-250"
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReject}
+                disabled={isProcessing}
+                className="flex items-center gap-2 px-6 py-2 bg-error text-error-foreground rounded-md hover:bg-error/90 transition-all duration-250 disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-error-foreground/30 border-t-error-foreground rounded-full animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="XMarkIcon" size={20} variant="outline" />
+                    <span>Reject</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {showDocumentModal && selectedDocument && (
+        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Icon
+                    name="DocumentTextIcon"
+                    size={20}
+                    variant="outline"
+                    className="text-primary"
+                  />
+                </div>
+                <div>
+                  <h3 className="font-heading font-semibold text-xl text-foreground capitalize">
+                    {selectedDocument.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Document Preview</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowDocumentModal(false);
+                  setSelectedDocument(null);
+                }}
+                className="p-2 hover:bg-muted rounded-md transition-all duration-250"
+              >
+                <Icon
+                  name="XMarkIcon"
+                  size={24}
+                  variant="outline"
+                  className="text-muted-foreground"
+                />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-auto p-6">
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[500px] flex items-center justify-center">
+                <img
+                  src={selectedDocument.url}
+                  alt={selectedDocument.name}
+                  className="max-w-full max-h-full object-contain rounded-md"
+                />
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Icon name="InformationCircleIcon" size={16} variant="outline" />
+                <span>Review document carefully before verification</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowDocumentModal(false);
+                    setSelectedDocument(null);
+                  }}
+                  className="px-4 py-2 bg-muted text-foreground rounded-md hover:bg-muted/80 transition-all duration-250"
+                >
+                  Close
+                </button>
+                <a
+                  href={selectedDocument.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250"
+                >
+                  <Icon name="ArrowTopRightOnSquareIcon" size={16} variant="outline" />
+                  Open in New Tab
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ApplicationDetailsInteractive;

@@ -2,6 +2,25 @@
  * Excel Template Generation Utilities
  * Generates downloadable Excel templates for data import
  */
+import * as XLSX from 'xlsx';
+
+export interface StudentData {
+  studentId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  level: string;
+  program: string;
+  phoneNumber?: string;
+}
+
+export interface StudentValidationError {
+  row: number;
+  field: string;
+  message: string;
+}
+
 
 export interface StudentTemplateData {
   'Student ID': string;
@@ -571,3 +590,205 @@ export function exportCandidateApplications(applications: Array<{
 
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Parse an Excel/CSV spreadsheet into structured student data.
+ * Shared by the Admin and Electoral Commission import screens so both
+ * portals parse identically.
+ *
+ * Throws an Error with a user-friendly message when the file has no
+ * valid data rows or required columns cannot be found.
+ */
+export async function parseStudentSpreadsheet(file: File): Promise<StudentData[]> {
+  const arrayBuffer = await file.arrayBuffer();
+
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    defval: '',
+    blankrows: false,
+  }) as any[][];
+
+  if (jsonData.length < 2) {
+    throw new Error('File appears to be empty or has no data rows.');
+  }
+
+  // Get headers from first row
+  const headers = jsonData[0].map((h: any) => String(h).toLowerCase().trim());
+
+  const findColumnIndex = (possibleNames: string[]): number => {
+    for (const name of possibleNames) {
+      const index = headers.findIndex(
+        (h) => h.includes(name.toLowerCase()) || name.toLowerCase().includes(h)
+      );
+      if (index !== -1) return index;
+    }
+    return -1;
+  };
+
+  const columnMap = {
+    studentId: findColumnIndex(['student id', 'studentid', 'id', 'student_id', 'matric', 'registration']),
+    firstName: findColumnIndex(['first name', 'firstname', 'first_name', 'fname', 'given name']),
+    lastName: findColumnIndex(['last name', 'lastname', 'last_name', 'lname', 'surname', 'family name']),
+    email: findColumnIndex(['email', 'e-mail', 'email address', 'mail']),
+    department: findColumnIndex(['department', 'dept', 'faculty', 'school']),
+    level: findColumnIndex(['level', 'year', 'class', 'grade']),
+    program: findColumnIndex(['program', 'programme', 'course', 'major', 'degree']),
+    phoneNumber: findColumnIndex(['phone', 'phone number', 'phonenumber', 'mobile', 'contact', 'tel']),
+  };
+
+  const students: StudentData[] = [];
+
+  for (let i = 1; i < jsonData.length; i++) {
+    const row = jsonData[i];
+    if (!row || row.every((cell: any) => !cell)) continue;
+
+    const student: StudentData = {
+      studentId: columnMap.studentId >= 0 ? String(row[columnMap.studentId] || '').trim() : '',
+      firstName: columnMap.firstName >= 0 ? String(row[columnMap.firstName] || '').trim() : '',
+      lastName: columnMap.lastName >= 0 ? String(row[columnMap.lastName] || '').trim() : '',
+      email: columnMap.email >= 0 ? String(row[columnMap.email] || '').trim() : '',
+      department: columnMap.department >= 0 ? String(row[columnMap.department] || '').trim() : '',
+      level: columnMap.level >= 0 ? String(row[columnMap.level] || '').trim() : '',
+      program: columnMap.program >= 0 ? String(row[columnMap.program] || '').trim() : '',
+      phoneNumber:
+        columnMap.phoneNumber >= 0
+          ? String(row[columnMap.phoneNumber] || '').trim() || undefined
+          : undefined,
+    };
+
+    // Only add if we have the minimum required fields
+    if (student.studentId && student.firstName && student.lastName && student.email) {
+      students.push(student);
+    }
+  }
+
+  if (students.length === 0) {
+    const missingColumns: string[] = [];
+    if (columnMap.studentId === -1) missingColumns.push('Student ID');
+    if (columnMap.firstName === -1) missingColumns.push('First Name');
+    if (columnMap.lastName === -1) missingColumns.push('Last Name');
+    if (columnMap.email === -1) missingColumns.push('Email');
+
+    throw new Error(
+      `No valid student data found!\n\nFound headers: ${headers.join(', ')}${
+        missingColumns.length
+          ? `\n\nMissing columns: ${missingColumns.join(', ')}`
+          : '\n\nRequired columns: Student ID, First Name, Last Name, Email, Department, Level, Program'
+      }`
+    );
+  }
+
+  return students;
+}
+
+
+/**
+ * Validate student data. Returns a list of per-row validation errors.
+ * Shared by the Admin and Electoral Commission import screens.
+ */
+export function validateStudentData(data: StudentData[]): StudentValidationError[] {
+  const errors: StudentValidationError[] = [];
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@cktutas\.edu\.gh$/;
+  const studentIdRegex = /^\d+$/;
+
+  data.forEach((student, index) => {
+    const row = index + 2; // +2 because row 1 is header and arrays are 0-indexed
+
+    if (!student.studentId || !studentIdRegex.test(student.studentId)) {
+      errors.push({
+        row,
+        field: 'Student ID',
+        message: 'Invalid format. Must be numeric only (e.g., 2024001, 123456)',
+      });
+    }
+
+    if (!student.firstName || student.firstName.trim().length < 2) {
+      errors.push({
+        row,
+        field: 'First Name',
+        message: 'First name is required and must be at least 2 characters',
+      });
+    }
+
+    if (!student.lastName || student.lastName.trim().length < 2) {
+      errors.push({
+        row,
+        field: 'Last Name',
+        message: 'Last name is required and must be at least 2 characters',
+      });
+    }
+
+    if (!student.email || !emailRegex.test(student.email)) {
+      errors.push({
+        row,
+        field: 'Email',
+        message: 'Must be a valid institutional email (@cktutas.edu.gh)',
+      });
+    }
+
+    if (!student.department || student.department.trim().length < 2) {
+      errors.push({
+        row,
+        field: 'Department',
+        message: 'Department is required',
+      });
+    }
+
+    if (!student.level || !['100', '200', '300', '400'].includes(student.level)) {
+      errors.push({
+        row,
+        field: 'Level',
+        message: 'Level must be 100, 200, 300, or 400',
+      });
+    }
+
+    if (!student.program || student.program.trim().length < 2) {
+      errors.push({
+        row,
+        field: 'Program',
+        message: 'Program is required',
+      });
+    }
+  });
+
+  return errors;
+}
+
+/**
+ * Download the one-time credentials sheet (fallback channel when email
+ * delivery is not configured). The passwords are provided exactly once by
+ * the import API response and are never stored or logged client-side.
+ */
+export function downloadCredentialsSheetCSV(
+  credentials: Array<{ studentId: string; email: string; name: string; password: string }>
+) {
+  if (credentials.length === 0) return;
+
+  const timestamp = new Date().toISOString().split('T')[0];
+  const csvContent = [
+    'Student ID,Email,Full Name,Temporary Password',
+    ...credentials.map((c) =>
+      [c.studentId, c.email, `"${c.name.replace(/"/g, '""')}"`, c.password].join(',')
+    ),
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute('href', url);
+  link.setAttribute('download', `UTASVotes_Student_Credentials_${timestamp}.csv`);
+  link.style.visibility = 'hidden';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+}
+

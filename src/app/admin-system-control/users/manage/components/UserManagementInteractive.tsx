@@ -18,6 +18,7 @@ interface User {
   accessStartDate?: string;
   accessEndDate?: string;
   position?: string;
+  requiresPasswordChange?: boolean;
 }
 
 interface InviteFormData {
@@ -114,6 +115,7 @@ const UserManagementInteractive = () => {
         accessStartDate: user.access_start_date,
         accessEndDate: user.access_end_date,
         position: user.position,
+        requiresPasswordChange: user.requires_password_change === true,
       }));
 
       console.log('✅ Setting users state with', transformedUsers.length, 'users');
@@ -268,6 +270,51 @@ const UserManagementInteractive = () => {
         console.error('❌ Error activating user:', error);
         alert(`Failed to activate user: ${error.message}`);
       }
+    }
+  };
+
+  const handleResetPassword = async (user: User) => {
+    if (
+      !confirm(
+        `Reset the password for ${user.name}?\n\nThey will be emailed a new temporary password and must change it at their next login.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch('/api/admin/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(`Failed to reset password: ${result.error || 'Unknown error'}`);
+        return;
+      }
+
+      alert(
+        result.emailDelivered
+          ? `${user.name}'s password has been reset. A new temporary password was emailed to ${user.email}.`
+          : `${user.name}'s password has been reset.\n\nTemporary password: ${result.temporaryPassword}\n\nEmail delivery is not configured, so share this password directly with the user.`
+      );
+
+      await fetchUsers();
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      alert(`Failed to reset password: ${error.message}`);
     }
   };
 
@@ -610,11 +657,19 @@ const UserManagementInteractive = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(user.status)}`}
-                        >
-                          {user.status}
-                        </span>
+                        <div className="flex flex-col items-start gap-1">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(user.status)}`}
+                          >
+                            {user.status}
+                          </span>
+                          {user.requiresPasswordChange && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-warning/10 text-warning">
+                              <Icon name="KeyIcon" size={12} variant="solid" />
+                              Password change required
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
                         {user.lastLogin
@@ -637,6 +692,14 @@ const UserManagementInteractive = () => {
                               className="text-success hover:text-success/80 transition-colors duration-200 text-sm font-medium"
                             >
                               Extend
+                            </button>
+                          )}
+                          {(user.role === 'student' || user.role === 'candidate') && (
+                            <button
+                              onClick={() => handleResetPassword(user)}
+                              className="text-warning hover:text-warning/80 transition-colors duration-200 text-sm font-medium"
+                            >
+                              Reset Password
                             </button>
                           )}
                           {user.status === 'active' && user.role !== 'admin' && (

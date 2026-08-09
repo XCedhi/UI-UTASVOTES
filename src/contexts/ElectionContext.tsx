@@ -94,18 +94,32 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .order('created_at', { ascending: false });
 
+      // Load the current user's votes so we can show real "already voted" state
+      let votedElectionIds = new Set<string>();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const { data: voteRows } = await supabase
+          .from('votes')
+          .select('election_id')
+          .eq('voter_id', session.user.id);
+        votedElectionIds = new Set((voteRows || []).map((v: any) => v.election_id));
+      }
+
       if (!electionsError && electionsData) {
         setElections(
           electionsData.map((e: any) => ({
             id: e.id,
-            title: e.title,
-            position: e.position,
-            type: e.type,
+            // Standardize on canonical columns with legacy fallbacks
+            title: e.name || e.title || 'Election',
+            position: e.position || 'President',
+            type: e.election_type || e.type || 'university-wide',
             status: e.status,
-            startDate: e.start_date,
-            endDate: e.end_date,
+            startDate: e.voting_start || e.start_date,
+            endDate: e.voting_end || e.end_date,
             description: e.description || '',
-            hasVoted: false,
+            hasVoted: votedElectionIds.has(e.id),
             totalCandidates: e.total_candidates || 0,
             positions: e.positions || [
               { name: 'President', candidateCount: 5 },
@@ -201,10 +215,33 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const castVote = async (electionId: string, candidateId: string) => {
-    // Simulate vote casting
-    console.log('Vote cast:', { electionId, candidateId });
-    // Update local state
-    setElections((prev) => prev.map((e) => (e.id === electionId ? { ...e, hasVoted: true } : e)));
+    // Get the current access token for server-side authentication
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const response = await fetch('/api/vote', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {}),
+      },
+      body: JSON.stringify({ electionId, candidateId }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to cast vote');
+    }
+
+    // Update local state and reload fresh data
+    setElections((prev) =>
+      prev.map((e) => (e.id === electionId ? { ...e, hasVoted: true } : e))
+    );
+    await loadData();
   };
 
   const toggleFeedLike = (feedId: string) => {

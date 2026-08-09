@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import ElectionStatusIndicator from '@/components/common/ElectionStatusIndicator';
 import NotificationCenter from '@/components/common/NotificationCenter';
-import CandidateApplicationCard from '@/app/electoral-commission-panel/components/CandidateApplicationCard';
+import ApplicationsByElection from '@/app/electoral-commission-panel/components/ApplicationsByElection';
 import ElectionMonitoringCard from '@/app/electoral-commission-panel/components/ElectionMonitoringCard';
 import SystemAlertCard from '@/app/electoral-commission-panel/components/SystemAlertCard';
 import ElectionBasedFeeManager from './ElectionBasedFeeManager';
@@ -31,6 +31,8 @@ interface CandidateApplication {
   studentId: string;
   email: string;
   position: string;
+  electionId: string;
+  electionName: string;
   department: string;
   avatar: string;
   submittedAt: string;
@@ -154,20 +156,22 @@ const ElectionManagementInteractive = () => {
       if (candidatesData) {
         setApplications(candidatesData.map((c: any) => ({
           id: c.id,
-          candidateName: c.full_name,
+          candidateName: c.name || c.full_name || 'Unknown',
           studentId: c.student_id,
           email: c.email,
           position: c.position,
+          electionId: c.election_id?.toString() || '',
+          electionName: c.election_name || c.election_title || '',
           department: c.department,
-          avatar: c.avatar || 'https://via.placeholder.com/150',
-          submittedAt: c.created_at,
+          avatar: c.avatar || c.photo_url || 'https://via.placeholder.com/150',
+          submittedAt: c.submitted_at || c.created_at,
           documents: {
             idCard: !!(c.student_id_doc_url || c.student_id_document_url),
             transcript: !!c.transcript_url,
-            manifesto: !!c.manifesto_doc_url,
+            manifesto: !!(c.manifesto || c.manifesto_url || c.manifesto_doc_url),
           },
-          eligibilityStatus: c.eligibility_status || 'pending',
-          paymentStatus: c.payment_status || 'pending',
+          eligibilityStatus: c.status === 'pending' ? 'pending' : c.status === 'approved' ? 'verified' : 'rejected',
+          paymentStatus: c.transaction_id ? 'completed' : 'pending',
           applicationFee: c.application_fee || 0,
         })));
       }
@@ -1015,61 +1019,13 @@ const ElectionManagementInteractive = () => {
 
                 <div className="p-6">
                   {activeTab === 'applications' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-heading font-semibold text-xl text-foreground">
-                          Pending Applications
-                        </h2>
-                        <span className="px-3 py-1 bg-warning text-warning-foreground rounded-full text-sm font-caption">
-                          {applications.filter((a) => a.eligibilityStatus === 'pending').length}{' '}
-                          Pending
-                        </span>
-                      </div>
-
-                      {applications.filter((a) => a.eligibilityStatus === 'pending').length > 0 ? (
-                        applications
-                          .filter((a) => a.eligibilityStatus === 'pending')
-                          .map((application) => (
-                            <CandidateApplicationCard
-                              key={application.id}
-                              application={application}
-                              onApprove={handleApproveApplication}
-                              onReject={handleRejectApplication}
-                              onViewDetails={handleViewApplicationDetails}
-                            />
-                          ))
-                      ) : (
-                        <div className="text-center py-12">
-                          <Icon
-                            name="CheckCircleIcon"
-                            size={48}
-                            variant="outline"
-                            className="mx-auto text-success mb-4"
-                          />
-                          <p className="text-muted-foreground">No pending applications</p>
-                        </div>
-                      )}
-
-                      {applications.filter((a) => a.eligibilityStatus === 'verified').length >
-                        0 && (
-                        <>
-                          <h3 className="font-heading font-semibold text-lg text-foreground mt-8 mb-4">
-                            Approved Applications
-                          </h3>
-                          {applications
-                            .filter((a) => a.eligibilityStatus === 'verified')
-                            .map((application) => (
-                              <CandidateApplicationCard
-                                key={application.id}
-                                application={application}
-                                onApprove={handleApproveApplication}
-                                onReject={handleRejectApplication}
-                                onViewDetails={handleViewApplicationDetails}
-                              />
-                            ))}
-                        </>
-                      )}
-                    </div>
+                    <ApplicationsByElection
+                      applications={applications}
+                      elections={elections}
+                      onApprove={handleApproveApplication}
+                      onReject={handleRejectApplication}
+                      onViewDetails={handleViewApplicationDetails}
+                    />
                   )}
 
                   {activeTab === 'elections' && (

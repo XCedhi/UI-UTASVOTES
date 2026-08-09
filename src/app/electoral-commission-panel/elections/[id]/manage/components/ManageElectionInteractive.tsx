@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
@@ -20,8 +20,10 @@ interface Position {
   applicationFee?: number;
 }
 
-const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProps) => {
+const ManageElectionInteractive = (_props: ManageElectionInteractiveProps) => {
   const router = useRouter();
+  const params = useParams();
+  const electionId = (params?.id as string) || '';
   const { refreshData } = useElectionContext();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -318,7 +320,6 @@ const ManageElectionInteractive = ({ electionId }: ManageElectionInteractiveProp
         userRole="commission"
         userName="Dr. Akosua Boateng"
         userAvatar="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg"
-        notificationCount={0}
         electionStatus={{
           isActive: electionData.status === 'active',
           name: electionData.name,

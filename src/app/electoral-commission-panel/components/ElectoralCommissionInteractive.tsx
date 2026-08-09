@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import ElectionStatusIndicator from '@/components/common/ElectionStatusIndicator';
 import NotificationCenter from '@/components/common/NotificationCenter';
-import CandidateApplicationCard from './CandidateApplicationCard';
 import ElectionMonitoringCard from './ElectionMonitoringCard';
+import ApplicationsByElection from './ApplicationsByElection';
 import SystemAlertCard from './SystemAlertCard';
 import ElectionBasedFeeManager from '../election-management/components/ElectionBasedFeeManager';
 import QuickStatsGrid from './QuickStatsGrid';
 import CommissionActivityLog from './CommissionActivityLog';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
+import { getUserSession } from '@/lib/auth-utils';
 
 interface Notification {
   id: string;
@@ -30,6 +31,8 @@ interface CandidateApplication {
   studentId: string;
   email: string;
   position: string;
+  electionId: string;
+  electionName: string;
   department: string;
   avatar: string;
   submittedAt: string;
@@ -46,7 +49,7 @@ interface CandidateApplication {
 interface ElectionData {
   id: string;
   name: string;
-  status: 'active' | 'scheduled' | 'completed';
+  status: 'active' | 'scheduled' | 'upcoming' | 'completed';
   totalVoters: number;
   votedCount: number;
   startDate: string;
@@ -122,12 +125,12 @@ const ElectoralCommissionInteractive = () => {
     try {
       console.log('🔍 Starting fetchDashboardData...');
       
-      // Check if user is authenticated
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check if user is authenticated from localStorage
+      const session = getUserSession();
       console.log('Session check:', session ? 'Authenticated' : 'Not authenticated');
-      console.log('User ID:', session?.user?.id);
-      console.log('User email:', session?.user?.email);
-      
+      console.log('User ID:', session?.userId);
+      console.log('User email:', session?.email);
+
       if (!session) {
         console.error('❌ No active session - user not authenticated');
         alert('Authentication error: Please log out and log back in');
@@ -200,8 +203,7 @@ const ElectoralCommissionInteractive = () => {
       const { data: candidatesData, error: candidatesError } = await supabase
         .from('candidates')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
+        .order('created_at', { ascending: false });
 
       console.log('📊 [COMMISSION PANEL] Candidates query result:');
       console.log('  - Error:', candidatesError);
@@ -222,15 +224,28 @@ const ElectoralCommissionInteractive = () => {
           console.log('✅ [COMMISSION PANEL] First candidate:', candidatesData[0]);
         }
         
+        // Build a lookup map of election IDs to names
+        const electionMap = new Map<string, string>();
+        (electionsData || []).forEach((e: any) => {
+          electionMap.set(e.id?.toString(), e.name || e.title || 'Election');
+        });
+
         // Transform database candidates to match component interface
         const transformedApplications: CandidateApplication[] = candidatesData.map((candidate) => {
           console.log('Transforming candidate:', candidate.name || candidate.full_name);
+          const electionId = candidate.election_id?.toString() || '';
           return {
             id: candidate.id.toString(),
             candidateName: candidate.name || candidate.full_name || 'Unknown',
             studentId: candidate.student_id || 'N/A',
             email: candidate.email || 'N/A',
             position: candidate.position || 'N/A',
+            electionId,
+            electionName:
+              electionMap.get(electionId) ||
+              candidate.election_name ||
+              candidate.election_title ||
+              'Election',
             department: candidate.department || 'N/A',
             avatar: candidate.avatar || candidate.photo_url || 'https://via.placeholder.com/150',
             submittedAt: candidate.submitted_at || candidate.created_at,
@@ -619,7 +634,6 @@ const ElectoralCommissionInteractive = () => {
         userRole="commission"
         userName="Dr. Akosua Boateng"
         userAvatar="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg"
-        notificationCount={unreadNotificationCount}
         electionStatus={
           activeElection
             ? {
@@ -726,61 +740,13 @@ const ElectoralCommissionInteractive = () => {
 
                 <div className="p-6">
                   {activeTab === 'applications' && (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h2 className="font-heading font-semibold text-xl text-foreground">
-                          Pending Applications
-                        </h2>
-                        <span className="px-3 py-1 bg-warning text-warning-foreground rounded-full text-sm font-caption">
-                          {applications.filter((a) => a.eligibilityStatus === 'pending').length}{' '}
-                          Pending
-                        </span>
-                      </div>
-
-                      {applications.filter((a) => a.eligibilityStatus === 'pending').length > 0 ? (
-                        applications
-                          .filter((a) => a.eligibilityStatus === 'pending')
-                          .map((application) => (
-                            <CandidateApplicationCard
-                              key={application.id}
-                              application={application}
-                              onApprove={handleApproveApplication}
-                              onReject={handleRejectApplication}
-                              onViewDetails={handleViewApplicationDetails}
-                            />
-                          ))
-                      ) : (
-                        <div className="text-center py-12">
-                          <Icon
-                            name="CheckCircleIcon"
-                            size={48}
-                            variant="outline"
-                            className="mx-auto text-success mb-4"
-                          />
-                          <p className="text-muted-foreground">No pending applications</p>
-                        </div>
-                      )}
-
-                      {applications.filter((a) => a.eligibilityStatus === 'verified').length >
-                        0 && (
-                        <>
-                          <h3 className="font-heading font-semibold text-lg text-foreground mt-8 mb-4">
-                            Approved Applications
-                          </h3>
-                          {applications
-                            .filter((a) => a.eligibilityStatus === 'verified')
-                            .map((application) => (
-                              <CandidateApplicationCard
-                                key={application.id}
-                                application={application}
-                                onApprove={handleApproveApplication}
-                                onReject={handleRejectApplication}
-                                onViewDetails={handleViewApplicationDetails}
-                              />
-                            ))}
-                        </>
-                      )}
-                    </div>
+                    <ApplicationsByElection
+                      applications={applications}
+                      elections={elections}
+                      onApprove={handleApproveApplication}
+                      onReject={handleRejectApplication}
+                      onViewDetails={handleViewApplicationDetails}
+                    />
                   )}
 
                   {activeTab === 'elections' && (

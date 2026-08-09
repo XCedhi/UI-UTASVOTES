@@ -6,7 +6,7 @@ import Icon from '@/components/ui/AppIcon';
 interface ElectionData {
   id: string;
   name: string;
-  status: 'active' | 'scheduled' | 'completed';
+  status: 'active' | 'scheduled' | 'upcoming' | 'completed';
   totalVoters: number;
   votedCount: number;
   startDate: string;
@@ -34,6 +34,7 @@ const ElectionMonitoringCard = ({
       case 'active':
         return 'bg-success text-success-foreground';
       case 'scheduled':
+      case 'upcoming':
         return 'bg-warning text-warning-foreground';
       case 'completed':
         return 'bg-muted text-muted-foreground';
@@ -47,6 +48,7 @@ const ElectionMonitoringCard = ({
       case 'active':
         return 'PlayIcon';
       case 'scheduled':
+      case 'upcoming':
         return 'ClockIcon';
       case 'completed':
         return 'CheckCircleIcon';

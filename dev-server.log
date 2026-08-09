@@ -1,0 +1,23 @@
+
+> utasvotes@0.1.0 dev
+> next dev -p 4028
+
+   ▲ Next.js 15.5.9
+   - Local:        http://localhost:4028
+   - Network:      http://172.20.10.4:4028
+   - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 35.5s
+ ○ Compiling /electoral-commission-panel ...
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ ✓ Compiled /electoral-commission-panel in 50.7s (2064 modules)
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\DumpStack.log.tmp'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\pagefile.sys'
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\swapfile.sys'
+ ✓ Compiled in 2.7s (969 modules)
+ GET /electoral-commission-panel 200 in 174ms
+ ✓ Compiled in 889ms (969 modules)
+ ✓ Compiled in 619ms (969 modules)

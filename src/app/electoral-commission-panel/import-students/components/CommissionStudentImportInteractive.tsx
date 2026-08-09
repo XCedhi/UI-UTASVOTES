@@ -4,31 +4,25 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
-import { downloadStudentImportTemplate } from '@/lib/excel-utils';
+import {
+  downloadStudentImportTemplate,
+  downloadCredentialsSheetCSV,
+  parseStudentSpreadsheet,
+  validateStudentData,
+} from '@/lib/excel-utils';
+import type { StudentData, StudentValidationError } from '@/lib/excel-utils';
 import { getUserSession } from '@/lib/auth-utils';
-
-interface StudentData {
-  studentId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  department: string;
-  level: string;
-  program: string;
-  phoneNumber?: string;
-}
-
-interface ValidationError {
-  row: number;
-  field: string;
-  message: string;
-}
+import { supabase } from '@/lib/supabase';
 
 interface ImportResult {
   success: number;
   failed: number;
-  errors: ValidationError[];
+  duplicates: number;
+  errors: StudentValidationError[];
   students: StudentData[];
+  emailConfigured: boolean;
+  emailDelivered: number;
+  emailFailed: number;
 }
 
 const CommissionStudentImportInteractive = () => {
@@ -41,6 +35,9 @@ const CommissionStudentImportInteractive = () => {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<StudentData[]>([]);
+  const [credentials, setCredentials] = useState<
+    Array<{ studentId: string; email: string; name: string; password: string }>
+  >([]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -97,114 +94,26 @@ const CommissionStudentImportInteractive = () => {
   const processFile = async (file: File) => {
     setIsProcessing(true);
 
-    // Simulate file processing
-    setTimeout(() => {
-      // Mock data for demonstration
-      const mockData: StudentData[] = [
-        {
-          studentId: '2024001',
-          firstName: 'Kwame',
-          lastName: 'Mensah',
-          email: 'kwame.mensah@cktutas.edu.gh',
-          department: 'Computer Science',
-          level: '300',
-          program: 'BSc Computer Science',
-          phoneNumber: '+233241234567',
-        },
-        {
-          studentId: '2024002',
-          firstName: 'Ama',
-          lastName: 'Osei',
-          email: 'ama.osei@cktutas.edu.gh',
-          department: 'Business Administration',
-          level: '200',
-          program: 'BSc Business Administration',
-          phoneNumber: '+233242345678',
-        },
-        {
-          studentId: '2024003',
-          firstName: 'Kofi',
-          lastName: 'Asante',
-          email: 'kofi.asante@cktutas.edu.gh',
-          department: 'Engineering',
-          level: '400',
-          program: 'BEng Mechanical Engineering',
-          phoneNumber: '+233243456789',
-        },
-      ];
+    try {
+      const students = await parseStudentSpreadsheet(file);
+      console.log(`Successfully parsed ${students.length} students from Excel file`);
+      alert(`Successfully loaded ${students.length} students from your file!`);
 
-      setPreviewData(mockData);
+      setPreviewData(students);
       setShowPreview(true);
+    } catch (error: any) {
+      console.error('Error processing Excel file:', error);
+      alert(
+        error.message ||
+          'Error processing file. Please check the file format and try again.'
+      );
+    } finally {
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
-  const validateData = (data: StudentData[]): ValidationError[] => {
-    const errors: ValidationError[] = [];
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@cktutas\.edu\.gh$/;
-    const studentIdRegex = /^\d+$/; // Just numbers
-
-    data.forEach((student, index) => {
-      const row = index + 2;
-
-      if (!student.studentId || !studentIdRegex.test(student.studentId)) {
-        errors.push({
-          row,
-          field: 'Student ID',
-          message: 'Invalid format. Must be numeric only (e.g., 2024001, 123456)',
-        });
-      }
-
-      if (!student.firstName || student.firstName.trim().length < 2) {
-        errors.push({
-          row,
-          field: 'First Name',
-          message: 'First name is required and must be at least 2 characters',
-        });
-      }
-
-      if (!student.lastName || student.lastName.trim().length < 2) {
-        errors.push({
-          row,
-          field: 'Last Name',
-          message: 'Last name is required and must be at least 2 characters',
-        });
-      }
-
-      if (!student.email || !emailRegex.test(student.email)) {
-        errors.push({
-          row,
-          field: 'Email',
-          message: 'Must be a valid institutional email (@cktutas.edu.gh)',
-        });
-      }
-
-      if (!student.department || student.department.trim().length < 2) {
-        errors.push({
-          row,
-          field: 'Department',
-          message: 'Department is required',
-        });
-      }
-
-      if (!student.level || !['100', '200', '300', '400'].includes(student.level)) {
-        errors.push({
-          row,
-          field: 'Level',
-          message: 'Level must be 100, 200, 300, or 400',
-        });
-      }
-
-      if (!student.program || student.program.trim().length < 2) {
-        errors.push({
-          row,
-          field: 'Program',
-          message: 'Program is required',
-        });
-      }
-    });
-
-    return errors;
+  const validateData = (data: StudentData[]): StudentValidationError[] => {
+    return validateStudentData(data);
   };
 
   const handleImport = async () => {
@@ -218,24 +127,88 @@ const CommissionStudentImportInteractive = () => {
       setImportResult({
         success: 0,
         failed: errors.length,
+        duplicates: 0,
         errors,
         students: [],
+        emailConfigured: false,
+        emailDelivered: 0,
+        emailFailed: 0,
       });
       setIsProcessing(false);
       return;
     }
 
-    // Simulate import process
-    setTimeout(() => {
-      setImportResult({
-        success: previewData.length,
-        failed: 0,
-        errors: [],
-        students: previewData,
+    try {
+      // Attach the caller's session token so the server can authorize the import
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch('/api/import-students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({ students: previewData }),
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to import students');
+      }
+
+      const createdStudents = result.results.createdStudents || [];
+
+      setImportResult({
+        success: result.results.success,
+        failed: result.results.failed,
+        duplicates: result.results.duplicates || 0,
+        errors: (result.results.errors || []).map((err: any) => ({
+          row: err.row,
+          field: 'Account Creation',
+          message: err.error,
+        })),
+        students: createdStudents.map((s: any) => ({
+          studentId: s.studentId,
+          firstName: s.name.split(' ')[0],
+          lastName: s.name.split(' ').slice(1).join(' '),
+          email: s.email,
+          department: '',
+          level: '',
+          program: '',
+        })),
+        emailConfigured: result.results.email?.configured ?? false,
+        emailDelivered: result.results.email?.delivered ?? 0,
+        emailFailed: result.results.email?.failed ?? 0,
+      });
+
+      // Hold the credentials only for the one-time fallback sheet download
+      setCredentials(
+        createdStudents.map((s: any) => ({
+          studentId: s.studentId,
+          email: s.email,
+          name: s.name,
+          password: s.password,
+        }))
+      );
+    } catch (error: any) {
+      console.error('Error importing students:', error);
+      alert(
+        `Failed to import students: ${error.message}\n\nPlease check:\n1. SUPABASE_SERVICE_ROLE_KEY is set in .env\n2. Database schema is up to date\n3. Check browser console for details`
+      );
+    } finally {
       setIsProcessing(false);
       setShowPreview(false);
-    }, 3000);
+    }
+  };
+
+  const handleDownloadCredentials = () => {
+    if (credentials.length === 0) return;
+    downloadCredentialsSheetCSV(credentials);
   };
 
   const downloadTemplate = () => {
@@ -612,8 +585,21 @@ const CommissionStudentImportInteractive = () => {
                         </div>
                         <div className="flex items-center gap-2 text-success">
                           <Icon name="CheckCircleIcon" size={16} variant="solid" />
-                          <span>Welcome emails sent to all students</span>
+                          <span>
+                            {importResult.emailConfigured
+                              ? `Welcome emails delivered (${importResult.emailDelivered} sent)`
+                              : 'Welcome emails queued — use the credentials sheet below'}
+                          </span>
                         </div>
+                        {importResult.emailConfigured && importResult.emailFailed > 0 && (
+                          <div className="flex items-center gap-2 text-warning">
+                            <Icon name="ExclamationTriangleIcon" size={16} variant="solid" />
+                            <span>
+                              {importResult.emailFailed} email(s) could not be delivered — use the
+                              credentials sheet below
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -670,6 +656,15 @@ const CommissionStudentImportInteractive = () => {
                   <Icon name="ArrowUpTrayIcon" size={20} variant="outline" />
                   Import Another File
                 </button>
+                {credentials.length > 0 && (
+                  <button
+                    onClick={handleDownloadCredentials}
+                    className="flex items-center gap-2 px-6 py-3 bg-warning text-warning-foreground rounded-md hover:bg-warning/90 transition-all duration-250 ease-smooth shadow-md"
+                  >
+                    <Icon name="ArrowDownTrayIcon" size={20} variant="outline" />
+                    Download Credentials Sheet
+                  </button>
+                )}
                 {importResult.success > 0 && (
                   <button
                     onClick={() => router.push('/electoral-commission-panel')}

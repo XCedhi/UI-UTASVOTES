@@ -14,6 +14,8 @@ interface Election {
   totalVoters: number;
   votedCount: number;
   positions: Position[];
+  isCertified?: boolean;
+  certifiedAt?: string;
 }
 
 interface Position {

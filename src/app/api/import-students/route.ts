@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { requireRole } from '@/lib/server-auth';
+import { isEmailConfigured, sendWelcomeEmail } from '@/lib/email';
 
 interface StudentData {
   studentId: string;
@@ -56,6 +58,9 @@ function generateSecurePassword(): string {
 
 export async function POST(request: Request) {
   try {
+    // Server-side authorization: only admin or commission may import students
+    await requireRole(request, ['admin', 'commission']);
+
     const { students } = await request.json();
 
     if (!students || !Array.isArray(students) || students.length === 0) {
@@ -101,8 +106,14 @@ export async function POST(request: Request) {
     const results = {
       success: 0,
       failed: 0,
+      duplicates: 0,
       errors: [] as any[],
-      createdStudents: [] as any[]
+      createdStudents: [] as any[],
+      email: {
+        configured: isEmailConfigured(),
+        delivered: 0,
+        failed: 0,
+      },
     };
 
     // Process each student
@@ -112,6 +123,27 @@ export async function POST(request: Request) {
       try {
         // Generate secure password
         const password = generateSecurePassword();
+
+        // Duplicate detection before creating anything
+        const { data: existingProfile } = await supabaseAdmin
+          .from('user_profiles')
+          .select('id, email, student_id')
+          .or(`student_id.eq.${student.studentId},email.eq.${student.email}`)
+          .maybeSingle();
+
+        if (existingProfile) {
+          results.duplicates++;
+          results.failed++;
+          results.errors.push({
+            row: i + 2,
+            studentId: student.studentId,
+            email: student.email,
+            error: `Duplicate: a user with this student ID or email already exists (${
+              existingProfile.email || existingProfile.student_id
+            })`
+          });
+          continue;
+        }
 
         // Create auth user
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -126,13 +158,19 @@ export async function POST(request: Request) {
         });
 
         if (authError) {
-          console.error(`Error creating auth user for ${student.email}:`, authError);
+          const isDuplicate =
+            authError.code === 'user_already_exists' ||
+            /already (registered|exists)/i.test(authError.message || '');
+          if (isDuplicate) results.duplicates++;
+          console.error(`Error creating auth user for ${student.email}:`, authError.message);
           results.failed++;
           results.errors.push({
             row: i + 2,
             studentId: student.studentId,
             email: student.email,
-            error: authError.message
+            error: isDuplicate
+              ? 'Duplicate: this email is already registered'
+              : authError.message
           });
           continue;
         }
@@ -148,6 +186,7 @@ export async function POST(request: Request) {
             phone: student.phoneNumber || null,
             department: student.department,
             level: student.level,
+            program: student.program,
             role: 'student',
             status: 'active',
             requires_password_change: true, // Force password change on first login
@@ -175,38 +214,39 @@ export async function POST(request: Request) {
           continue;
         }
 
-        // Send welcome email with temporary password
+        // Send welcome email with temporary password (primary delivery channel)
         try {
-          const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:4028'}/api/send-welcome-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: student.email,
-              fullName: `${student.firstName} ${student.lastName}`,
-              studentId: student.studentId,
-              department: student.department,
-              temporaryPassword: password
-            })
+          const emailResult = await sendWelcomeEmail({
+            to: student.email,
+            fullName: `${student.firstName} ${student.lastName}`,
+            studentId: student.studentId,
+            department: student.department,
+            program: student.program,
+            temporaryPassword: password
           });
 
-          if (!emailResponse.ok) {
-            console.warn(`⚠️ Failed to send welcome email to ${student.email}`);
+          if (emailResult.delivered) {
+            results.email.delivered++;
           } else {
-            console.log(`✅ Welcome email sent to ${student.email}`);
+            results.email.failed++;
+            console.warn(
+              `Email not delivered to ${student.email} (via ${emailResult.via}); fallback credentials sheet available`
+            );
           }
         } catch (emailError) {
-          console.warn(`⚠️ Error sending welcome email to ${student.email}:`, emailError);
+          results.email.failed++;
+          console.warn(`Error sending welcome email to ${student.email}:`, emailError);
           // Don't fail the import if email fails
         }
 
-        console.log(`✅ Created account for ${student.email} with temporary password`);
-
         results.success++;
+        // Credentials are returned exactly once so the admin/commission screen
+        // can offer the one-time fallback credentials sheet download.
         results.createdStudents.push({
           studentId: student.studentId,
           email: student.email,
           name: `${student.firstName} ${student.lastName}`,
-          password: password // In production, don't return this - only send via email
+          password: password
         });
 
       } catch (error: any) {
