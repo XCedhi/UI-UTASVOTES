@@ -196,23 +196,30 @@ const ElectoralCommissionInteractive = () => {
       }
 
       // Fetch candidates/applications from database
+      console.log('🔍 [COMMISSION PANEL] Fetching candidates from database...');
       const { data: candidatesData, error: candidatesError } = await supabase
         .from('candidates')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
 
+      console.log('📊 [COMMISSION PANEL] Candidates query result:');
+      console.log('  - Error:', candidatesError);
+      console.log('  - Data count:', candidatesData?.length || 0);
+      console.log('  - First candidate:', candidatesData?.[0]);
+
       if (candidatesError) {
-        console.error('Error fetching candidates:', candidatesError);
+        console.error('❌ [COMMISSION PANEL] Error fetching candidates:', candidatesError);
         console.error('Full error details:', JSON.stringify(candidatesError, null, 2));
         alert(`Error loading applications: ${candidatesError.message}`);
       } else if (candidatesData) {
-        console.log('✅ Fetched candidates data:', candidatesData);
-        console.log('✅ Number of applications found:', candidatesData.length);
-        console.log('✅ First candidate:', candidatesData[0]);
+        console.log('✅ [COMMISSION PANEL] Fetched candidates data:', candidatesData);
+        console.log('✅ [COMMISSION PANEL] Number of applications found:', candidatesData.length);
         
         if (candidatesData.length === 0) {
-          console.warn('⚠️ No candidates found in database');
+          console.warn('⚠️ [COMMISSION PANEL] No candidates found in database');
+        } else {
+          console.log('✅ [COMMISSION PANEL] First candidate:', candidatesData[0]);
         }
         
         // Transform database candidates to match component interface
@@ -228,7 +235,7 @@ const ElectoralCommissionInteractive = () => {
             avatar: candidate.avatar || candidate.photo_url || 'https://via.placeholder.com/150',
             submittedAt: candidate.submitted_at || candidate.created_at,
             documents: {
-              idCard: !!candidate.student_id_doc_url,
+              idCard: !!(candidate.student_id_doc_url || candidate.student_id_document_url),
               transcript: !!candidate.transcript_url,
               manifesto: !!(candidate.manifesto || candidate.manifesto_url || candidate.manifesto_doc_url),
             },
@@ -371,18 +378,69 @@ const ElectoralCommissionInteractive = () => {
     );
   }
 
-  const handleApproveApplication = (id: string) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, eligibilityStatus: 'verified' as const } : app))
-    );
-    console.log('Approved application:', id);
+  const handleApproveApplication = async (id: string) => {
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({ 
+          status: 'approved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error approving application:', error);
+        alert('Failed to approve application. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setApplications((prev) =>
+        prev.map((app) => (app.id === id ? { ...app, eligibilityStatus: 'verified' as const } : app))
+      );
+      alert('Application approved successfully!');
+      console.log('Approved application:', id);
+    } catch (error) {
+      console.error('Error in handleApproveApplication:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
-  const handleRejectApplication = (id: string) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, eligibilityStatus: 'rejected' as const } : app))
-    );
-    console.log('Rejected application:', id);
+  const handleRejectApplication = async (id: string) => {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (!reason || !reason.trim()) {
+      alert('Rejection reason is required.');
+      return;
+    }
+
+    try {
+      // Update in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({ 
+          status: 'rejected',
+          verification_notes: reason,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error rejecting application:', error);
+        alert('Failed to reject application. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setApplications((prev) =>
+        prev.map((app) => (app.id === id ? { ...app, eligibilityStatus: 'rejected' as const } : app))
+      );
+      alert('Application rejected successfully!');
+      console.log('Rejected application:', id);
+    } catch (error) {
+      console.error('Error in handleRejectApplication:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
   const handleViewApplicationDetails = (id: string) => {

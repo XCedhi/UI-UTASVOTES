@@ -50,22 +50,26 @@ export async function POST(request: NextRequest) {
     console.log('✅ All required fields present');
 
     // Check if user already applied for this position in this election
+    // BUT allow reapplication if previous application was rejected
     console.log('🔍 Checking for existing application...');
     const { data: existingApplication } = await supabase
       .from('candidates')
-      .select('id')
+      .select('id, status')
       .eq('user_id', userId)
       .eq('election_id', electionId)
       .eq('position', positionTitle)
+      .in('status', ['pending', 'approved']) // Only block if pending or approved
       .single();
 
     if (existingApplication) {
-      console.log('⚠️ Duplicate application found');
+      console.log('⚠️ Duplicate application found with status:', existingApplication.status);
       return NextResponse.json(
         { error: 'You have already applied for this position' },
         { status: 400 }
       );
     }
+
+    console.log('✅ No duplicate application found (rejected applications are allowed to reapply)');
 
     console.log('✅ No duplicate application found');
 

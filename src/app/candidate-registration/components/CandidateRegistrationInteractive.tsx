@@ -45,10 +45,10 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
   const [selectedPosition, setSelectedPosition] = useState('');
   const [eligibilityChecklist, setEligibilityChecklist] = useState<Record<string, boolean>>({});
   const [uploads, setUploads] = useState<{
-    photo: { name: string; size: number; preview?: string } | null;
-    manifesto: { name: string; size: number } | null;
-    studentId: { name: string; size: number } | null;
-    transcript: { name: string; size: number } | null;
+    photo: { name: string; size: number; preview?: string; file?: File } | null;
+    manifesto: { name: string; size: number; file?: File } | null;
+    studentId: { name: string; size: number; file?: File } | null;
+    transcript: { name: string; size: number; file?: File } | null;
   }>({
     photo: null,
     manifesto: null,
@@ -256,6 +256,7 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
         name: file.name,
         size: file.size,
         preview: field === 'photo' ? (reader.result as string) : undefined,
+        file: file, // Store the actual File object for later upload
       };
       setUploads({ ...uploads, [field]: uploadData });
       if (errors[field]) {
@@ -368,11 +369,135 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
         return;
       }
 
-      // Prepare application data
+      // Upload files to Supabase Storage and get public URLs
+      console.log('📤 Starting file uploads to Supabase Storage...');
+      let photoUrl = null;
+      let manifestoUrl = null;
+      let studentIdUrl = null;
+      let transcriptUrl = null;
+
+      try {
+        // Upload photo if exists
+        if (uploads.photo?.file) {
+          console.log('📸 Uploading photo...');
+          const timestamp = Date.now();
+          const photoExt = uploads.photo.file.name.split('.').pop();
+          const photoPath = `${userId}/${timestamp}-photo.${photoExt}`;
+          
+          const { data: photoData, error: photoError } = await supabase.storage
+            .from('candidate-documents')
+            .upload(photoPath, uploads.photo.file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (photoError) {
+            console.error('❌ Photo upload error:', photoError);
+            throw new Error(`Failed to upload photo: ${photoError.message}`);
+          }
+
+          // Get public URL
+          const { data: photoPublicUrl } = supabase.storage
+            .from('candidate-documents')
+            .getPublicUrl(photoPath);
+          
+          photoUrl = photoPublicUrl.publicUrl;
+          console.log('✅ Photo uploaded:', photoUrl);
+        }
+
+        // Upload manifesto if exists
+        if (uploads.manifesto?.file) {
+          console.log('📄 Uploading manifesto...');
+          const timestamp = Date.now();
+          const manifestoPath = `${userId}/${timestamp}-manifesto.pdf`;
+          
+          const { data: manifestoData, error: manifestoError } = await supabase.storage
+            .from('candidate-documents')
+            .upload(manifestoPath, uploads.manifesto.file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (manifestoError) {
+            console.error('❌ Manifesto upload error:', manifestoError);
+            throw new Error(`Failed to upload manifesto: ${manifestoError.message}`);
+          }
+
+          const { data: manifestoPublicUrl } = supabase.storage
+            .from('candidate-documents')
+            .getPublicUrl(manifestoPath);
+          
+          manifestoUrl = manifestoPublicUrl.publicUrl;
+          console.log('✅ Manifesto uploaded:', manifestoUrl);
+        }
+
+        // Upload student ID if exists
+        if (uploads.studentId?.file) {
+          console.log('🆔 Uploading student ID...');
+          const timestamp = Date.now();
+          const idExt = uploads.studentId.file.name.split('.').pop();
+          const idPath = `${userId}/${timestamp}-student-id.${idExt}`;
+          
+          const { data: idData, error: idError } = await supabase.storage
+            .from('candidate-documents')
+            .upload(idPath, uploads.studentId.file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (idError) {
+            console.error('❌ Student ID upload error:', idError);
+            throw new Error(`Failed to upload student ID: ${idError.message}`);
+          }
+
+          const { data: idPublicUrl } = supabase.storage
+            .from('candidate-documents')
+            .getPublicUrl(idPath);
+          
+          studentIdUrl = idPublicUrl.publicUrl;
+          console.log('✅ Student ID uploaded:', studentIdUrl);
+        }
+
+        // Upload transcript if exists
+        if (uploads.transcript?.file) {
+          console.log('📋 Uploading transcript...');
+          const timestamp = Date.now();
+          const transcriptPath = `${userId}/${timestamp}-transcript.pdf`;
+          
+          const { data: transcriptData, error: transcriptError } = await supabase.storage
+            .from('candidate-documents')
+            .upload(transcriptPath, uploads.transcript.file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (transcriptError) {
+            console.error('❌ Transcript upload error:', transcriptError);
+            throw new Error(`Failed to upload transcript: ${transcriptError.message}`);
+          }
+
+          const { data: transcriptPublicUrl } = supabase.storage
+            .from('candidate-documents')
+            .getPublicUrl(transcriptPath);
+          
+          transcriptUrl = transcriptPublicUrl.publicUrl;
+          console.log('✅ Transcript uploaded:', transcriptUrl);
+        }
+
+        console.log('✅ All files uploaded successfully!');
+      } catch (uploadError) {
+        console.error('❌ File upload failed:', uploadError);
+        alert(
+          `Failed to upload documents: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}\n\nPlease ensure:\n1. Files are under size limits\n2. You have a stable internet connection\n3. The Supabase storage bucket is properly configured`
+        );
+        return;
+      }
+
+      // Prepare application data with uploaded URLs
       const applicationData = {
         userId,
-        electionId: selectedElectionId || selectedPositionData.electionId, // Use the selected election ID
-        positionId: selectedPosition, // This is the position ID
+        electionId: selectedElectionId || selectedPositionData.electionId,
+        positionId: selectedPosition,
         positionTitle: selectedPositionData.title,
         fullName: formData.fullName,
         studentId: formData.studentId,
@@ -383,11 +508,11 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
         cgpa: formData.cgpa,
         transactionId,
         applicationFee: selectedPositionData.fee,
-        // For now, we'll store file names. In production, these would be uploaded to storage
-        photoUrl: uploads.photo?.name || null,
-        manifestoUrl: uploads.manifesto?.name || null,
-        studentIdUrl: uploads.studentId?.name || null,
-        transcriptUrl: uploads.transcript?.name || null,
+        // Use the uploaded URLs instead of filenames
+        photoUrl,
+        manifestoUrl,
+        studentIdUrl,
+        transcriptUrl,
       };
 
       console.log('📤 Submitting application data:', JSON.stringify(applicationData, null, 2));

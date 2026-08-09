@@ -45,53 +45,113 @@ const ApplicationDetailsInteractive = () => {
 
   useEffect(() => {
     setIsHydrated(true);
-    // Mock data - replace with actual API call
-    setApplication({
-      id: params.id as string,
-      candidateName: 'Kwame Mensah',
-      studentId: 'UTAS2024001',
-      email: 'kwame.mensah@cktutas.edu.gh',
-      phone: '+233 24 123 4567',
-      position: 'SRC President',
-      department: 'Computer Science',
-      level: '300',
-      program: 'BSc Computer Science',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-      submittedAt: '2026-01-20T10:30:00',
-      manifesto:
-        'I pledge to represent the student body with integrity and dedication. My vision includes improving campus facilities, enhancing student welfare programs, and fostering better communication between students and administration.',
-      documents: {
-        idCard: {
-          uploaded: true,
-          url: 'https://images.unsplash.com/photo-1633409361618-c73427e4e206?w=800&h=600&fit=crop',
-          verified: true,
-        },
-        transcript: {
-          uploaded: true,
-          url: 'https://images.unsplash.com/photo-1554224311-beee460c201f?w=800&h=600&fit=crop',
-          verified: true,
-        },
-        manifesto: {
-          uploaded: true,
-          url: 'https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=800&h=600&fit=crop',
-          verified: false,
-        },
-      },
-      eligibilityStatus: 'pending',
-      paymentStatus: 'completed',
-      applicationFee: 50.0,
-      verificationNotes: '',
-    });
+    fetchApplicationDetails();
   }, [params.id]);
+
+  const fetchApplicationDetails = async () => {
+    try {
+      const applicationId = params.id as string;
+      console.log('Fetching application details for ID:', applicationId);
+
+      // Import supabase dynamically to avoid SSR issues
+      const { supabase } = await import('@/lib/supabase');
+
+      // Fetch candidate application from database
+      const { data: candidate, error } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('id', applicationId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching application:', error);
+        alert('Failed to load application details. Please try again.');
+        return;
+      }
+
+      if (!candidate) {
+        alert('Application not found.');
+        return;
+      }
+
+      console.log('Fetched candidate data:', candidate);
+
+      // Transform database data to match component interface
+      const transformedApplication: Application = {
+        id: candidate.id.toString(),
+        candidateName: candidate.name || candidate.full_name || 'Unknown',
+        studentId: candidate.student_id || 'N/A',
+        email: candidate.email || 'N/A',
+        phone: candidate.phone || 'N/A',
+        position: candidate.position || 'N/A',
+        department: candidate.department || 'N/A',
+        level: candidate.level || 'N/A',
+        program: candidate.program || 'N/A',
+        avatar: candidate.avatar || candidate.photo_url || 'https://via.placeholder.com/150',
+        submittedAt: candidate.submitted_at || candidate.created_at,
+        manifesto: candidate.manifesto || 'No manifesto provided.',
+        documents: {
+          idCard: {
+            uploaded: !!(candidate.student_id_doc_url || candidate.student_id_document_url),
+            url: candidate.student_id_doc_url || candidate.student_id_document_url || '',
+            verified: candidate.status === 'approved',
+          },
+          transcript: {
+            uploaded: !!candidate.transcript_url,
+            url: candidate.transcript_url || '',
+            verified: candidate.status === 'approved',
+          },
+          manifesto: {
+            uploaded: !!(candidate.manifesto_url || candidate.manifesto_doc_url),
+            url: candidate.manifesto_url || candidate.manifesto_doc_url || '',
+            verified: candidate.status === 'approved',
+          },
+        },
+        eligibilityStatus: candidate.status === 'pending' ? 'pending' : candidate.status === 'approved' ? 'verified' : 'rejected',
+        paymentStatus: candidate.transaction_id ? 'completed' : 'pending',
+        applicationFee: candidate.application_fee || 0,
+        verificationNotes: candidate.verification_notes || '',
+      };
+
+      setApplication(transformedApplication);
+    } catch (error) {
+      console.error('Error in fetchApplicationDetails:', error);
+      alert('An error occurred while loading application details.');
+    }
+  };
 
   const handleApprove = async () => {
     setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/supabase');
+      
+      // Update candidate status in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({ 
+          status: 'approved',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application?.id);
+
+      if (error) {
+        console.error('Error approving application:', error);
+        alert('Failed to approve application. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Update local state
       setApplication((prev) => (prev ? { ...prev, eligibilityStatus: 'verified' } : null));
       setShowApproveModal(false);
       setIsProcessing(false);
-    }, 1500);
+      alert('Application approved successfully!');
+    } catch (error) {
+      console.error('Error in handleApprove:', error);
+      alert('An error occurred. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   const handleReject = async () => {
@@ -100,15 +160,40 @@ const ApplicationDetailsInteractive = () => {
       return;
     }
     setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Import supabase dynamically
+      const { supabase } = await import('@/lib/supabase');
+      
+      // Update candidate status in database
+      const { error } = await supabase
+        .from('candidates')
+        .update({ 
+          status: 'rejected',
+          verification_notes: rejectionReason,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application?.id);
+
+      if (error) {
+        console.error('Error rejecting application:', error);
+        alert('Failed to reject application. Please try again.');
+        setIsProcessing(false);
+        return;
+      }
+
+      // Update local state
       setApplication((prev) =>
         prev ? { ...prev, eligibilityStatus: 'rejected', verificationNotes: rejectionReason } : null
       );
       setShowRejectModal(false);
       setIsProcessing(false);
       setRejectionReason('');
-    }, 1500);
+      alert('Application rejected successfully!');
+    } catch (error) {
+      console.error('Error in handleReject:', error);
+      alert('An error occurred. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   const handleViewDocument = (docName: string, docUrl: string) => {

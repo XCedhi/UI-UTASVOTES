@@ -64,143 +64,113 @@ const CommissionElectionResultsInteractive = () => {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
-  const loadElections = () => {
-    // Mock data - in production, this would fetch from Supabase
-    const mockElections: Election[] = [
-      {
-        id: 'election-1',
-        name: 'Student Council Elections 2026',
-        status: 'active',
-        startDate: '2026-01-20T08:00:00',
-        endDate: '2026-01-25T18:00:00',
-        totalVoters: 5420,
-        votedCount: 4228,
-        positions: [
-          {
-            id: 'pos-1',
-            title: 'SRC President',
-            totalVotes: 4228,
-            candidates: [
-              {
-                id: 'c1',
-                name: 'Kwame Mensah',
-                department: 'Computer Science',
-                avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-                votes: 1870,
-                percentage: 44.23,
-                isWinner: true,
-              },
-              {
-                id: 'c2',
-                name: 'Ama Osei',
-                department: 'Business Administration',
-                avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2',
-                votes: 1589,
-                percentage: 37.59,
-                isWinner: false,
-              },
-              {
-                id: 'c3',
-                name: 'Kofi Asante',
-                department: 'Engineering',
-                avatar: 'https://images.pixabay.com/photo/2016/11/21/12/42/beard-1845166_1280.jpg',
-                votes: 769,
-                percentage: 18.18,
-                isWinner: false,
-              },
-            ],
-          },
-          {
-            id: 'pos-2',
-            title: 'Vice President',
-            totalVotes: 4228,
-            candidates: [
-              {
-                id: 'c4',
-                name: 'Abena Adjei',
-                department: 'Medicine',
-                avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg',
-                votes: 2114,
-                percentage: 50.02,
-                isWinner: true,
-              },
-              {
-                id: 'c5',
-                name: 'Yaw Owusu',
-                department: 'Law',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
-                votes: 2114,
-                percentage: 49.98,
-                isWinner: false,
-              },
-            ],
-          },
-          {
-            id: 'pos-3',
-            title: 'General Secretary',
-            totalVotes: 4228,
-            candidates: [
-              {
-                id: 'c6',
-                name: 'Akua Boateng',
-                department: 'Economics',
-                avatar: 'https://images.pixabay.com/photo/2017/08/01/08/29/woman-2563491_1280.jpg',
-                votes: 2537,
-                percentage: 60.01,
-                isWinner: true,
-              },
-              {
-                id: 'c7',
-                name: 'Emmanuel Darko',
-                department: 'Political Science',
-                avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e',
-                votes: 1691,
-                percentage: 39.99,
-                isWinner: false,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'election-2',
-        name: 'Faculty Representatives 2026',
-        status: 'completed',
-        startDate: '2026-01-10T08:00:00',
-        endDate: '2026-01-15T18:00:00',
-        totalVoters: 3200,
-        votedCount: 2464,
-        positions: [
-          {
-            id: 'pos-4',
-            title: 'Faculty of Science Rep',
-            totalVotes: 2464,
-            candidates: [
-              {
-                id: 'c8',
-                name: 'Nana Agyeman',
-                department: 'Chemistry',
-                avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a',
-                votes: 1478,
-                percentage: 59.98,
-                isWinner: true,
-              },
-              {
-                id: 'c9',
-                name: 'Efua Mensah',
-                department: 'Physics',
-                avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg',
-                votes: 986,
-                percentage: 40.02,
-                isWinner: false,
-              },
-            ],
-          },
-        ],
-      },
-    ];
+  const loadElections = async () => {
+    try {
+      // Import supabase client
+      const { supabase } = await import('@/lib/supabase');
 
-    setElections(mockElections);
+      // Fetch all elections from database
+      const { data: electionsData, error: electionsError } = await supabase
+        .from('elections')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (electionsError || !electionsData) {
+        console.error('Error fetching elections:', electionsError);
+        setElections([]);
+        return;
+      }
+
+      // Process each election with its candidates
+      const processedElections: Election[] = await Promise.all(
+        electionsData.map(async (election) => {
+          // Fetch candidates for this election
+          const { data: candidatesData, error: candidatesError } = await supabase
+            .from('candidates')
+            .select('*')
+            .eq('election_id', election.id)
+            .eq('status', 'approved')
+            .order('votes', { ascending: false });
+
+          if (candidatesError) {
+            console.error('Error fetching candidates:', candidatesError);
+            return null;
+          }
+
+          // Group candidates by position
+          const candidatesByPosition = (candidatesData || []).reduce(
+            (acc: any, candidate: any) => {
+              const position = candidate.position || 'General Position';
+              if (!acc[position]) {
+                acc[position] = [];
+              }
+              acc[position].push(candidate);
+              return acc;
+            },
+            {}
+          );
+
+          // Create positions array
+          const positions: Position[] = Object.entries(candidatesByPosition).map(
+            ([positionTitle, candidates]: any) => {
+              const totalVotes = candidates.reduce((sum: number, c: any) => sum + (c.votes || 0), 0);
+
+              return {
+                id: `pos-${positionTitle}`,
+                title: positionTitle,
+                totalVotes,
+                candidates: candidates.map((candidate: any, index: number) => ({
+                  id: candidate.id,
+                  name: candidate.full_name || candidate.name || 'Unknown Candidate',
+                  department: candidate.department || 'N/A',
+                  avatar: candidate.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
+                  votes: candidate.votes || 0,
+                  percentage: totalVotes > 0 ? ((candidate.votes || 0) / totalVotes) * 100 : 0,
+                  isWinner: index === 0 && (candidate.votes || 0) > 0,
+                })),
+              };
+            }
+          );
+
+          // Determine election status
+          const now = new Date();
+          const startDate = new Date(election.voting_start || election.start_date);
+          const endDate = new Date(election.voting_end || election.end_date);
+
+          let status: 'active' | 'completed' | 'scheduled';
+          if (now < startDate) {
+            status = 'scheduled';
+          } else if (now >= startDate && now <= endDate) {
+            status = 'active';
+          } else {
+            status = 'completed';
+          }
+
+          return {
+            id: election.id,
+            name: election.name || election.title || 'Election',
+            status,
+            startDate: (election.voting_start || election.start_date).toString(),
+            endDate: (election.voting_end || election.end_date).toString(),
+            totalVoters: election.total_voters || 0,
+            votedCount: election.voted_count || 0,
+            positions,
+          };
+        })
+      );
+
+      // Filter out null values
+      const validElections = processedElections.filter((e): e is Election => e !== null);
+      setElections(validElections);
+
+      // Set initial selected election
+      if (validElections.length > 0 && !selectedElection) {
+        setSelectedElection(validElections[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading elections:', error);
+      setElections([]);
+    }
   };
 
   const handleExport = (format: string) => {
@@ -219,7 +189,7 @@ const CommissionElectionResultsInteractive = () => {
   if (!isHydrated) {
     return (
       <div className="min-h-screen bg-background">
-        <Header userRole="commission" userName="Loading..." notificationCount={0} />
+        <Header userRole="commission" userName="Loading..." />
         <main className="pt-24 pb-12 px-4 lg:px-6">
           <div className="max-w-7xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />

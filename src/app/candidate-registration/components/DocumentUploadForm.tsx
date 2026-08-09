@@ -8,6 +8,7 @@ interface UploadedFile {
   name: string;
   size: number;
   preview?: string;
+  file?: File; // Store the actual File object for upload
 }
 
 interface DocumentUploadFormProps {

@@ -162,7 +162,7 @@ const ElectionManagementInteractive = () => {
           avatar: c.avatar || 'https://via.placeholder.com/150',
           submittedAt: c.created_at,
           documents: {
-            idCard: !!c.student_id_doc_url,
+            idCard: !!(c.student_id_doc_url || c.student_id_document_url),
             transcript: !!c.transcript_url,
             manifesto: !!c.manifesto_doc_url,
           },

@@ -8,27 +8,45 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const session = getUserSession();
+    const verifyAccess = () => {
+      try {
+        // Get session from localStorage (simple and reliable)
+        const session = getUserSession();
 
-    // Not logged in - redirect to login
-    if (!session) {
-      router.push('/login');
-      return;
-    }
+        // Not logged in - redirect to login
+        if (!session) {
+          console.log('❌ No session found - redirecting to login');
+          router.push('/login');
+          setIsChecking(false);
+          return;
+        }
 
-    // Check if user can access this route
-    if (!canAccessRoute(session.role, pathname)) {
-      // Redirect to appropriate dashboard
-      router.push(getRoleDashboard(session.role));
-      return;
-    }
+        // Check if user can access this route
+        if (!canAccessRoute(session.role, pathname)) {
+          console.log(`⚠️ User (${session.role}) cannot access ${pathname}`);
+          // Redirect to appropriate dashboard
+          router.push(getRoleDashboard(session.role));
+          setIsChecking(false);
+          return;
+        }
 
-    setIsAuthorized(true);
+        console.log(`✅ Access granted for ${session.role} to ${pathname}`);
+        setIsAuthorized(true);
+        setIsChecking(false);
+      } catch (error) {
+        console.error('❌ Error during access verification:', error);
+        router.push('/login');
+        setIsChecking(false);
+      }
+    };
+
+    verifyAccess();
   }, [pathname, router]);
 
-  if (!isAuthorized) {
+  if (isChecking || !isAuthorized) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

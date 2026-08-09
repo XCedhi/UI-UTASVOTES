@@ -1,16 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/AppIcon';
 import { clearUserSession } from '@/lib/auth-utils';
+import { supabase } from '@/lib/supabase';
 
 interface HeaderProps {
   userRole?: 'student' | 'candidate' | 'commission' | 'admin' | null;
   userName?: string;
   userAvatar?: string;
-  notificationCount?: number;
   electionStatus?: {
     isActive: boolean;
     name: string;
@@ -18,17 +18,150 @@ interface HeaderProps {
   };
 }
 
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  created_at: string;
+  is_read: boolean;
+  action_url?: string;
+}
+
 const Header = ({
   userRole = null,
   userName = 'Guest User',
   userAvatar,
-  notificationCount = 0,
   electionStatus,
 }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  // Fetch notifications when component mounts
+  useEffect(() => {
+    if (userRole) {
+      fetchNotifications();
+    }
+  }, [userRole]);
+
+  const fetchNotifications = async () => {
+    try {
+      // Get current user ID
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+      
+      if (!userId) return;
+
+      // Fetch notifications for this user
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        return;
+      }
+
+      if (data) {
+        setNotifications(data);
+        const unread = data.filter(n => !n.is_read).length;
+        setUnreadCount(unread);
+      }
+    } catch (error) {
+      console.error('Error in fetchNotifications:', error);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      // Update notification as read in database
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+
+      if (!error) {
+        // Update local state
+        setNotifications(prev => 
+          prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Mark as read
+    if (!notification.is_read) {
+      handleMarkAsRead(notification.id);
+    }
+
+    // Navigate to action URL if provided
+    if (notification.action_url) {
+      router.push(notification.action_url);
+      setIsNotificationOpen(false);
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'election':
+        return 'CheckBadgeIcon';
+      case 'result':
+        return 'ChartBarIcon';
+      case 'application':
+        return 'DocumentTextIcon';
+      case 'approval':
+        return 'CheckCircleIcon';
+      case 'deadline':
+        return 'ClockIcon';
+      case 'system':
+        return 'InformationCircleIcon';
+      default:
+        return 'BellIcon';
+    }
+  };
+
+  const getNotificationColor = (type: string) => {
+    switch (type) {
+      case 'election':
+      case 'approval':
+        return 'text-success';
+      case 'result':
+        return 'text-primary';
+      case 'application':
+        return 'text-accent';
+      case 'deadline':
+        return 'text-warning';
+      case 'system':
+        return 'text-muted-foreground';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const now = new Date();
+    const notifDate = new Date(timestamp);
+    const diffMs = now.getTime() - notifDate.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return notifDate.toLocaleDateString();
+  };
 
   const navigationItems = [
     {
@@ -192,9 +325,9 @@ const Header = ({
                   aria-label="Notifications"
                 >
                   <Icon name="BellIcon" size={24} variant="outline" />
-                  {notificationCount > 0 && (
+                  {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-error text-error-foreground text-xs font-caption rounded-full flex items-center justify-center">
-                      {notificationCount > 9 ? '9+' : notificationCount}
+                      {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </button>
@@ -326,37 +459,51 @@ const Header = ({
 
       {isNotificationOpen && userRole && (
         <div className="absolute top-20 right-4 lg:right-24 w-80 bg-popover border border-border rounded-md shadow-lg z-[1100] max-h-96 overflow-y-auto">
-          <div className="p-4 border-b border-border">
+          <div className="p-4 border-b border-border flex items-center justify-between">
             <h3 className="font-heading font-semibold text-lg">Notifications</h3>
+            {notifications.length > 0 && (
+              <button
+                onClick={() => fetchNotifications()}
+                className="text-xs text-primary hover:underline"
+              >
+                Refresh
+              </button>
+            )}
           </div>
           <div className="py-2">
-            {notificationCount > 0 ? (
-              <>
-                <div className="px-4 py-3 hover:bg-muted transition-all duration-250 ease-smooth cursor-pointer">
+            {notifications.length > 0 ? (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`px-4 py-3 hover:bg-muted transition-all duration-250 ease-smooth cursor-pointer border-l-2 ${
+                    notification.is_read ? 'border-transparent' : 'border-accent bg-accent/5'
+                  }`}
+                >
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-accent mt-2" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Election Results Available</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Results for Student Council 2026 are now available
+                    <Icon
+                      name={getNotificationIcon(notification.type) as any}
+                      size={20}
+                      variant={notification.is_read ? 'outline' : 'solid'}
+                      className={getNotificationColor(notification.type)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm ${notification.is_read ? 'font-normal' : 'font-semibold'}`}>
+                        {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {notification.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formatTimestamp(notification.created_at)}
+                      </p>
                     </div>
+                    {!notification.is_read && (
+                      <div className="w-2 h-2 rounded-full bg-accent flex-shrink-0 mt-1.5" />
+                    )}
                   </div>
                 </div>
-                <div className="px-4 py-3 hover:bg-muted transition-all duration-250 ease-smooth cursor-pointer">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full bg-primary mt-2" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Voting Period Extended</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Voting deadline extended to January 25, 2026
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">5 hours ago</p>
-                    </div>
-                  </div>
-                </div>
-              </>
+              ))
             ) : (
               <div className="px-4 py-8 text-center">
                 <Icon
@@ -365,10 +512,26 @@ const Header = ({
                   variant="outline"
                   className="mx-auto text-muted-foreground"
                 />
-                <p className="text-sm text-muted-foreground mt-4">No new notifications</p>
+                <p className="text-sm text-muted-foreground mt-4">No notifications yet</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  You'll receive notifications about elections, results, and system updates
+                </p>
               </div>
             )}
           </div>
+          {notifications.length > 0 && (
+            <div className="p-3 border-t border-border">
+              <button
+                onClick={() => {
+                  setIsNotificationOpen(false);
+                  router.push('/notifications');
+                }}
+                className="w-full text-sm text-primary hover:underline text-center"
+              >
+                View all notifications
+              </button>
+            </div>
+          )}
         </div>
       )}
     </header>

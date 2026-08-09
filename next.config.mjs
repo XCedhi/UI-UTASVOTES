@@ -36,7 +36,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack(config) {
+  webpack(config, { isServer }) {
     config.module.rules.push({
       test: /\.(jsx|tsx)$/,
       exclude: [/node_modules/],
@@ -44,6 +44,26 @@ const nextConfig = {
         loader: '@dhiwise/component-tagger/nextLoader',
       }],
     });
+    
+    // Fix chunk loading issues in Next.js 15
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            commons: {
+              name: 'commons',
+              chunks: 'all',
+              minChunks: 2,
+            },
+          },
+        },
+      };
+    }
+    
     return config;
   },
 };
