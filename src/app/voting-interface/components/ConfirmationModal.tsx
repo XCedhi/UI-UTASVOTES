@@ -8,6 +8,7 @@ interface ConfirmationModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   candidateCount: number;
+  isSubmitting?: boolean;
 }
 
 const ConfirmationModal = ({
@@ -15,6 +16,7 @@ const ConfirmationModal = ({
   onConfirm,
   onCancel,
   candidateCount,
+  isSubmitting = false,
 }: ConfirmationModalProps) => {
   if (!isOpen) return null;
 
@@ -96,17 +98,28 @@ const ConfirmationModal = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 px-6 py-3 bg-muted text-foreground rounded-md font-medium hover:bg-muted/80 transition-all duration-250 ease-smooth"
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 bg-muted text-foreground rounded-md font-medium hover:bg-muted/80 transition-all duration-250 ease-smooth disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Go Back
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-all duration-250 ease-smooth hover:-translate-y-0.5"
+              disabled={isSubmitting}
+              className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-all duration-250 ease-smooth hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               <span className="flex items-center justify-center gap-2">
-                <Icon name="CheckCircleIcon" size={20} variant="solid" />
-                Confirm & Submit
+                {isSubmitting ? (
+                  <>
+                    <Icon name="ArrowPathIcon" size={20} variant="outline" className="animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  <>
+                    <Icon name="CheckCircleIcon" size={20} variant="solid" />
+                    Confirm & Submit
+                  </>
+                )}
               </span>
             </button>
           </div>

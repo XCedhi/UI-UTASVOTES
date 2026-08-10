@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getUserSession } from '@/lib/auth-utils';
 
 export interface Election {
   id: string;
@@ -64,7 +65,10 @@ interface ElectionContextType {
   feed: FeedItem[];
   notifications: Notification[];
   loading: boolean;
-  castVote: (electionId: string, candidateId: string) => Promise<void>;
+  castVote: (
+    electionId: string,
+    candidateId: string
+  ) => Promise<{ success: boolean; receiptNumber?: string }>;
   toggleFeedLike: (feedId: string) => void;
   refreshData: () => Promise<void>;
 }
@@ -109,27 +113,46 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
 
       if (!electionsError && electionsData) {
         setElections(
-          electionsData.map((e: any) => ({
-            id: e.id,
-            // Standardize on canonical columns with legacy fallbacks
-            title: e.name || e.title || 'Election',
-            position: e.position || 'President',
-            type: e.election_type || e.type || 'university-wide',
-            status: e.status,
-            startDate: e.voting_start || e.start_date,
-            endDate: e.voting_end || e.end_date,
-            description: e.description || '',
-            hasVoted: votedElectionIds.has(e.id),
-            totalCandidates: e.total_candidates || 0,
-            positions: e.positions || [
-              { name: 'President', candidateCount: 5 },
-              { name: 'Vice President', candidateCount: 3 },
-              { name: 'Secretary', candidateCount: 4 },
-              { name: 'Treasurer', candidateCount: 2 },
-            ],
-            voterTurnout: e.voter_turnout || 1250,
-            totalVoters: e.total_voters || 3500,
-          }))
+          electionsData.map((e: any) => {
+            // Compute a real status from the voting window when dates exist so
+            // the voting UI only surfaces elections that are actually open NOW
+            // (the DB `status` field can be stale).
+            const now = Date.now();
+            const startTime = e.voting_start || e.start_date;
+            const endTime = e.voting_end || e.end_date;
+            const startMs = startTime ? new Date(startTime).getTime() : null;
+            const endMs = endTime ? new Date(endTime).getTime() : null;
+            const status: 'active' | 'upcoming' | 'ended' =
+              startMs === null || endMs === null
+                ? e.status
+                : now < startMs
+                  ? 'upcoming'
+                  : now > endMs
+                    ? 'ended'
+                    : 'active';
+
+            return {
+              id: e.id,
+              // Standardize on canonical columns with legacy fallbacks
+              title: e.name || e.title || 'Election',
+              position: e.position || 'President',
+              type: e.election_type || e.type || 'university-wide',
+              status,
+              startDate: e.voting_start || e.start_date,
+              endDate: e.voting_end || e.end_date,
+              description: e.description || '',
+              hasVoted: votedElectionIds.has(e.id),
+              totalCandidates: e.total_candidates || 0,
+              positions: e.positions || [
+                { name: 'President', candidateCount: 5 },
+                { name: 'Vice President', candidateCount: 3 },
+                { name: 'Secretary', candidateCount: 4 },
+                { name: 'Treasurer', candidateCount: 2 },
+              ],
+              voterTurnout: e.voter_turnout || 1250,
+              totalVoters: e.total_voters || 3500,
+            };
+          })
         );
       }
 
@@ -215,10 +238,13 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const castVote = async (electionId: string, candidateId: string) => {
-    // Get the current access token for server-side authentication
+    // Attach both the real Supabase session (preferred by the server) and the
+    // app's localStorage session (fallback) so voting works even when the
+    // Supabase access token is missing or expired.
     const {
       data: { session },
     } = await supabase.auth.getSession();
+    const localSession = getUserSession();
 
     const response = await fetch('/api/vote', {
       method: 'POST',
@@ -227,6 +253,8 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
         ...(session?.access_token
           ? { Authorization: `Bearer ${session.access_token}` }
           : {}),
+        ...(localSession?.userId ? { 'x-user-id': localSession.userId } : {}),
+        ...(localSession?.email ? { 'x-user-email': localSession.email } : {}),
       },
       body: JSON.stringify({ electionId, candidateId }),
     });
@@ -242,6 +270,8 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
       prev.map((e) => (e.id === electionId ? { ...e, hasVoted: true } : e))
     );
     await loadData();
+
+    return { success: true, receiptNumber: result.receiptNumber };
   };
 
   const toggleFeedLike = (feedId: string) => {

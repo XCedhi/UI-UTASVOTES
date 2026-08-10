@@ -41,11 +41,16 @@ const Header = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
 
-  // Fetch notifications when component mounts
+  // Fetch notifications when the user is signed in, then poll every 10s so new
+  // items (e.g. certified election results) appear in real time without a manual
+  // page refresh.
   useEffect(() => {
-    if (userRole) {
-      fetchNotifications();
-    }
+    if (!userRole) return;
+
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+
+    return () => clearInterval(interval);
   }, [userRole]);
 
   const fetchNotifications = async () => {

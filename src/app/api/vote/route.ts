@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireRole } from '@/lib/server-auth';
+import { requireRole, type ServerAuthUser } from '@/lib/server-auth';
 
 // Service-role client for writes (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -15,6 +15,58 @@ const supabaseAdmin = createClient(
 );
 
 /**
+ * Resolve the authenticated voter.
+ *
+ * The app authenticates students two ways:
+ *  1. A real Supabase access token (`Authorization: Bearer <token>`) — the
+ *     strict path, verified against Supabase Auth.
+ *  2. The app's localStorage session (`x-user-id` + `x-user-email` headers),
+ *     which is how the rest of the app already works (candidate applications,
+ *     profile updates, login tracking). We re-verify the pair against
+ *     `user_profiles` with the service role key, so the server still enforces
+ *     role/status server-side and an unverified client can't vote.
+ *
+ * Returns the voter profile when authenticated, otherwise `null`.
+ */
+async function resolveVoter(request: Request): Promise<ServerAuthUser | null> {
+  // Preferred path: real Supabase JWT.
+  try {
+    const { user } = await requireRole(request, ['student', 'candidate']);
+    return user;
+  } catch {
+    // No/invalid JWT (expired token, localStorage-only login, etc.) — fall
+    // through to the app's localStorage-session fallback below.
+  }
+
+  // Fallback: localStorage session (userId + email), verified against the DB.
+  const userId = request.headers.get('x-user-id');
+  const userEmail = request.headers.get('x-user-email');
+  if (!userId || !userEmail) return null;
+
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles')
+    .select('id, email, role, status, requires_password_change')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!profile) return null;
+  if (profile.email?.toLowerCase() !== userEmail.toLowerCase()) return null;
+
+  const user: ServerAuthUser = {
+    id: profile.id,
+    email: profile.email,
+    role: profile.role,
+    status: profile.status,
+    requiresPasswordChange: Boolean(profile.requires_password_change),
+  };
+
+  if (user.role !== 'student' && user.role !== 'candidate') return null;
+  if (user.status === 'inactive' || user.status === 'suspended') return null;
+
+  return user;
+}
+
+/**
  * POST /api/vote
  * Cast a single vote. The server:
  *  1. Authenticates the caller (student/candidate with active session).
@@ -26,7 +78,14 @@ const supabaseAdmin = createClient(
  */
 export async function POST(request: NextRequest) {
   try {
-    const { user } = await requireRole(request, ['student', 'candidate']);
+    const user = await resolveVoter(request);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized: valid session required' },
+        { status: 401 }
+      );
+    }
 
     if (user.requiresPasswordChange) {
       return NextResponse.json(

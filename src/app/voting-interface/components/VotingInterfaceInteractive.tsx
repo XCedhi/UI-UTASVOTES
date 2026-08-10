@@ -54,6 +54,8 @@ const VotingInterfaceInteractive = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [receiptNumber, setReceiptNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voteError, setVoteError] = useState('');
 
   // Local state to manage selections before submission
   const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
@@ -183,26 +185,51 @@ const VotingInterfaceInteractive = () => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmSubmission = () => {
-    const receipt = `UTAS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    setReceiptNumber(receipt);
-    setShowConfirmation(false);
-    setShowSuccess(true);
-
-    if (selectedElection) {
+  const handleConfirmSubmission = async () => {
+    if (!selectedElection) return;
+    setVoteError('');
+    setIsSubmitting(true);
+    try {
       // Find selected candidates for this election
       const selectedForThisElection = candidates.filter(
         (c) => c.positionId === `pos-${selectedElection.id}` && selectedCandidateIds.has(c.id)
       );
 
-      // Cast votes in global context
-      selectedForThisElection.forEach((c) => {
-        // Find original candidate to get electionId (though we know it matches selectedElection)
+      if (selectedForThisElection.length === 0) {
+        throw new Error('No candidates selected. Please go back and choose a candidate.');
+      }
+
+      // Record the ballot with the server and only show success when the vote is
+      // actually stored in the database (the API returns the real receipt).
+      let receipt = '';
+      let recorded = false;
+      for (const c of selectedForThisElection) {
         const globalC = globalCandidates.find((gc) => gc.id === c.id);
-        if (globalC) {
-          castVote(globalC.electionId, globalC.id);
+        if (!globalC) continue;
+        try {
+          const res = await castVote(globalC.electionId, globalC.id);
+          receipt = res.receiptNumber || receipt;
+          recorded = true;
+        } catch (err: any) {
+          // If a vote was already recorded for this election, duplicate/conflict
+          // errors on the remaining selections are expected — keep the first receipt.
+          if (recorded) continue;
+          throw err;
         }
-      });
+      }
+
+      if (!recorded) {
+        throw new Error('Your vote could not be recorded. Please try again.');
+      }
+
+      setReceiptNumber(receipt);
+      setShowConfirmation(false);
+      setShowSuccess(true);
+    } catch (err: any) {
+      setShowConfirmation(false);
+      setVoteError(err?.message || 'Failed to cast your vote. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -244,6 +271,30 @@ const VotingInterfaceInteractive = () => {
 
   return (
     <>
+      {voteError && (
+        <div className="mx-4 lg:mx-6 mb-6">
+          <div className="max-w-7xl mx-auto flex items-start gap-3 bg-error/10 border border-error/30 text-error rounded-lg p-4">
+            <Icon
+              name="ExclamationTriangleIcon"
+              size={20}
+              variant="solid"
+              className="mt-0.5 flex-shrink-0"
+            />
+            <div className="flex-1">
+              <p className="font-medium text-sm">Vote Not Recorded</p>
+              <p className="text-sm mt-1">{voteError}</p>
+            </div>
+            <button
+              onClick={() => setVoteError('')}
+              className="p-1 rounded-md hover:bg-error/10 transition-colors"
+              aria-label="Dismiss error"
+            >
+              <Icon name="XMarkIcon" size={20} variant="outline" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {activeView === 'elections' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
@@ -381,6 +432,7 @@ const VotingInterfaceInteractive = () => {
         onConfirm={handleConfirmSubmission}
         onCancel={() => setShowConfirmation(false)}
         candidateCount={selectedCandidatesForReview.length}
+        isSubmitting={isSubmitting}
       />
 
       <SuccessModal

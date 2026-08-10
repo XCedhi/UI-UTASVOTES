@@ -43,9 +43,9 @@ AS $$
 BEGIN
   UPDATE public.elections
   SET 
-    voted_count = (SELECT COUNT(DISTINCT user_id) FROM public.votes WHERE election_id = NEW.election_id),
+    voted_count = (SELECT COUNT(DISTINCT voter_id) FROM public.votes WHERE election_id = NEW.election_id),
     turnout_percentage = (
-      SELECT ROUND((COUNT(DISTINCT user_id)::DECIMAL / NULLIF(total_voters, 0)) * 100, 2)
+      SELECT ROUND((COUNT(DISTINCT voter_id)::DECIMAL / NULLIF(total_voters, 0)) * 100, 2)
       FROM public.votes 
       WHERE election_id = NEW.election_id
     )
@@ -156,11 +156,14 @@ CREATE TRIGGER update_candidates_updated_at BEFORE UPDATE ON public.candidates
 CREATE TRIGGER update_feed_items_updated_at BEFORE UPDATE ON public.feed_items
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_election_stats_trigger AFTER INSERT ON public.votes
-  FOR EACH ROW EXECUTE FUNCTION update_election_stats();
-
-CREATE TRIGGER update_candidate_votes_trigger AFTER INSERT ON public.votes
-  FOR EACH ROW EXECUTE FUNCTION update_candidate_votes();
+-- Votes counters: /api/vote maintains candidates.votes and elections.voted_count
+-- via the increment_candidate_votes / increment_election_voted_count RPCs.
+-- Keeping AFTER INSERT triggers here too would DOUBLE-COUNT every ballot, and the
+-- old update_election_stats() referenced a non-existent `user_id` column, which
+-- made every vote insert fail. They are dropped (see also migration
+-- 20260809_votes_permissions_fix.sql).
+DROP TRIGGER IF EXISTS update_election_stats_trigger ON public.votes;
+DROP TRIGGER IF EXISTS update_candidate_votes_trigger ON public.votes;
 
 CREATE TRIGGER update_post_likes_count_trigger AFTER INSERT OR DELETE ON public.post_likes
   FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();

@@ -106,6 +106,15 @@ CREATE POLICY "Users can insert own votes"
   ON public.votes FOR INSERT
   WITH CHECK (auth.uid() = voter_id);
 
+-- IMPORTANT: table-level GRANTs are REQUIRED for the voting/results flow.
+-- Without them PostgREST returns "permission denied for table votes" (42501)
+-- for every role — including service_role — so /api/vote cannot record ballots
+-- and no results page can count them. service_role bypasses RLS, so granting
+-- it full CRUD here is safe; anon/authenticated stay protected by the policies.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.votes TO service_role;
+GRANT SELECT, INSERT ON public.votes TO authenticated;
+GRANT SELECT ON public.votes TO anon;
+
 -- ------------------------------------------------------------
 -- 4. VOTE COUNTER FUNCTIONS (atomic increments)
 -- ------------------------------------------------------------

@@ -6,6 +6,7 @@ import Icon from '@/components/ui/AppIcon';
 import AppImage from '@/components/ui/AppImage';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { supabase } from '@/lib/supabase';
+import { resolveCandidatePhoto } from '@/lib/candidate-photo';
 
 interface Candidate {
   id: string;
@@ -30,12 +31,34 @@ const StudentElectionResultsInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [elections, setElections] = useState<Election[]>([]);
   const [loading, setLoading] = useState(true);
+  const [highlightElectionId, setHighlightElectionId] = useState<string | null>(null);
   const { profile, loading: profileLoading } = useUserProfile();
 
   useEffect(() => {
     setIsHydrated(true);
     fetchCompletedElections();
+
+    // Deep link from a "certified results" notification:
+    // /student-election-results?election=<electionId>
+    const params = new URLSearchParams(window.location.search);
+    const electionId = params.get('election');
+    if (electionId) {
+      setHighlightElectionId(electionId);
+    }
   }, []);
+
+  // When the deep-linked election is loaded, scroll its card into view and
+  // briefly highlight it so the student lands right on their certified results.
+  useEffect(() => {
+    if (!highlightElectionId || elections.length === 0) return;
+
+    const card = document.getElementById(`election-card-${highlightElectionId}`);
+    if (!card) return;
+
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const timer = setTimeout(() => setHighlightElectionId(null), 5000);
+    return () => clearTimeout(timer);
+  }, [elections, highlightElectionId]);
 
   const fetchCompletedElections = async () => {
     try {
@@ -82,7 +105,7 @@ const StudentElectionResultsInteractive = () => {
             position: c.position || election.position || 'Candidate',
             votes: c.votes || 0,
             percentage: totalVotes > 0 ? ((c.votes || 0) / totalVotes) * 100 : 0,
-            image: c.avatar || 'https://via.placeholder.com/150',
+            image: resolveCandidatePhoto(c.avatar || c.photo_url),
             isWinner: index === 0 && (c.votes || 0) > 0, // First candidate with votes is winner
           }));
 
@@ -162,7 +185,15 @@ const StudentElectionResultsInteractive = () => {
             </div>
           ) : (
             elections.map((election) => (
-              <div key={election.id} className="bg-card border border-border rounded-lg p-6">
+              <div
+                key={election.id}
+                id={`election-card-${election.id}`}
+                className={`bg-card border rounded-lg p-6 transition-all duration-500 ${
+                  highlightElectionId === election.id
+                    ? 'border-primary ring-2 ring-primary/30'
+                    : 'border-border'
+                }`}
+              >
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="font-heading font-semibold text-xl text-foreground mb-1">

@@ -113,6 +113,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Election not found' }, { status: 404 });
     }
 
+    if (election.is_certified) {
+      return NextResponse.json(
+        { error: 'Election is already certified. Results have already been sent.' },
+        { status: 409 }
+      );
+    }
+
     const { data: candidatesData, error: candidatesError } = await supabaseAdmin
       .from('candidates')
       .select('*')
@@ -162,17 +169,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Deliver the certified results to all active students
+    // Deliver the certified results to all active students: a real-time in-app
+    // notification (shown in the Header bell) plus an email with the full table.
     const { data: students } = await supabaseAdmin
       .from('user_profiles')
-      .select('email, full_name')
+      .select('id, email, full_name')
       .eq('role', 'student')
       .eq('status', 'active');
 
     let emailed = 0;
     let failed = 0;
+    let notified = 0;
 
     if (students && students.length > 0) {
+      // In-app notifications deep-link straight to the student results page so
+      // tapping the bell item lands the student on the certified election.
+      const notificationRows = students.map((student) => ({
+        user_id: student.id,
+        type: 'result',
+        title: 'Certified Results Available',
+        message: `The certified results for ${electionName} are now available. Tap to view the winners.`,
+        action_url: `/student-election-results?election=${electionId}`,
+        is_read: false,
+      }));
+
+      const { error: notifyError } = await supabaseAdmin
+        .from('notifications')
+        .insert(notificationRows);
+
+      if (notifyError) {
+        console.error('Error creating result notifications:', notifyError);
+      } else {
+        notified = notificationRows.length;
+      }
+
       for (const student of students) {
         const result = await sendResultsEmail({
           to: student.email,
@@ -192,11 +222,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Election certified and results sent to ${emailed} student(s).`,
+      message: `Election certified and results sent to ${emailed} student(s) by email and ${notified} student(s) via in-app notification.`,
       electionId,
       certifiedAt,
       emailed,
       failed,
+      notified,
       totalStudents: students?.length || 0,
     });
   } catch (error: any) {

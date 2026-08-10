@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { getUserSession } from '@/lib/auth-utils';
+import { resolveCandidatePhoto, PLACEHOLDER_AVATAR } from '@/lib/candidate-photo';
 
 interface Election {
   id: string;
@@ -38,10 +39,15 @@ interface Candidate {
 const CommissionElectionResultsInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [userName, setUserName] = useState('Commission Member');
-  const [selectedElection, setSelectedElection] = useState('election-1');
+  const [selectedElection, setSelectedElection] = useState('');
+  // Tracks the user's chosen election across auto-refresh cycles so the 5s
+  // refresh never silently resets the selection back to the first election.
+  const selectedElectionRef = useRef<string>('');
+  const [userAvatar, setUserAvatar] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [elections, setElections] = useState<Election[]>([]);
+  const [isCertifying, setIsCertifying] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -49,6 +55,7 @@ const CommissionElectionResultsInteractive = () => {
     const session = getUserSession();
     if (session) {
       setUserName(session.name);
+      setUserAvatar(session.avatar || '');
     }
 
     loadElections();
@@ -83,6 +90,22 @@ const CommissionElectionResultsInteractive = () => {
         return;
       }
 
+      // Fetch authoritative live tallies from the votes table (server-side,
+      // bypasses RLS). Falls back to counter columns if unavailable.
+      let liveResults: Record<
+        string,
+        { total: number; candidates: Record<string, number> }
+      > = {};
+      try {
+        const res = await fetch('/api/results', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          liveResults = data.elections || {};
+        }
+      } catch (err) {
+        console.error('Error fetching live results:', err);
+      }
+
       // Process each election with its candidates
       const processedElections: Election[] = await Promise.all(
         electionsData.map(async (election) => {
@@ -98,6 +121,9 @@ const CommissionElectionResultsInteractive = () => {
             console.error('Error fetching candidates:', candidatesError);
             return null;
           }
+
+          // Live tallies for this election (from the votes table, authoritative).
+          const live = liveResults[election.id];
 
           // Group candidates by position
           const candidatesByPosition = (candidatesData || []).reduce(
@@ -115,21 +141,34 @@ const CommissionElectionResultsInteractive = () => {
           // Create positions array
           const positions: Position[] = Object.entries(candidatesByPosition).map(
             ([positionTitle, candidates]: any) => {
-              const totalVotes = candidates.reduce((sum: number, c: any) => sum + (c.votes || 0), 0);
+              // Use real vote counts from the votes table when available; the
+              // denormalized counter column is only a fallback.
+              const totalVotes = live
+                ? candidates.reduce(
+                    (sum: number, c: any) => sum + (live.candidates[c.id] || 0),
+                    0
+                  )
+                : candidates.reduce((sum: number, c: any) => sum + (c.votes || 0), 0);
 
               return {
                 id: `pos-${positionTitle}`,
                 title: positionTitle,
                 totalVotes,
-                candidates: candidates.map((candidate: any, index: number) => ({
-                  id: candidate.id,
-                  name: candidate.full_name || candidate.name || 'Unknown Candidate',
-                  department: candidate.department || 'N/A',
-                  avatar: candidate.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
-                  votes: candidate.votes || 0,
-                  percentage: totalVotes > 0 ? ((candidate.votes || 0) / totalVotes) * 100 : 0,
-                  isWinner: index === 0 && (candidate.votes || 0) > 0,
-                })),
+                candidates: candidates.map((candidate: any, index: number) => {
+                  const candidateVotes = live
+                    ? live.candidates[candidate.id] || 0
+                    : candidate.votes || 0;
+
+                  return {
+                    id: candidate.id,
+                    name: candidate.full_name || candidate.name || 'Unknown Candidate',
+                    department: candidate.department || 'N/A',
+                    avatar: resolveCandidatePhoto(candidate.avatar || candidate.photo_url),
+                    votes: candidateVotes,
+                    percentage: totalVotes > 0 ? (candidateVotes / totalVotes) * 100 : 0,
+                    isWinner: index === 0 && candidateVotes > 0,
+                  };
+                }),
               };
             }
           );
@@ -155,8 +194,10 @@ const CommissionElectionResultsInteractive = () => {
             startDate: (election.voting_start || election.start_date).toString(),
             endDate: (election.voting_end || election.end_date).toString(),
             totalVoters: election.total_voters || 0,
-            votedCount: election.voted_count || 0,
+            votedCount: (live?.total ?? election.voted_count) || 0,
             positions,
+            isCertified: Boolean(election.is_certified),
+            certifiedAt: election.certified_at || undefined,
           };
         })
       );
@@ -165,9 +206,14 @@ const CommissionElectionResultsInteractive = () => {
       const validElections = processedElections.filter((e): e is Election => e !== null);
       setElections(validElections);
 
-      // Set initial selected election
-      if (validElections.length > 0 && !selectedElection) {
-        setSelectedElection(validElections[0].id);
+      // Set initial selected election (only the first time, or if the chosen
+      // election no longer exists). A ref is used so the 5-second auto-refresh
+      // never silently resets the selection back to the first election.
+      if (validElections.length > 0) {
+        const keep = validElections.find((e) => e.id === selectedElectionRef.current);
+        const nextId = (keep || validElections[0]).id;
+        selectedElectionRef.current = nextId;
+        setSelectedElection(nextId);
       }
     } catch (error) {
       console.error('Error loading elections:', error);
@@ -179,14 +225,63 @@ const CommissionElectionResultsInteractive = () => {
     alert(`Exporting results as ${format.toUpperCase()}`);
   };
 
-  const handleCertify = () => {
-    alert('Results certified and emails sent to all students');
+  const handleCertify = async () => {
+    const election = currentElection;
+    if (!election) {
+      alert('Please select an election to certify first.');
+      return;
+    }
+    if (election.isCertified) {
+      alert(`Results for "${election.name}" have already been certified and sent.`);
+      return;
+    }
+    if (
+      !window.confirm(
+        `Certify the final results for "${election.name}" and send them to all students (in-app notification + email)?`
+      )
+    ) {
+      return;
+    }
+
+    setIsCertifying(true);
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      const res = await fetch('/api/elections/certify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ electionId: election.id }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to certify results. Please try again.');
+        return;
+      }
+
+      alert(data.message || 'Results certified and sent to all students.');
+
+      // Refresh so the election is marked as certified in the UI.
+      await loadElections();
+    } catch (error) {
+      console.error('Error certifying election:', error);
+      alert('Failed to certify results. Please try again.');
+    } finally {
+      setIsCertifying(false);
+    }
   };
 
   const currentElection = elections.find((e) => e.id === selectedElection);
-  const turnoutPercentage = currentElection
-    ? ((currentElection.votedCount / currentElection.totalVoters) * 100).toFixed(2)
-    : '0';
+  const turnoutPercentage =
+    currentElection && currentElection.totalVoters > 0
+      ? ((currentElection.votedCount / currentElection.totalVoters) * 100).toFixed(2)
+      : '0';
 
   if (!isHydrated) {
     return (
@@ -206,8 +301,8 @@ const CommissionElectionResultsInteractive = () => {
       <Header
         userRole="commission"
         userName={userName}
-        userAvatar="https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg"
-        notificationCount={5}
+        userAvatar={userAvatar}
+        notificationCount={0}
         electionStatus={
           currentElection?.status === 'active'
             ? {
@@ -264,10 +359,20 @@ const CommissionElectionResultsInteractive = () => {
               </button>
               <button
                 onClick={handleCertify}
-                className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth shadow-md"
+                disabled={!currentElection || currentElection.isCertified || isCertifying}
+                className="flex items-center gap-2 px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-all duration-250 ease-smooth shadow-md disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-primary"
               >
-                <Icon name="CheckBadgeIcon" size={20} variant="outline" />
-                Certify & Send
+                <Icon
+                  name={isCertifying ? 'ArrowPathIcon' : 'CheckBadgeIcon'}
+                  size={20}
+                  variant="outline"
+                  className={isCertifying ? 'animate-spin' : ''}
+                />
+                {isCertifying
+                  ? 'Certifying…'
+                  : currentElection?.isCertified
+                    ? 'Certified ✓'
+                    : 'Certify & Send'}
               </button>
             </div>
           </div>
@@ -278,7 +383,10 @@ const CommissionElectionResultsInteractive = () => {
               {elections.map((election) => (
                 <button
                   key={election.id}
-                  onClick={() => setSelectedElection(election.id)}
+                  onClick={() => {
+                    selectedElectionRef.current = election.id;
+                    setSelectedElection(election.id);
+                  }}
                   className={`flex-shrink-0 px-6 py-3 rounded-md transition-all duration-250 ${
                     selectedElection === election.id
                       ? 'bg-primary text-primary-foreground shadow-md'
@@ -440,6 +548,9 @@ const CommissionElectionResultsInteractive = () => {
                                   src={candidate.avatar}
                                   alt={candidate.name}
                                   className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR;
+                                  }}
                                 />
                               </div>
                             </div>

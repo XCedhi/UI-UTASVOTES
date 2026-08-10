@@ -21,3 +21,6 @@ Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\swapf
  GET /electoral-commission-panel 200 in 174ms
  ✓ Compiled in 889ms (969 modules)
  ✓ Compiled in 619ms (969 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 2.2s (2042 modules)
+ GET /login 200 in 3501ms

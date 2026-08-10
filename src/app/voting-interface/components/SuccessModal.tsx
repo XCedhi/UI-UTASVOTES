@@ -75,7 +75,7 @@ const SuccessModal = ({ isOpen, receiptNumber, onClose }: SuccessModalProps) => 
 
           <div className="flex flex-col gap-3">
             <Link
-              href="/election-results"
+              href="/student-election-results"
               className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-md font-medium text-center hover:bg-primary/90 transition-all duration-250 ease-smooth hover:-translate-y-0.5"
             >
               View Election Results

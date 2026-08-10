@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
+import { resolveCandidatePhoto, PLACEHOLDER_AVATAR } from '@/lib/candidate-photo';
 
 interface Election {
   id: string;
@@ -36,6 +37,9 @@ interface Candidate {
 const AdminElectionResultsInteractive = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [selectedElection, setSelectedElection] = useState<string>('');
+  // Tracks the user's chosen election across refresh cycles so auto-refresh
+  // never silently resets the selection back to the first election.
+  const selectedElectionRef = useRef<string>('');
   const [autoRefresh, setAutoRefresh] = useState(false); // Changed from true to false
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [elections, setElections] = useState<Election[]>([]);
@@ -215,7 +219,7 @@ const AdminElectionResultsInteractive = () => {
                   id: candidate.id,
                   name: candidate.full_name,
                   department: candidate.department,
-                  avatar: candidate.avatar || candidate.photo_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e',
+                  avatar: resolveCandidatePhoto(candidate.avatar || candidate.photo_url),
                   votes: votes,
                   percentage: percentage,
                   isWinner: candidate.is_winner || false,
@@ -261,9 +265,14 @@ const AdminElectionResultsInteractive = () => {
       const validElections = processedElections.filter((e) => e !== null) as Election[];
       setElections(validElections);
 
-      // Set first election as selected if none selected
-      if (validElections.length > 0 && !selectedElection) {
-        setSelectedElection(validElections[0].id);
+      // Set first election as selected (only the first time, or if the chosen
+      // election no longer exists). A ref is used so auto-refresh never resets
+      // the selection back to the first election.
+      if (validElections.length > 0) {
+        const keep = validElections.find((e) => e.id === selectedElectionRef.current);
+        const nextId = (keep || validElections[0]).id;
+        selectedElectionRef.current = nextId;
+        setSelectedElection(nextId);
       }
     } catch (error) {
       console.error('Error loading elections:', error);
@@ -282,9 +291,10 @@ const AdminElectionResultsInteractive = () => {
   };
 
   const currentElection = elections.find((e) => e.id === selectedElection);
-  const turnoutPercentage = currentElection
-    ? ((currentElection.votedCount / currentElection.totalVoters) * 100).toFixed(2)
-    : '0';
+  const turnoutPercentage =
+    currentElection && currentElection.totalVoters > 0
+      ? ((currentElection.votedCount / currentElection.totalVoters) * 100).toFixed(2)
+      : '0';
 
   if (!isHydrated || isLoading) {
     return (
@@ -408,7 +418,10 @@ const AdminElectionResultsInteractive = () => {
               {elections.map((election) => (
                 <button
                   key={election.id}
-                  onClick={() => setSelectedElection(election.id)}
+                  onClick={() => {
+                    selectedElectionRef.current = election.id;
+                    setSelectedElection(election.id);
+                  }}
                   className={`flex-shrink-0 px-6 py-3 rounded-md transition-all duration-250 ${
                     selectedElection === election.id
                       ? 'bg-primary text-primary-foreground shadow-md'
@@ -570,6 +583,9 @@ const AdminElectionResultsInteractive = () => {
                                   src={candidate.avatar}
                                   alt={candidate.name}
                                   className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_AVATAR;
+                                  }}
                                 />
                               </div>
                             </div>
