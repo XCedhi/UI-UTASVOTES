@@ -140,26 +140,35 @@ export async function POST(request: NextRequest) {
       console.log('✅ Announcement created for election');
     }
 
-    // Create notifications for all users
+    // Create notifications for students and candidates (the people who apply).
+    // Each notification deep-links to the candidate registration page so the
+    // student gets an election preview and can jump straight into applying.
     const { data: users } = await supabaseAdmin
       .from('user_profiles')
       .select('id, role');
 
     if (users && users.length > 0) {
-      const notifications = users.map(user => ({
-        user_id: user.id,
-        title: 'New Election Created',
-        message: `${name} has been scheduled. Nominations open on ${new Date(nomination_start).toLocaleDateString()}.`,
-        type: 'election',
-        is_read: false,
-      }));
+      const recipientRoles = ['student', 'candidate'];
+      const recipients = users.filter((user: any) => recipientRoles.includes(user.role));
+      const electionTypeLabel = election_type === 'departmental' ? 'departmental' : 'university-wide';
 
-      const { error: notifError } = await supabaseAdmin.from('notifications').insert(notifications);
-      
-      if (notifError) {
-        console.error('⚠️ Error creating notifications:', notifError);
-      } else {
-        console.log('✅ Notifications sent to all users');
+      if (recipients.length > 0) {
+        const notifications = recipients.map(user => ({
+          user_id: user.id,
+          title: 'New Election Created',
+          message: `${name} has been scheduled as a ${electionTypeLabel} election. Nominations open on ${new Date(nomination_start).toLocaleDateString()} and close on ${new Date(nomination_end).toLocaleDateString()}. Tap to preview and apply.`,
+          type: 'election',
+          is_read: false,
+          action_url: `/candidate-registration?election=${election.id}`,
+        }));
+
+        const { error: notifError } = await supabaseAdmin.from('notifications').insert(notifications);
+        
+        if (notifError) {
+          console.error('⚠️ Error creating notifications:', notifError);
+        } else {
+          console.log('✅ Notifications sent to students and candidates');
+        }
       }
     }
 

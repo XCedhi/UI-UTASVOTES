@@ -5,7 +5,15 @@ import Icon from '@/components/ui/AppIcon';
 
 interface Notification {
   id: string;
-  type: 'election' | 'deadline' | 'result' | 'approval' | 'system';
+  type:
+    | 'election'
+    | 'deadline'
+    | 'result'
+    | 'approval'
+    | 'application'
+    | 'application_approved'
+    | 'application_rejected'
+    | 'system';
   title: string;
   message: string;
   timestamp: string;
@@ -39,7 +47,12 @@ const NotificationCenter = ({
       case 'result':
         return 'ChartBarIcon';
       case 'approval':
+      case 'application_approved':
         return 'CheckCircleIcon';
+      case 'application_rejected':
+        return 'XCircleIcon';
+      case 'application':
+        return 'DocumentTextIcon';
       case 'system':
         return 'InformationCircleIcon';
       default:
@@ -56,7 +69,12 @@ const NotificationCenter = ({
       case 'result':
         return 'text-success';
       case 'approval':
+      case 'application_approved':
         return 'text-success';
+      case 'application_rejected':
+        return 'text-error';
+      case 'application':
+        return 'text-accent';
       case 'system':
         return 'text-accent';
       default:
@@ -90,6 +108,10 @@ const NotificationCenter = ({
     }
     if (notification.actionUrl) {
       window.location.href = notification.actionUrl;
+    } else {
+      // No action URL (e.g. per-student application decisions) → open the
+      // full notification message page.
+      window.location.href = `/notifications/${notification.id}`;
     }
   };
 

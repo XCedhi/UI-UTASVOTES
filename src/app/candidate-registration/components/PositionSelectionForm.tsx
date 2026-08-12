@@ -31,6 +31,7 @@ interface PositionSelectionFormProps {
   studentDepartment: string;
   errors: Record<string, string>;
   onChange: (positionId: string, electionId: string) => void;
+  preselectedElectionId?: string;
 }
 
 const PositionSelectionForm = ({
@@ -40,6 +41,7 @@ const PositionSelectionForm = ({
   studentDepartment,
   errors,
   onChange,
+  preselectedElectionId,
 }: PositionSelectionFormProps) => {
   const [selectedElection, setSelectedElection] = useState<string>('');
   const [availablePositions, setAvailablePositions] = useState<Position[]>([]);
@@ -50,10 +52,28 @@ const PositionSelectionForm = ({
       return true; // All students can see university-wide elections
     }
     if (election.election_type === 'departmental') {
-      return election.department === studentDepartment; // Only show if student is in that department
+      // Only show if the student is in that department (case-insensitive)
+      if (!election.department || !studentDepartment) return false;
+      return (
+        election.department.trim().toLowerCase() ===
+        studentDepartment.trim().toLowerCase()
+      );
     }
     return false;
   });
+
+  // Auto-select the election when deep-linked from a notification
+  useEffect(() => {
+    if (
+      preselectedElectionId &&
+      preselectedElectionId !== selectedElection &&
+      eligibleElections.some((e) => e.id === preselectedElectionId)
+    ) {
+      setSelectedElection(preselectedElectionId);
+      onChange('', preselectedElectionId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedElectionId]);
 
   // Update available positions when election is selected
   useEffect(() => {

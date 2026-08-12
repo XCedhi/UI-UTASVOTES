@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
 import { supabase } from '@/lib/supabase';
+import { notifyCandidateOfDecision } from '@/lib/application-decision-notifications';
 
 interface Application {
   id: string;
@@ -104,6 +105,12 @@ const ApplicationDetailsInteractive = () => {
       // Update local state
       setApplication((prev) => prev ? { ...prev, eligibilityStatus: 'verified' } : null);
       setShowApproveModal(false);
+
+      // Notify the specific student whose application was approved
+      await notifyCandidateOfDecision(params.id as string, 'approved', {
+        position: application?.position,
+      });
+
       alert('Application approved successfully!');
     } catch (error) {
       console.error('Error approving application:', error);
@@ -141,6 +148,13 @@ const ApplicationDetailsInteractive = () => {
       setApplication((prev) => prev ? { ...prev, eligibilityStatus: 'rejected', verificationNotes: rejectionReason } : null);
       setShowRejectModal(false);
       setRejectionReason('');
+
+      // Notify the specific student whose application was rejected
+      await notifyCandidateOfDecision(params.id as string, 'rejected', {
+        position: application?.position,
+        reason: rejectionReason,
+      });
+
       alert('Application rejected successfully!');
     } catch (error) {
       console.error('Error rejecting application:', error);

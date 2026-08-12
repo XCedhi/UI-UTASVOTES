@@ -8,19 +8,685 @@
    - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 35.5s
- ○ Compiling /electoral-commission-panel ...
+ ✓ Ready in 5.2s
+ ○ Compiling /login ...
 Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
   npx update-browserslist-db@latest
   Why you should do it regularly: https://github.com/browserslist/update-db#readme
- ✓ Compiled /electoral-commission-panel in 50.7s (2064 modules)
+ ✓ Compiled /login in 7.8s (2012 modules)
 Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\DumpStack.log.tmp'
-Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\pagefile.sys'
 Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\swapfile.sys'
- ✓ Compiled in 2.7s (969 modules)
- GET /electoral-commission-panel 200 in 174ms
- ✓ Compiled in 889ms (969 modules)
- ✓ Compiled in 619ms (969 modules)
+Watchpack Error (initial scan): Error: EINVAL: invalid argument, lstat 'C:\pagefile.sys'
+ GET /login 200 in 9273ms
+ ✓ Compiled in 1824ms (944 modules)
+ ✓ Compiled in 263ms (929 modules)
+ ○ Compiling /api/change-password ...
+ ✓ Compiled /api/change-password in 2.8s (2056 modules)
+🔄 Changing password for user: 3331f1a7-3c7a-4b0c-bdc5-46ccca97709e
+✅ Profile flag updated successfully
+✅ Password updated successfully
+ POST /api/change-password 200 in 5267ms
+ GET /login 200 in 365ms
+ ○ Compiling /change-password ...
+ ✓ Compiled /change-password in 18.6s (2006 modules)
+ GET /change-password 200 in 19354ms
+ GET /login 200 in 342ms
+ GET /login 200 in 202ms
+ GET /change-password 200 in 159ms
+ GET /login 200 in 192ms
+ GET /change-password 200 in 935ms
+ ✓ Compiled in 1578ms (947 modules)
  ○ Compiling /login ...
- ✓ Compiled /login in 2.2s (2042 modules)
- GET /login 200 in 3501ms
+ ✓ Compiled /login in 519ms (1068 modules)
+ GET /login 200 in 1888ms
+ ✓ Compiled /api/change-password in 480ms (141 modules)
+🔄 Changing password for user: 08dd5edd-ff7d-41a4-88b1-ff254323214f
+✅ Profile flag updated successfully
+✅ Password updated successfully
+ POST /api/change-password 200 in 3413ms
+ POST /api/change-password 401 in 480ms
+ ○ Compiling /change-password ...
+ ✓ Compiled /change-password in 726ms (1073 modules)
+ GET /change-password 200 in 2094ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 723ms (1068 modules)
+ GET /login 200 in 2440ms
+ ○ Compiling /change-password ...
+ ✓ Compiled /change-password in 664ms (1074 modules)
+ GET /change-password 200 in 1301ms
+ ○ Compiling /api/change-password ...
+ ✓ Compiled /api/change-password in 586ms (1132 modules)
+🔄 Changing password for user: b1873b37-71d6-4325-aa2b-aa6685afc6cf
+✅ Profile flag updated successfully
+✅ Password updated successfully
+ POST /api/change-password 200 in 3032ms
+ GET /login 200 in 1015ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 1420ms (2066 modules)
+✅ Login tracked successfully for user: b1873b37-71d6-4325-aa2b-aa6685afc6cf
+ POST /api/auth/track-login 200 in 2321ms
+ ○ Compiling /student-dashboard ...
+ ✓ Compiled /student-dashboard in 2.5s (2126 modules)
+ GET /student-dashboard 200 in 3053ms
+ ○ Compiling /voting-interface ...
+ ✓ Compiled /voting-interface in 1558ms (2148 modules)
+ GET /voting-interface 200 in 2030ms
+ ○ Compiling /api/vote ...
+ ✓ Compiled /api/vote in 1291ms (2151 modules)
+ POST /api/vote 200 in 4080ms
+ GET /student-dashboard 200 in 332ms
+ ○ Compiling /student-election-results ...
+ ✓ Compiled /student-election-results in 1517ms (2159 modules)
+ GET /student-election-results?election=be05d277-91dd-4783-a829-ff8810556568 200 in 1853ms
+ GET /login 200 in 171ms
+ GET /change-password 200 in 153ms
+ ○ Compiling /api/change-password ...
+ ✓ Compiled /api/change-password in 1089ms (1186 modules)
+🔄 Changing password for user: bec907a1-9d10-436b-be84-b260886a5d4a
+✅ Profile flag updated successfully
+✅ Password updated successfully
+ POST /api/change-password 200 in 3493ms
+ GET /login 200 in 1463ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 703ms (1188 modules)
+✅ Login tracked successfully for user: bec907a1-9d10-436b-be84-b260886a5d4a
+ POST /api/auth/track-login 200 in 1674ms
+ GET /student-dashboard 200 in 282ms
+ GET /login 200 in 149ms
+✅ Login tracked successfully for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/auth/track-login 200 in 588ms
+ ○ Compiling /api/check-commission-expiry ...
+ ✓ Compiled /api/check-commission-expiry in 2.5s (2399 modules)
+🔍 Checking commission expiry for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/check-commission-expiry 200 in 3340ms
+ ○ Compiling /electoral-commission-panel ...
+ ✓ Compiled /electoral-commission-panel in 2.2s (2423 modules)
+ GET /electoral-commission-panel 200 in 2725ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1518ms (2424 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 2922ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 2918ms
+ GET /electoral-commission-panel 200 in 725ms
+ GET /photo_2026-04-17_02-54-48.png 404 in 196ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 195ms
+ ○ Compiling /electoral-commission-panel/elections/[id]/manage ...
+ ✓ Compiled /electoral-commission-panel/elections/[id]/manage in 2.5s (2139 modules)
+ ✓ Compiled in 665ms (1000 modules)
+ GET /electoral-commission-panel/elections/404e4969-9189-45b2-827d-de3a554ca04f/manage 200 in 11433ms
+ GET /electoral-commission-panel/elections/404e4969-9189-45b2-827d-de3a554ca04f/manage 200 in 86ms
+ GET /electoral-commission-panel/elections/404e4969-9189-45b2-827d-de3a554ca04f/manage 200 in 81ms
+ GET /electoral-commission-panel/elections/bfe2d635-ef57-4e22-8d5a-2c9ee5a50d4a/manage 200 in 140ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 789ms (1136 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 1575ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 1576ms
+ ○ Compiling /electoral-commission-panel/elections/create ...
+ ✓ Compiled /electoral-commission-panel/elections/create in 1968ms (2146 modules)
+ GET /electoral-commission-panel/elections/create 200 in 2149ms
+ GET /electoral-commission-panel/elections/create 200 in 67ms
+ ○ Compiling /api/elections/create ...
+ ✓ Compiled /api/elections/create in 1538ms (2189 modules)
+🔑 Supabase URL: https://inogysmdiergapyvavbx.supabase.co
+🔑 Service Role Key exists: true
+🔑 Service Role Key length: 219
+✅ Supabase admin client created
+📥 Received election creation request
+📦 Request body: {
+  "name": "Let's test create a new election",
+  "description": "We wanna see if this actually works",
+  "election_type": "university-wide",
+  "department": "",
+  "nomination_start": "2026-08-07T08:08",
+  "nomination_end": "2026-08-08T08:08",
+  "voting_start": "2026-08-10T08:09",
+  "voting_end": "2026-08-10T09:10",
+  "positions": [
+    "Test this",
+    "Vice Test this",
+    "and now that"
+  ],
+  "userId": "8f238550-8265-4476-8650-65a2863ccd1f"
+}
+✅ Validation passed, creating election...
+ GET /electoral-commission-panel/elections/create 200 in 473ms
+✅ Election created: {
+  id: 'e2264c82-2683-4043-a2df-2e00198b5187',
+  title: null,
+  description: 'We wanna see if this actually works',
+  type: null,
+  status: 'upcoming',
+  start_date: null,
+  end_date: null,
+  registration_start: null,
+  registration_end: null,
+  total_voters: 0,
+  voted_count: 0,
+  turnout_percentage: 0,
+  allow_abstain: true,
+  require_all_positions: false,
+  show_live_results: false,
+  created_by: '8f238550-8265-4476-8650-65a2863ccd1f',
+  created_at: '2026-08-10T08:11:22.929021+00:00',
+  updated_at: '2026-08-10T08:11:22.929021+00:00',
+  department: null,
+  election_type: 'university-wide',
+  nomination_start: '2026-08-07T08:08:00+00:00',
+  nomination_end: '2026-08-08T08:08:00+00:00',
+  voting_start: '2026-08-10T08:09:00+00:00',
+  voting_end: '2026-08-10T09:10:00+00:00',
+  name: "Let's test create a new election",
+  is_certified: false,
+  certified_at: null,
+  certified_by: null,
+  results_sent_at: null
+}
+✅ Announcement created for election
+✅ Notifications sent to all users
+ POST /api/elections/create 200 in 4472ms
+ ○ Compiling /electoral-commission-panel/election-management ...
+ ✓ Compiled /electoral-commission-panel/election-management in 2.2s (2203 modules)
+ GET /electoral-commission-panel/election-management 200 in 2448ms
+ GET /electoral-commission-panel/election-management 200 in 62ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 519ms (1195 modules)
+ GET /electoral-commission-panel/call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 1095ms
+ GET /electoral-commission-panel/photo_2026-04-17_02-54-48.png 404 in 1093ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 941ms (1133 modules)
+ GET /login 200 in 1330ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 743ms (1182 modules)
+✅ Login tracked successfully for user: bec907a1-9d10-436b-be84-b260886a5d4a
+ POST /api/auth/track-login 200 in 1781ms
+ ○ Compiling /student-dashboard ...
+ ✓ Compiled /student-dashboard in 872ms (1193 modules)
+ GET /student-dashboard 200 in 1311ms
+ ✓ Compiled /student-election-results in 494ms (1195 modules)
+ GET /student-election-results?election=be05d277-91dd-4783-a829-ff8810556568 200 in 761ms
+ ○ Compiling /candidate-registration ...
+ ✓ Compiled /candidate-registration in 1657ms (2166 modules)
+ GET /candidate-registration 200 in 1996ms
+ GET /candidate-registration 200 in 63ms
+ ✓ Compiled in 4.8s (2160 modules)
+ GET /candidate-registration 200 in 3456ms
+ GET /candidate-registration 200 in 70ms
+ ✓ Compiled in 887ms (1020 modules)
+ GET /candidate-registration 200 in 124ms
+ ✓ Compiled in 1047ms (1020 modules)
+ GET /candidate-registration 200 in 137ms
+ ✓ Compiled in 568ms (1020 modules)
+ GET /candidate-registration 200 in 153ms
+ ✓ Compiled in 758ms (1020 modules)
+ GET /candidate-registration 200 in 151ms
+ ✓ Compiled in 839ms (1020 modules)
+ GET /candidate-registration 200 in 107ms
+ ✓ Compiled in 1507ms (1020 modules)
+ GET /candidate-registration 200 in 167ms
+ GET /candidate-registration 200 in 1649ms
+ ✓ Compiled in 2.9s (2160 modules)
+ ✓ Compiled in 3.2s (2160 modules)
+ ✓ Compiled in 1743ms (2160 modules)
+ ✓ Compiled in 3s (2160 modules)
+Error processing file src\app\candidate-registration\components\CandidateRegistrationInteractive.tsx: [SyntaxError: Unterminated JSX contents. (793:10)] {
+  code: 'BABEL_PARSER_SYNTAX_ERROR',
+  reasonCode: 'UnterminatedJsxContent',
+  loc: [Position],
+  pos: 29302,
+  syntaxPlugin: 'jsx'
+}
+Error processing file src\app\candidate-registration\components\CandidateRegistrationInteractive.tsx: [SyntaxError: Unterminated JSX contents. (793:10)] {
+  code: 'BABEL_PARSER_SYNTAX_ERROR',
+  reasonCode: 'UnterminatedJsxContent',
+  loc: [Position],
+  pos: 29302,
+  syntaxPlugin: 'jsx'
+}
+ ⨯ ./src/app/candidate-registration/components/CandidateRegistrationInteractive.tsx
+Error:   [31mx[0m Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+     ,-[[36;1;4mC:\Users\yk.yk\Desktop\Projects\UI UTASVOTES\src\app\candidate-registration\components\CandidateRegistrationInteractive.tsx[0m:795:1]
+ [2m792[0m |       </div>
+ [2m793[0m |     </div>
+ [2m794[0m |   );
+ [2m795[0m | };
+     : [35;1m^[0m
+ [2m796[0m | 
+ [2m797[0m | export default CandidateRegistrationInteractive;
+     `----
+  [31mx[0m Unexpected eof
+     ,-[[36;1;4mC:\Users\yk.yk\Desktop\Projects\UI UTASVOTES\src\app\candidate-registration\components\CandidateRegistrationInteractive.tsx[0m:797:51]
+ [2m795[0m | };
+ [2m796[0m | 
+ [2m797[0m | export default CandidateRegistrationInteractive;
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/candidate-registration/components/CandidateRegistrationInteractive.tsx
+./src/app/candidate-registration/page.tsx
+ ✓ Compiled in 2.1s (2160 modules)
+ ✓ Compiled in 2.2s (2160 modules)
+ ✓ Compiled in 2.4s (2160 modules)
+ GET /candidate-registration 200 in 872ms
+ GET /student-dashboard 200 in 248ms
+ GET /candidate-registration 200 in 74ms
+ GET /login 200 in 204ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 1880ms (1197 modules)
+✅ Login tracked successfully for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/auth/track-login 200 in 2883ms
+ ○ Compiling /api/check-commission-expiry ...
+ ✓ Compiled /api/check-commission-expiry in 1180ms (1435 modules)
+🔍 Checking commission expiry for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/check-commission-expiry 200 in 1844ms
+ ○ Compiling /electoral-commission-panel ...
+ ✓ Compiled /electoral-commission-panel in 1241ms (1441 modules)
+ GET /electoral-commission-panel 200 in 1476ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1817ms (1433 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 2418ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 2413ms
+ ○ Compiling /electoral-commission-panel/elections/[id]/manage ...
+ ✓ Compiled /electoral-commission-panel/elections/[id]/manage in 1730ms (1439 modules)
+ GET /electoral-commission-panel/elections/be05d277-91dd-4783-a829-ff8810556568/manage 200 in 2131ms
+ GET /photo_2026-04-17_02-54-48.png 404 in 470ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 468ms
+ ○ Compiling /electoral-commission-panel/elections/create ...
+ ✓ Compiled /electoral-commission-panel/elections/create in 1611ms (1144 modules)
+ GET /electoral-commission-panel/elections/create 200 in 2001ms
+ ○ Compiling /api/elections/create ...
+ ✓ Compiled /api/elections/create in 1675ms (1187 modules)
+🔑 Supabase URL: https://inogysmdiergapyvavbx.supabase.co
+🔑 Service Role Key exists: true
+🔑 Service Role Key length: 219
+✅ Supabase admin client created
+📥 Received election creation request
+📦 Request body: {
+  "name": "Let us test another one",
+  "description": "testinggggggg",
+  "election_type": "university-wide",
+  "department": "",
+  "nomination_start": "2026-08-11T08:25",
+  "nomination_end": "2026-08-12T08:25",
+  "voting_start": "2026-08-13T08:25",
+  "voting_end": "2026-08-14T08:25",
+  "positions": [
+    "testing position",
+    "and this too"
+  ],
+  "userId": "8f238550-8265-4476-8650-65a2863ccd1f"
+}
+✅ Validation passed, creating election...
+ GET /electoral-commission-panel/elections/create 200 in 362ms
+✅ Election created: {
+  id: 'd704e4be-edb3-4667-ad69-47a160c67831',
+  title: null,
+  description: 'testinggggggg',
+  type: null,
+  status: 'upcoming',
+  start_date: null,
+  end_date: null,
+  registration_start: null,
+  registration_end: null,
+  total_voters: 0,
+  voted_count: 0,
+  turnout_percentage: 0,
+  allow_abstain: true,
+  require_all_positions: false,
+  show_live_results: false,
+  created_by: '8f238550-8265-4476-8650-65a2863ccd1f',
+  created_at: '2026-08-11T08:27:43.979538+00:00',
+  updated_at: '2026-08-11T08:27:43.979538+00:00',
+  department: null,
+  election_type: 'university-wide',
+  nomination_start: '2026-08-11T08:25:00+00:00',
+  nomination_end: '2026-08-12T08:25:00+00:00',
+  voting_start: '2026-08-13T08:25:00+00:00',
+  voting_end: '2026-08-14T08:25:00+00:00',
+  name: 'Let us test another one',
+  is_certified: false,
+  certified_at: null,
+  certified_by: null,
+  results_sent_at: null
+}
+✅ Announcement created for election
+✅ Notifications sent to students and candidates
+ POST /api/elections/create 200 in 4078ms
+ ○ Compiling /electoral-commission-panel/election-management ...
+ ✓ Compiled /electoral-commission-panel/election-management in 1955ms (1195 modules)
+ GET /electoral-commission-panel/election-management 200 in 2257ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 593ms (1196 modules)
+ GET /electoral-commission-panel/call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 1110ms
+ GET /electoral-commission-panel/photo_2026-04-17_02-54-48.png 404 in 1109ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1239ms (1198 modules)
+ GET /login 200 in 1486ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 1720ms (1185 modules)
+✅ Login tracked successfully for user: bec907a1-9d10-436b-be84-b260886a5d4a
+ POST /api/auth/track-login 200 in 2570ms
+ ○ Compiling /student-dashboard ...
+ ✓ Compiled /student-dashboard in 1464ms (1196 modules)
+ GET /student-dashboard 200 in 1722ms
+ ○ Compiling /candidate-registration ...
+ ✓ Compiled /candidate-registration in 1000ms (1202 modules)
+ GET /candidate-registration?election=d704e4be-edb3-4667-ad69-47a160c67831 200 in 1215ms
+ ○ Compiling /api/payment/momo/initiate ...
+ ✓ Compiled /api/payment/momo/initiate in 1648ms (2201 modules)
+Database error: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'network' column of 'payment_transactions' in the schema cache"
+}
+📱 MoMo Payment Prompt Sent:
+   Network: mtn
+   Phone: 544200462
+   Amount: GHS 100
+   Transaction ID: MOMO17864621749512289
+   Description: Application fee for and this too
+ POST /api/payment/momo/initiate 200 in 2387ms
+ ○ Compiling /api/payment/momo/status ...
+ ✓ Compiled /api/payment/momo/status in 913ms (2203 modules)
+ GET /api/payment/momo/status?transactionId=MOMO17864621749512289 200 in 1704ms
+ ○ Compiling /api/candidate-application/submit ...
+ ✓ Compiled /api/candidate-application/submit in 835ms (2205 modules)
+📥 Received candidate application submission request
+📋 Request body: {
+  "userId": "bec907a1-9d10-436b-be84-b260886a5d4a",
+  "electionId": "d704e4be-edb3-4667-ad69-47a160c67831",
+  "positionId": "cbdf7fec-5b1d-49dc-8120-c5c2ea48ae6d",
+  "positionTitle": "and this too",
+  "fullName": "OSEI FRIMPONG",
+  "studentId": "20230404042",
+  "email": "stevenosei94.stu@cktutas.edu.gh",
+  "phone": "544200462",
+  "department": "Bsc computer science",
+  "level": "300",
+  "cgpa": "",
+  "transactionId": "MOMO17864621749512289",
+  "applicationFee": 100,
+  "photoUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462185260-photo.jpg",
+  "manifestoUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462199350-manifesto.pdf",
+  "studentIdUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462203086-student-id.pdf",
+  "transcriptUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462205706-transcript.pdf"
+}
+✅ All required fields present
+🔍 Checking for existing application...
+✅ No duplicate application found (rejected applications are allowed to reapply)
+✅ No duplicate application found
+📝 Preparing candidate data...
+📤 Inserting candidate into database...
+Candidate data: {
+  "election_id": "d704e4be-edb3-4667-ad69-47a160c67831",
+  "user_id": "bec907a1-9d10-436b-be84-b260886a5d4a",
+  "position": "and this too",
+  "status": "pending",
+  "submitted_at": "2026-08-11T15:30:08.854Z",
+  "full_name": "OSEI FRIMPONG",
+  "email": "stevenosei94.stu@cktutas.edu.gh",
+  "student_id": "20230404042",
+  "phone": "544200462",
+  "department": "Bsc computer science",
+  "level": "300",
+  "transaction_id": "MOMO17864621749512289",
+  "application_fee": 100,
+  "photo_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462185260-photo.jpg",
+  "manifesto_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462199350-manifesto.pdf",
+  "student_id_document_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462203086-student-id.pdf",
+  "transcript_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462205706-transcript.pdf"
+}
+✅ Candidate inserted successfully: 1b685ea1-a60a-409a-a518-d6baae65383d
+📬 Creating notifications...
+📬 Found 2 admin/commission users
+📥 Received candidate application submission request
+📋 Request body: {
+  "userId": "bec907a1-9d10-436b-be84-b260886a5d4a",
+  "electionId": "d704e4be-edb3-4667-ad69-47a160c67831",
+  "positionId": "cbdf7fec-5b1d-49dc-8120-c5c2ea48ae6d",
+  "positionTitle": "and this too",
+  "fullName": "OSEI FRIMPONG",
+  "studentId": "20230404042",
+  "email": "stevenosei94.stu@cktutas.edu.gh",
+  "phone": "544200462",
+  "department": "Bsc computer science",
+  "level": "300",
+  "cgpa": "",
+  "transactionId": "MOMO17864621749512289",
+  "applicationFee": 100,
+  "photoUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462189019-photo.jpg",
+  "manifestoUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462204507-manifesto.pdf",
+  "studentIdUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462205867-student-id.pdf",
+  "transcriptUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/bec907a1-9d10-436b-be84-b260886a5d4a/1786462207904-transcript.pdf"
+}
+✅ All required fields present
+🔍 Checking for existing application...
+⚠️ Error creating notifications: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'related_id' column of 'notifications' in the schema cache"
+}
+✅ Application submission complete!
+ POST /api/candidate-application/submit 200 in 2386ms
+⚠️ Duplicate application found with status: pending
+ POST /api/candidate-application/submit 400 in 454ms
+ GET /student-dashboard 200 in 384ms
+ GET /login 200 in 107ms
+ ✓ Compiled /api/auth/track-login in 397ms (1198 modules)
+✅ Login tracked successfully for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/auth/track-login 200 in 949ms
+ ○ Compiling /api/check-commission-expiry ...
+ ✓ Compiled /api/check-commission-expiry in 1770ms (1436 modules)
+🔍 Checking commission expiry for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/check-commission-expiry 200 in 2281ms
+ ○ Compiling /electoral-commission-panel ...
+ ✓ Compiled /electoral-commission-panel in 1567ms (1442 modules)
+ GET /electoral-commission-panel 200 in 1855ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1981ms (1435 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 2606ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 2601ms
+ GET /login 200 in 111ms
+✅ Login tracked successfully for user: b1873b37-71d6-4325-aa2b-aa6685afc6cf
+ POST /api/auth/track-login 200 in 737ms
+ GET /student-dashboard 200 in 105ms
+ GET /candidate-registration?election=d704e4be-edb3-4667-ad69-47a160c67831 200 in 134ms
+ ○ Compiling /api/payment/momo/initiate ...
+ ✓ Compiled /api/payment/momo/initiate in 1832ms (1196 modules)
+Database error: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'network' column of 'payment_transactions' in the schema cache"
+}
+📱 MoMo Payment Prompt Sent:
+   Network: mtn
+   Phone: 533454521
+   Amount: GHS 100
+   Transaction ID: MOMO17864624884908114
+   Description: Application fee for testing position
+ POST /api/payment/momo/initiate 200 in 2596ms
+ ✓ Compiled /api/payment/momo/status in 453ms (1198 modules)
+ GET /api/payment/momo/status?transactionId=MOMO17864624884908114 200 in 1255ms
+ ✓ Compiled /api/candidate-application/submit in 447ms (1200 modules)
+📥 Received candidate application submission request
+📋 Request body: {
+  "userId": "b1873b37-71d6-4325-aa2b-aa6685afc6cf",
+  "electionId": "d704e4be-edb3-4667-ad69-47a160c67831",
+  "positionId": "c976c129-cc0d-4b36-926e-8726a87d7d06",
+  "positionTitle": "testing position",
+  "fullName": "Devina Awelana Kwosongo",
+  "studentId": "20250417098",
+  "email": "kwosongodevina.stu@cktutas.edu.gh",
+  "phone": "533454521",
+  "department": "Fundamental health and child birth",
+  "level": "100",
+  "cgpa": "",
+  "transactionId": "MOMO17864624884908114",
+  "applicationFee": 100,
+  "photoUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462498115-photo.jpg",
+  "manifestoUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462501976-manifesto.pdf",
+  "studentIdUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462503137-student-id.pdf",
+  "transcriptUrl": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462504533-transcript.pdf"
+}
+✅ All required fields present
+🔍 Checking for existing application...
+✅ No duplicate application found (rejected applications are allowed to reapply)
+✅ No duplicate application found
+📝 Preparing candidate data...
+📤 Inserting candidate into database...
+Candidate data: {
+  "election_id": "d704e4be-edb3-4667-ad69-47a160c67831",
+  "user_id": "b1873b37-71d6-4325-aa2b-aa6685afc6cf",
+  "position": "testing position",
+  "status": "pending",
+  "submitted_at": "2026-08-11T15:35:06.756Z",
+  "full_name": "Devina Awelana Kwosongo",
+  "email": "kwosongodevina.stu@cktutas.edu.gh",
+  "student_id": "20250417098",
+  "phone": "533454521",
+  "department": "Fundamental health and child birth",
+  "level": "100",
+  "transaction_id": "MOMO17864624884908114",
+  "application_fee": 100,
+  "photo_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462498115-photo.jpg",
+  "manifesto_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462501976-manifesto.pdf",
+  "student_id_document_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462503137-student-id.pdf",
+  "transcript_url": "https://inogysmdiergapyvavbx.supabase.co/storage/v1/object/public/candidate-documents/b1873b37-71d6-4325-aa2b-aa6685afc6cf/1786462504533-transcript.pdf"
+}
+✅ Candidate inserted successfully: c9a6bbd6-d31c-4e73-bcac-cf94d9f18274
+📬 Creating notifications...
+📬 Found 2 admin/commission users
+⚠️ Error creating notifications: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'related_id' column of 'notifications' in the schema cache"
+}
+✅ Application submission complete!
+ POST /api/candidate-application/submit 200 in 1975ms
+ GET /student-dashboard 200 in 283ms
+ GET /login 200 in 114ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 598ms (1202 modules)
+✅ Login tracked successfully for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/auth/track-login 200 in 1186ms
+ ○ Compiling /api/check-commission-expiry ...
+ ✓ Compiled /api/check-commission-expiry in 1534ms (1440 modules)
+🔍 Checking commission expiry for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/check-commission-expiry 200 in 2049ms
+ GET /electoral-commission-panel 200 in 122ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 2.2s (1441 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 2518ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 68ms
+ ○ Compiling /electoral-commission-panel/applications/[id] ...
+ ✓ Compiled /electoral-commission-panel/applications/[id] in 2.6s (2450 modules)
+ GET /electoral-commission-panel/applications/c9a6bbd6-d31c-4e73-bcac-cf94d9f18274 200 in 3675ms
+ GET /photo_2026-04-17_02-54-48.png 404 in 433ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 428ms
+ GET /electoral-commission-panel/applications/1b685ea1-a60a-409a-a518-d6baae65383d 200 in 98ms
+ ✓ Compiled in 15.9s (2158 modules)
+ GET /electoral-commission-panel/applications/1b685ea1-a60a-409a-a518-d6baae65383d 200 in 804ms
+ ✓ Compiled in 1798ms (1022 modules)
+ GET /electoral-commission-panel/applications/1b685ea1-a60a-409a-a518-d6baae65383d 200 in 565ms
+ ✓ Compiled in 5.6s (2160 modules)
+ ✓ Compiled in 1568ms (1023 modules)
+ ✓ Compiled in 5.1s (2145 modules)
+ ✓ Compiled in 1612ms (1023 modules)
+ ✓ Compiled in 656ms (1023 modules)
+ ✓ Compiled in 650ms (1023 modules)
+ ✓ Compiled in 1631ms (1023 modules)
+ ✓ Compiled in 681ms (1023 modules)
+ ✓ Compiled in 738ms (1023 modules)
+ ✓ Compiled in 1794ms (2145 modules)
+ GET /electoral-commission-panel/applications/1b685ea1-a60a-409a-a518-d6baae65383d 200 in 968ms
+ GET /electoral-commission-panel 200 in 186ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 3.7s (1140 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 4747ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 4668ms
+ GET /electoral-commission-panel/applications/c9a6bbd6-d31c-4e73-bcac-cf94d9f18274 200 in 189ms
+ ○ Compiling /electoral-commission-panel/elections/[id]/analytics ...
+ ✓ Compiled /electoral-commission-panel/elections/[id]/analytics in 5.5s (2171 modules)
+ GET /electoral-commission-panel/elections/d704e4be-edb3-4667-ad69-47a160c67831/analytics 200 in 7120ms
+ GET /electoral-commission-panel/elections/d704e4be-edb3-4667-ad69-47a160c67831/analytics 200 in 162ms
+ GET /login 200 in 188ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 2s (1189 modules)
+✅ Login tracked successfully for user: 648db2fa-1ebf-42f3-bf67-bf57060d0fa7
+ POST /api/auth/track-login 200 in 3279ms
+ ○ Compiling /student-dashboard ...
+ ✓ Compiled /student-dashboard in 808ms (1200 modules)
+ GET /student-dashboard 200 in 1321ms
+ ○ Compiling /voting-interface ...
+ ✓ Compiled /voting-interface in 1981ms (1199 modules)
+ GET /voting-interface 200 in 2461ms
+ GET /login 200 in 169ms
+✅ Login tracked successfully for user: b1873b37-71d6-4325-aa2b-aa6685afc6cf
+ POST /api/auth/track-login 200 in 638ms
+ GET /student-dashboard 200 in 134ms
+ ○ Compiling /candidate-registration ...
+ ✓ Compiled /candidate-registration in 737ms (1199 modules)
+ GET /candidate-registration?election=e2264c82-2683-4043-a2df-2e00198b5187 200 in 1022ms
+ ○ Compiling /notifications/[id] ...
+ ✓ Compiled /notifications/[id] in 3s (2225 modules)
+ GET /notifications/a9ec2505-6a7e-4437-a2a1-6c801254c63f 200 in 4654ms
+ GET /notifications/a9ec2505-6a7e-4437-a2a1-6c801254c63f 200 in 136ms
+ ○ Compiling /notifications ...
+ ✓ Compiled /notifications in 1797ms (2212 modules)
+ GET /notifications 200 in 2066ms
+ GET /notifications/1174f5d0-992c-4e54-b89f-d72e45e3bee9 200 in 178ms
+ GET /notifications 200 in 146ms
+ GET /login 200 in 243ms
+✅ Login tracked successfully for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/auth/track-login 200 in 608ms
+ ○ Compiling /api/check-commission-expiry ...
+ ✓ Compiled /api/check-commission-expiry in 4.3s (1424 modules)
+🔍 Checking commission expiry for user: 8f238550-8265-4476-8650-65a2863ccd1f
+ POST /api/check-commission-expiry 200 in 5366ms
+ ○ Compiling /electoral-commission-panel ...
+ ✓ Compiled /electoral-commission-panel in 5s (1439 modules)
+ GET /electoral-commission-panel 200 in 5523ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 977ms (1440 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 1941ms
+ GET /call_of_duty_black_ops_black_ops_iii_102453_1920x1080.jpg 404 in 125ms
+ ○ Compiling /electoral-commission-panel/elections/[id]/manage ...
+ ✓ Compiled /electoral-commission-panel/elections/[id]/manage in 3.5s (1433 modules)
+ GET /electoral-commission-panel/elections/d704e4be-edb3-4667-ad69-47a160c67831/manage 200 in 3738ms
+ ○ Compiling /electoral-commission-panel/election-results ...
+ ✓ Compiled /_not-found in 9.7s (2164 modules)
+ GET /photo_2026-04-17_02-54-48.png 404 in 9553ms
+ GET /electoral-commission-panel/election-results 200 in 11011ms
+ GET /electoral-commission-panel/election-results 200 in 112ms
+ ○ Compiling /api/results ...
+ ✓ Compiled /api/results in 2.3s (2204 modules)
+ GET /api/results 200 in 2465ms
+ GET /api/results 200 in 3304ms
+ GET /api/results 200 in 379ms
+ GET /api/results 200 in 1034ms
+ GET /api/results 200 in 713ms
+ GET /login 200 in 388ms
+ ○ Compiling /api/auth/track-login ...
+ ✓ Compiled /api/auth/track-login in 674ms (1184 modules)
+✅ Login tracked successfully for user: 648db2fa-1ebf-42f3-bf67-bf57060d0fa7
+ POST /api/auth/track-login 200 in 1393ms
+ ○ Compiling /student-dashboard ...
+ ✓ Compiled /student-dashboard in 3s (1195 modules)
+ GET /student-dashboard 200 in 3471ms
+ ○ Compiling /candidate-registration ...
+ ✓ Compiled /candidate-registration in 3s (1203 modules)
+ GET /candidate-registration?election=d704e4be-edb3-4667-ad69-47a160c67831 200 in 3345ms
+ GET /candidate-registration?election=e2264c82-2683-4043-a2df-2e00198b5187 200 in 141ms
+ GET /student-dashboard 200 in 1910ms
+ GET /student-dashboard 200 in 117ms
+ ○ Compiling /voting-interface ...
+ ✓ Compiled /voting-interface in 4s (1213 modules)
+ GET /voting-interface?election=d704e4be-edb3-4667-ad69-47a160c67831 200 in 4533ms
+ GET /voting-interface 200 in 102ms
+ GET /student-dashboard 200 in 181ms
+ GET /voting-interface 200 in 109ms

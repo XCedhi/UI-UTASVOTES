@@ -188,18 +188,32 @@ const ElectionManagementInteractive = () => {
         // Update status for each election based on dates and fetch related data
         const updatedElections = await Promise.all(
           electionsData.map(async (e: any) => {
-            const votingStart = new Date(e.voting_start || e.start_date);
-            const votingEnd = new Date(e.voting_end || e.end_date);
-            
+            // Only compute a date-based status when both dates are present.
+            // Guard against missing values, which would otherwise coerce to
+            // the epoch (1970-01-01) and wrongly mark elections as completed.
+            const rawStart = e.voting_start || e.start_date;
+            const rawEnd = e.voting_end || e.end_date;
+
             let correctStatus = e.status;
-            
-            // Determine correct status based on dates
-            if (now < votingStart) {
-              correctStatus = 'upcoming';
-            } else if (now >= votingStart && now <= votingEnd) {
-              correctStatus = 'active';
-            } else if (now > votingEnd) {
-              correctStatus = 'completed';
+
+            if (rawStart && rawEnd) {
+              const votingStart = new Date(rawStart);
+              const votingEnd = new Date(rawEnd);
+
+              // Determine correct status based on dates
+              if (now < votingStart) {
+                correctStatus = 'upcoming';
+              } else if (now >= votingStart && now <= votingEnd) {
+                correctStatus = 'active';
+              } else if (now > votingEnd) {
+                // Only auto-complete elections that were actually live.
+                // A newly created election that never went active must not be
+                // silently flipped to "completed" by date drift, otherwise it
+                // disappears from the student candidate-application flow.
+                if (e.status === 'active' || e.status === 'paused') {
+                  correctStatus = 'completed';
+                }
+              }
             }
             
             // Update in database if status is different

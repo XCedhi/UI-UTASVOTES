@@ -18,6 +18,7 @@ interface Position {
   description: string;
   fee: number;
   requirements: string[];
+  electionName: string;
 }
 
 interface CandidateRegistrationInteractiveProps {
@@ -32,6 +33,8 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
   const [positions, setPositions] = useState<Position[]>([]);
   const [elections, setElections] = useState<any[]>([]);
   const [selectedElectionId, setSelectedElectionId] = useState('');
+  const [previewElection, setPreviewElection] = useState<any>(null);
+  const [previewNotice, setPreviewNotice] = useState('');
   const [applicationDeadline, setApplicationDeadline] = useState<string>('');
   const [formData, setFormData] = useState({
     fullName: '',
@@ -66,11 +69,14 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
 
   const loadAvailablePositions = async () => {
     try {
-      // Fetch active elections with their positions
+      // Fetch elections that may still accept applications. The date-based
+      // auto-status updater can mark an election "completed" from its voting
+      // window even while nominations are still open, so we fetch broadly and
+      // filter on the client using the nomination window.
       const { data: electionsData, error: electionsError } = await supabase
         .from('elections')
         .select('*')
-        .in('status', ['active', 'upcoming']);
+        .in('status', ['active', 'upcoming', 'completed', 'paused', 'scheduled']);
 
       if (electionsError) {
         console.error('Error fetching elections:', electionsError);
@@ -84,11 +90,38 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
         return;
       }
 
-      // Set application deadline from the first active election
-      if (electionsData[0]) {
-        const deadline = electionsData[0].nomination_deadline || 
-                        electionsData[0].application_deadline || 
-                        electionsData[0].start_date;
+      // An election is open for applications while its nomination window is
+      // still open or upcoming. Completed elections only remain open when the
+      // nomination deadline explicitly extends to now or later (e.g. the
+      // date-based auto-updater completed it while nominations were running).
+      const nowMs = Date.now();
+      const isOpenForApplications = (election: any): boolean => {
+        if (election.status === 'cancelled') return false;
+
+        const nomEndRaw = election.nomination_end;
+        const nomEndMs = nomEndRaw ? new Date(nomEndRaw).getTime() : null;
+
+        if (election.status === 'completed') {
+          return nomEndMs !== null && nomEndMs >= nowMs;
+        }
+
+        if (nomEndMs !== null && nomEndMs < nowMs) return false;
+        return true;
+      };
+
+      const openElections = electionsData.filter(isOpenForApplications);
+
+      if (openElections.length === 0) {
+        setPositions([]);
+        setLoadingPositions(false);
+        return;
+      }
+
+      // Set application deadline from the first open election
+      if (openElections[0]) {
+        const deadline = openElections[0].nomination_deadline || 
+                        openElections[0].application_deadline || 
+                        openElections[0].start_date;
         if (deadline) {
           setApplicationDeadline(deadline);
           if (onDeadlineLoad) {
@@ -98,7 +131,7 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
       }
 
       // Fetch all positions for these elections
-      const electionIds = electionsData.map((e: any) => e.id);
+      const electionIds = openElections.map((e: any) => e.id);
       const { data: positionsData, error: positionsError } = await supabase
         .from('positions')
         .select('*')
@@ -109,7 +142,7 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
       }
 
       // Group positions by election
-      const electionsWithPositions = electionsData.map((election: any) => {
+      const electionsWithPositions = openElections.map((election: any) => {
         const electionPositions = (positionsData || [])
           .filter((p: any) => p.election_id === election.id)
           .map((p: any) => ({
@@ -130,9 +163,12 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
         return {
           id: election.id,
           name: election.name || election.title || 'Election',
+          description: election.description || '',
           election_type: election.election_type || 'university-wide',
           department: election.department,
           status: election.status,
+          nomination_start: election.nomination_start,
+          nomination_end: election.nomination_end,
           voting_start: election.voting_start || election.start_date,
           voting_end: election.voting_end || election.end_date,
           positions: electionPositions,
@@ -145,6 +181,22 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
       // Also create a flat list of all positions for backward compatibility
       const allPositions = electionsWithPositions.flatMap((e: any) => e.positions);
       setPositions(allPositions);
+
+      // Deep link from a "New Election" notification: /candidate-registration?election=<id>
+      const params = new URLSearchParams(
+        typeof window !== 'undefined' ? window.location.search : ''
+      );
+      const linkedElectionId = params.get('election');
+      if (linkedElectionId) {
+        const target = electionsWithPositions.find((e: any) => e.id === linkedElectionId);
+        if (target) {
+          setPreviewElection(target);
+        } else {
+          setPreviewNotice(
+            'The election you were linked to is not currently open for applications.'
+          );
+        }
+      }
 
       setLoadingPositions(false);
     } catch (error) {
@@ -239,6 +291,29 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
     }
     if (errors.election) {
       setErrors({ ...errors, election: '' });
+    }
+  };
+
+  const formatDate = (value: string | null | undefined) => {
+    if (!value) return 'TBA';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return 'TBA';
+    return d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const handleProceedToApply = () => {
+    if (!previewElection) return;
+    setSelectedElectionId(previewElection.id);
+    setPreviewElection(null);
+    setPreviewNotice('');
+    setCurrentStep(2);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/candidate-registration');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -574,7 +649,32 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
   const selectedPositionData = positions.find((p) => p.id === selectedPosition);
 
   return (
-    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <>
+      {previewNotice && (
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="flex items-start gap-3 bg-warning/10 border border-warning/30 rounded-md p-4">
+            <Icon
+              name="InformationCircleIcon"
+              size={20}
+              variant="solid"
+              className="text-warning flex-shrink-0 mt-0.5"
+            />
+            <div className="flex-1">
+              <p className="text-sm text-foreground font-medium">Election not open</p>
+              <p className="text-sm text-muted-foreground mt-1">{previewNotice}</p>
+            </div>
+            <button
+              onClick={() => setPreviewNotice('')}
+              className="text-muted-foreground hover:text-foreground transition-all"
+              aria-label="Dismiss notice"
+            >
+              <Icon name="XMarkIcon" size={20} variant="outline" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-card border border-border rounded-md p-6">
           <div className="flex items-center justify-between mb-6">
@@ -615,6 +715,7 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
               studentDepartment={formData.department}
               errors={errors}
               onChange={handlePositionChange}
+              preselectedElectionId={selectedElectionId}
             />
           )}
 
@@ -690,7 +791,129 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
       <div className="space-y-6">
         <RegistrationProgress currentStep={currentStep} steps={steps} />
       </div>
-    </div>
+      </div>
+
+      {previewElection && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-card border border-border rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between p-6 pb-0">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium">
+                    {previewElection.election_type === 'university-wide'
+                      ? 'University-Wide'
+                      : 'Departmental'}
+                  </span>
+                  {previewElection.election_type === 'departmental' &&
+                    previewElection.department && (
+                      <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs font-medium">
+                        {previewElection.department}
+                      </span>
+                    )}
+                </div>
+                <h2 className="font-heading font-semibold text-2xl text-foreground">
+                  {previewElection.name}
+                </h2>
+              </div>
+              <button
+                onClick={() => setPreviewElection(null)}
+                className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                aria-label="Close election preview"
+              >
+                <Icon name="XMarkIcon" size={20} variant="outline" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Description
+                </p>
+                <p className="text-sm text-foreground">
+                  {previewElection.description ||
+                    'Nominations for this election are now open.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted/30 rounded-md p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    Nominations
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {formatDate(previewElection.nomination_start)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    to {formatDate(previewElection.nomination_end)}
+                  </p>
+                </div>
+                <div className="bg-muted/30 rounded-md p-4">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    Voting
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {formatDate(previewElection.voting_start)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    to {formatDate(previewElection.voting_end)}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                  Available Positions ({previewElection.positions?.length || 0})
+                </p>
+                <div className="space-y-2">
+                  {(previewElection.positions || []).slice(0, 8).map((position: any) => (
+                    <div
+                      key={position.id}
+                      className="flex items-center justify-between bg-card border border-border rounded-md px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          name="BriefcaseIcon"
+                          size={18}
+                          variant="outline"
+                          className="text-primary"
+                        />
+                        <span className="text-sm font-medium text-foreground">
+                          {position.title}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-accent">
+                        GHS {position.fee}
+                      </span>
+                    </div>
+                  ))}
+                  {!previewElection.positions?.length && (
+                    <p className="text-sm text-muted-foreground">
+                      Positions will be announced by the Electoral Commission.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setPreviewElection(null)}
+                  className="px-5 py-2.5 bg-muted text-foreground rounded-md font-medium hover:bg-muted/80 transition-all duration-250"
+                >
+                  Not Now
+                </button>
+                <button
+                  onClick={handleProceedToApply}
+                  className="px-5 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-all duration-250 flex items-center gap-2"
+                >
+                  <Icon name="ArrowRightIcon" size={18} variant="outline" />
+                  Proceed to Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

@@ -109,11 +109,14 @@ const Header = ({
       handleMarkAsRead(notification.id);
     }
 
-    // Navigate to action URL if provided
+    // Navigate to the action URL if provided; otherwise open the full
+    // notification message page so the student can read the entire message.
     if (notification.action_url) {
       router.push(notification.action_url);
-      setIsNotificationOpen(false);
+    } else {
+      router.push(`/notifications/${notification.id}`);
     }
+    setIsNotificationOpen(false);
   };
 
   const getNotificationIcon = (type: string) => {
@@ -125,7 +128,10 @@ const Header = ({
       case 'application':
         return 'DocumentTextIcon';
       case 'approval':
+      case 'application_approved':
         return 'CheckCircleIcon';
+      case 'application_rejected':
+        return 'XCircleIcon';
       case 'deadline':
         return 'ClockIcon';
       case 'system':
@@ -139,7 +145,10 @@ const Header = ({
     switch (type) {
       case 'election':
       case 'approval':
+      case 'application_approved':
         return 'text-success';
+      case 'application_rejected':
+        return 'text-error';
       case 'result':
         return 'text-primary';
       case 'application':

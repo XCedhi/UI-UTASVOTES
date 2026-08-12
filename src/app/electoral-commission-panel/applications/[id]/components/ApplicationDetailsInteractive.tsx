@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
+import { notifyCandidateOfDecision } from '@/lib/application-decision-notifications';
 
 interface Application {
   id: string;
@@ -145,6 +146,12 @@ const ApplicationDetailsInteractive = () => {
       // Update local state
       setApplication((prev) => (prev ? { ...prev, eligibilityStatus: 'verified' } : null));
       setShowApproveModal(false);
+
+      // Notify the specific student whose application was approved
+      await notifyCandidateOfDecision(application?.id as string, 'approved', {
+        position: application?.position,
+      });
+
       setIsProcessing(false);
       alert('Application approved successfully!');
     } catch (error) {
@@ -188,6 +195,13 @@ const ApplicationDetailsInteractive = () => {
       setShowRejectModal(false);
       setIsProcessing(false);
       setRejectionReason('');
+
+      // Notify the specific student whose application was rejected
+      await notifyCandidateOfDecision(application?.id as string, 'rejected', {
+        position: application?.position,
+        reason: rejectionReason,
+      });
+
       alert('Application rejected successfully!');
     } catch (error) {
       console.error('Error in handleReject:', error);
