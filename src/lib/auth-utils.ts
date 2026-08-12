@@ -48,6 +48,9 @@ export const getUserSession = (): UserSession | null => {
 export const setUserSession = (session: UserSession) => {
   if (typeof window === 'undefined') return;
 
+  // Clear any previous user's data so each account stays fully separate
+  clearUserSession();
+
   localStorage.setItem('userRole', session.role);
   localStorage.setItem('userEmail', session.email);
   localStorage.setItem('userName', session.name);
