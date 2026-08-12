@@ -533,12 +533,21 @@ const CampaignFeedInteractive = () => {
                   <div className="mt-6 pt-6 border-t border-border space-y-4">
                     {/* Add Comment Form */}
                     <div className="flex gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                        <AppImage
-                          src={currentUser?.avatar_url || '/assets/images/no_image.png'}
-                          alt="You"
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-primary flex items-center justify-center flex-shrink-0">
+                        {currentUser?.avatar_url ? (
+                          <AppImage
+                            src={currentUser.avatar_url}
+                            alt="You"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Icon
+                            name="UserIcon"
+                            size={24}
+                            variant="solid"
+                            className="text-primary-foreground"
+                          />
+                        )}
                       </div>
                       <div className="flex-1 flex gap-2">
                         <input

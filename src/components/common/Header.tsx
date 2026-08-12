@@ -35,11 +35,16 @@ const Header = ({
   electionStatus,
 }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [userAvatar]);
 
   // Fetch notifications when component mounts
   useEffect(() => {
@@ -338,20 +343,19 @@ const Header = ({
                   aria-label="User menu"
                 >
                   <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center overflow-hidden">
-                    {userAvatar ? (
+                    {userAvatar && !avatarError ? (
                       <img
                         src={userAvatar}
                         alt={userName || 'User profile'}
                         className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = '/assets/images/no_image.png';
-                        }}
+                        onError={() => setAvatarError(true)}
                       />
                     ) : (
-                      <img
-                        src="/assets/images/no_image.png"
-                        alt={userName || 'User profile'}
-                        className="w-full h-full object-cover"
+                      <Icon
+                        name="UserIcon"
+                        size={24}
+                        variant="solid"
+                        className="text-primary-foreground"
                       />
                     )}
                   </div>

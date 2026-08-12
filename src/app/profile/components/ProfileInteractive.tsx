@@ -96,7 +96,7 @@ const ProfileInteractive = () => {
           phone: profile.phone || '',
           department: profile.department || '',
           level: profile.level || '',
-          avatar: profile.avatar_url || '/assets/images/no_image.png',
+          avatar: profile.avatar_url || '',
         });
       } else {
         console.error('No profile found');
@@ -111,10 +111,40 @@ const ProfileInteractive = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    setIsEditing(false);
+    try {
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+
+      if (!userId) {
+        alert('Session expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          fullName: profileData.fullName,
+          phone: profileData.phone,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(`Failed to update profile: ${result.error}`);
+        return;
+      }
+
+      localStorage.setItem('userName', profileData.fullName);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -122,10 +152,38 @@ const ProfileInteractive = () => {
     setErrors({});
   };
 
-  const handleProfilePictureChange = (croppedImage: string) => {
-    setProfileData((prev) => ({ ...prev, avatar: croppedImage }));
-    console.log('Profile picture updated');
-    // In production, upload to Supabase Storage here
+  const handleProfilePictureChange = async (croppedImage: string) => {
+    try {
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+
+      if (!userId) {
+        alert('Session expired. Please log in again.');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          avatarUrl: croppedImage,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert(`Failed to update profile picture: ${result.error}`);
+        return;
+      }
+
+      setProfileData((prev) => ({ ...prev, avatar: croppedImage }));
+      localStorage.setItem('userAvatar', croppedImage);
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      alert('Failed to update profile picture. Please try again.');
+    }
   };
 
   if (!isHydrated || isLoading) {
