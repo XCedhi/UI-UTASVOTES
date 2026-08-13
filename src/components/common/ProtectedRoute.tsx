@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { getUserSession, canAccessRoute, getRoleDashboard } from '@/lib/auth-utils';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: string[];
+}
+
+export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -20,6 +25,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         if (!session) {
           console.log('❌ No session found - redirecting to login');
           router.push('/login');
+          setIsChecking(false);
+          return;
+        }
+
+        // Check explicit allowedRoles if provided
+        if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(session.role)) {
+          console.log(`⚠️ User (${session.role}) not in allowedRoles [${allowedRoles.join(', ')}]`);
+          router.push(getRoleDashboard(session.role));
           setIsChecking(false);
           return;
         }

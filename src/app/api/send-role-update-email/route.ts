@@ -70,6 +70,13 @@ export async function POST(request: NextRequest) {
       `;
     }
 
+    // Determine recipient email
+    // In development/testing: Send to admin email (Resend free tier restriction)
+    // In production: Send to actual user email (requires verified domain)
+    const recipientEmail = process.env.NODE_ENV === 'production' 
+      ? email 
+      : process.env.ADMIN_NOTIFICATION_EMAIL || email;
+
     // Build notification banner for development mode
     let devModeBanner = '';
     if (process.env.NODE_ENV !== 'production' && recipientEmail !== email) {
@@ -182,13 +189,6 @@ export async function POST(request: NextRequest) {
         </body>
       </html>
     `;
-
-    // Determine recipient email
-    // In development/testing: Send to admin email (Resend free tier restriction)
-    // In production: Send to actual user email (requires verified domain)
-    const recipientEmail = process.env.NODE_ENV === 'production' 
-      ? email 
-      : process.env.ADMIN_NOTIFICATION_EMAIL || email;
 
     console.log(`📧 Sending email to: ${recipientEmail} (original: ${email})`);
 

@@ -11,6 +11,7 @@ interface HeaderProps {
   userRole?: 'student' | 'candidate' | 'commission' | 'admin' | null;
   userName?: string;
   userAvatar?: string;
+  notificationCount?: number;
   electionStatus?: {
     isActive: boolean;
     name: string;

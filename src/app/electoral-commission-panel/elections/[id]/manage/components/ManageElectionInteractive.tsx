@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useElectionContext } from '@/contexts/ElectionContext';
 
 interface ManageElectionInteractiveProps {
-  electionId: string;
+  electionId?: string;
 }
 
 interface Position {

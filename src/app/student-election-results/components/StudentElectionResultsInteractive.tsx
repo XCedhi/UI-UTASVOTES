@@ -112,7 +112,7 @@ const StudentElectionResultsInteractive = () => {
           return {
             id: election.id,
             title: election.title || 'Election',
-            status: 'completed' as const,
+            status: 'completed' as 'completed' | 'ongoing' | 'upcoming',
             endDate: election.end_date || '',
             totalVotes,
             candidates,
@@ -121,7 +121,7 @@ const StudentElectionResultsInteractive = () => {
       );
 
       // Filter out null values and set elections
-      const validElections = electionsWithCandidates.filter((e): e is Election => e !== null);
+      const validElections = electionsWithCandidates.filter((e): e is Election => Boolean(e));
       setElections(validElections);
       setLoading(false);
     } catch (error) {
@@ -136,11 +136,11 @@ const StudentElectionResultsInteractive = () => {
         <Header 
           userRole={(profile?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'} 
           userName={profile?.full_name || 'Loading...'} 
-          userAvatar={profile?.avatar_url}
+          userAvatar={profile?.avatar_url || undefined}
           notificationCount={0} 
         />
         <main className="pt-24 pb-12 px-4 lg:px-6">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="h-96 bg-muted animate-pulse rounded-lg" />
           </div>
         </main>
@@ -153,7 +153,7 @@ const StudentElectionResultsInteractive = () => {
       <Header
         userRole={(profile?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'}
         userName={profile?.full_name || 'Student'}
-        userAvatar={profile?.avatar_url}
+        userAvatar={profile?.avatar_url || undefined}
         notificationCount={3}
       />
 

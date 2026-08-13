@@ -352,9 +352,9 @@ const CampaignFeedInteractive = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header 
-          userRole={currentUser?.role || 'student'} 
+          userRole={(currentUser?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'} 
           userName={currentUser?.full_name || 'Loading...'} 
-          userAvatar={currentUser?.avatar_url}
+          userAvatar={currentUser?.avatar_url || undefined}
           notificationCount={0} 
         />
         <main className="pt-24 pb-12 px-4 lg:px-6">
@@ -372,9 +372,9 @@ const CampaignFeedInteractive = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header
-        userRole={currentUser?.role || 'student'}
+        userRole={(currentUser?.role as 'student' | 'candidate' | 'commission' | 'admin') || 'student'}
         userName={currentUser?.full_name || 'Guest User'}
-        userAvatar={currentUser?.avatar_url}
+        userAvatar={currentUser?.avatar_url || undefined}
         notificationCount={3}
         electionStatus={{
           isActive: true,

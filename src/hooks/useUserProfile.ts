@@ -47,6 +47,21 @@ export function useUserProfile() {
 
       if (fetchError) {
         console.error('Error fetching profile by ID:', fetchError);
+        // Fallback to email if stored in localStorage
+        const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
+        if (userEmail) {
+          const { data: profileByEmail } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+          if (profileByEmail) {
+            setProfile(profileByEmail);
+            setError(null);
+            setLoading(false);
+            return;
+          }
+        }
         setError('Failed to fetch profile');
         setLoading(false);
         return;
@@ -55,6 +70,7 @@ export function useUserProfile() {
       if (profileData) {
         setProfile(profileData);
         setError(null);
+        setLoading(false);
       } else {
         setError('Profile not found');
         setLoading(false);
