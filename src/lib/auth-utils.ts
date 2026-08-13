@@ -48,10 +48,19 @@ export const getUserSession = (): UserSession | null => {
 export const setUserSession = (session: UserSession) => {
   if (typeof window === 'undefined') return;
 
+  // Clear any previous session keys first to prevent cross-user leakage
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('userName');
+  localStorage.removeItem('userAvatar');
+  localStorage.removeItem('userAccessEndDate');
+  localStorage.removeItem('userOriginalRole');
+  localStorage.removeItem('userId');
+
   localStorage.setItem('userRole', session.role);
   localStorage.setItem('userEmail', session.email);
   localStorage.setItem('userName', session.name);
-  if (session.avatar) localStorage.setItem('userAvatar', session.avatar);
+  localStorage.setItem('userAvatar', session.avatar || '');
   if (session.accessEndDate) localStorage.setItem('userAccessEndDate', session.accessEndDate);
   if (session.originalRole) localStorage.setItem('userOriginalRole', session.originalRole);
   if (session.userId) localStorage.setItem('userId', session.userId);

@@ -111,21 +111,71 @@ const ProfileInteractive = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSaving(false);
-    setIsEditing(false);
+    try {
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await import('@/lib/supabase')).supabase.auth.getSession().then(({ data: { session } }) => session?.access_token) || ''}`,
+        },
+        body: JSON.stringify({
+          fullName: profileData.fullName,
+          phone: profileData.phone,
+          department: profileData.department,
+          level: profileData.level,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save profile');
+      }
+
+      console.log('✅ Profile saved successfully:', result.profile);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('❌ Error saving profile:', error);
+      setErrors({ general: error instanceof Error ? error.message : 'Failed to save profile' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
     setErrors({});
+    fetchUserProfile(); // Reload original data
   };
 
-  const handleProfilePictureChange = (croppedImage: string) => {
+  const handleProfilePictureChange = async (croppedImage: string) => {
     setProfileData((prev) => ({ ...prev, avatar: croppedImage }));
-    console.log('Profile picture updated');
-    // In production, upload to Supabase Storage here
+    
+    // Save avatar to database immediately
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          avatarUrl: croppedImage,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save avatar');
+      }
+      
+      console.log('✅ Avatar saved successfully');
+    } catch (error) {
+      console.error('❌ Error saving avatar:', error);
+      setErrors({ general: 'Failed to save profile picture' });
+    }
   };
 
   if (!isHydrated || isLoading) {

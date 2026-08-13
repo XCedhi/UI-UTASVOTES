@@ -25,48 +25,31 @@ export function useUserProfile() {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      
-      // Get userId from localStorage
+
+      // Get userId from localStorage as fallback
       const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
-      const userEmail = typeof window !== 'undefined' ? localStorage.getItem('userEmail') : null;
-      
-      if (!userId && !userEmail) {
+
+      // Use Supabase auth session as primary source
+      const { data: { session } } = await supabase.auth.getSession();
+      const authUserId = session?.user?.id || userId;
+
+      if (!authUserId) {
         setError('No user credentials found');
         setLoading(false);
         return;
       }
 
-      // Fetch user profile
-      let profileData = null;
-      
-      if (userId) {
-        const { data, error: fetchError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        
-        if (fetchError) {
-          console.error('Error fetching profile by ID:', fetchError);
-        } else {
-          profileData = data;
-        }
-      }
-      
-      // Fallback to email if userId didn't work
-      if (!profileData && userEmail) {
-        const { data, error: fetchError } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('email', userEmail)
-          .single();
-        
-        if (fetchError) {
-          console.error('Error fetching profile by email:', fetchError);
-          setError('Failed to fetch profile');
-        } else {
-          profileData = data;
-        }
+      const { data: profileData, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', authUserId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching profile by ID:', fetchError);
+        setError('Failed to fetch profile');
+        setLoading(false);
+        return;
       }
 
       if (profileData) {
@@ -74,9 +57,8 @@ export function useUserProfile() {
         setError(null);
       } else {
         setError('Profile not found');
+        setLoading(false);
       }
-
-      setLoading(false);
     } catch (err) {
       console.error('Error fetching user profile:', err);
       setError('An error occurred');

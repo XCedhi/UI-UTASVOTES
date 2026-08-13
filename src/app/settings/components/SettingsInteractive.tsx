@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/common/Header';
 import Icon from '@/components/ui/AppIcon';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface SettingsState {
@@ -21,7 +20,6 @@ interface SettingsState {
 
 const SettingsInteractive = () => {
   const router = useRouter();
-  const { theme: currentTheme, setTheme } = useTheme();
   const { profile, loading: profileLoading } = useUserProfile();
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -37,11 +35,56 @@ const SettingsInteractive = () => {
     theme: 'light',
   });
 
+  // Load user preferences on mount
   useEffect(() => {
     setIsHydrated(true);
-    // Sync with current theme
-    setSettings((prev) => ({ ...prev, theme: currentTheme }));
-  }, [currentTheme]);
+    loadPreferences();
+  }, []);
+
+  const loadPreferences = async () => {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/preferences', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const prefs = result.preferences;
+        if (prefs) {
+          setSettings((prev) => ({
+            ...prev,
+            emailNotifications: prefs.email_notifications ?? true,
+            smsNotifications: prefs.sms_notifications ?? false,
+            pushNotifications: prefs.push_notifications ?? true,
+            electionReminders: prefs.election_reminders ?? true,
+            resultNotifications: prefs.result_notifications ?? true,
+            campaignUpdates: prefs.campaign_updates ?? false,
+            language: prefs.language ?? 'en',
+            timezone: prefs.timezone ?? 'Africa/Accra',
+            theme: prefs.theme ?? 'light',
+          }));
+          
+          // Apply theme from preferences
+          if (prefs.theme && prefs.theme !== 'auto') {
+            const root = document.documentElement;
+            if (prefs.theme === 'dark') {
+              root.classList.add('dark');
+            } else {
+              root.classList.remove('dark');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  };
 
   const handleToggle = (key: keyof SettingsState) => {
     setSettings((prev) => ({
@@ -52,8 +95,50 @@ const SettingsInteractive = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSaving(false);
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await fetch('/api/preferences', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          theme: settings.theme,
+          email_notifications: settings.emailNotifications,
+          sms_notifications: settings.smsNotifications,
+          push_notifications: settings.pushNotifications,
+          election_reminders: settings.electionReminders,
+          result_notifications: settings.resultNotifications,
+          campaign_updates: settings.campaignUpdates,
+          language: settings.language,
+          timezone: settings.timezone,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save settings');
+      }
+
+      console.log('✅ Settings saved successfully:', result.preferences);
+      
+      // Apply theme immediately
+      if (settings.theme !== 'auto') {
+        const root = document.documentElement;
+        if (settings.theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error saving settings:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isHydrated || profileLoading) {
@@ -241,12 +326,9 @@ const SettingsInteractive = () => {
                   ].map((themeOption) => (
                     <button
                       key={themeOption.value}
-                      onClick={() => {
-                        setTheme(themeOption.value as 'light' | 'dark');
-                        setSettings({ ...settings, theme: themeOption.value as any });
-                      }}
+                      onClick={() => setSettings({ ...settings, theme: themeOption.value as any })}
                       className={`p-6 border-2 rounded-md transition-all duration-250 ${
-                        currentTheme === themeOption.value
+                        settings.theme === themeOption.value
                           ? 'border-primary bg-primary/10 shadow-md'
                           : 'border-border hover:border-primary/50'
                       }`}
@@ -256,7 +338,7 @@ const SettingsInteractive = () => {
                         size={32}
                         variant="outline"
                         className={
-                          currentTheme === themeOption.value
+                          settings.theme === themeOption.value
                             ? 'text-primary'
                             : 'text-muted-foreground'
                         }

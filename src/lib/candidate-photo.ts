@@ -9,11 +9,15 @@
 
 const CANDIDATE_PHOTO_BUCKET_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/candidate-documents/`;
 
-export const PLACEHOLDER_AVATAR = '/assets/images/no_image.png';
+export const PLACEHOLDER_AVATAR = '/assets/images/no_image.png'; // Default profile image for students
 
 export function resolveCandidatePhoto(url?: string | null): string {
   if (!url) return PLACEHOLDER_AVATAR;
   if (/^https?:\/\//i.test(url)) return url;
   // Legacy rows: bare filename or storage path → resolve against the public bucket.
   return `${CANDIDATE_PHOTO_BUCKET_URL}${url.replace(/^\/+/, '')}`;
+}
+
+export function isDefaultCandidatePhoto(url?: string | null): boolean {
+  return !url || url === PLACEHOLDER_AVATAR;
 }

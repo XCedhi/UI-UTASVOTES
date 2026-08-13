@@ -254,8 +254,13 @@ const Header = ({
     setIsProfileMenuOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     clearUserSession();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Supabase signOut error:', error);
+    }
     router.push('/login');
   };
 
