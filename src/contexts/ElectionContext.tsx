@@ -122,14 +122,23 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
             const endTime = e.voting_end || e.end_date;
             const startMs = startTime ? new Date(startTime).getTime() : null;
             const endMs = endTime ? new Date(endTime).getTime() : null;
-            const status: 'active' | 'upcoming' | 'ended' =
-              startMs === null || endMs === null
-                ? e.status
+
+            let status: 'active' | 'upcoming' | 'ended' = 'active';
+            if (e.status === 'completed' || e.status === 'cancelled' || e.status === 'ended') {
+              status = 'ended';
+            } else if (e.status === 'active') {
+              status = endMs !== null && now > endMs ? 'ended' : 'active';
+            } else if (e.status === 'upcoming' || e.status === 'scheduled') {
+              status = startMs !== null && now >= startMs ? 'active' : 'upcoming';
+            } else {
+              status = startMs === null || endMs === null
+                ? (e.status || 'active')
                 : now < startMs
                   ? 'upcoming'
                   : now > endMs
                     ? 'ended'
                     : 'active';
+            }
 
             return {
               id: e.id,
@@ -171,7 +180,7 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
             position: c.position,
             status: c.status,
             manifesto: c.manifesto || '',
-            avatar: c.avatar,
+            avatar: c.photo_url || c.avatar || c.photo || null,
             department: c.department,
             level: c.level,
             gpa: c.gpa,

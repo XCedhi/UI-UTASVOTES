@@ -46,6 +46,8 @@ const VotingInterfaceInteractive = () => {
     elections: globalElections,
     candidates: globalCandidates,
     castVote,
+    loading: contextLoading,
+    refreshData,
   } = useElectionContext();
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeView, setActiveView] = useState<'elections' | 'voting' | 'review'>('elections');
@@ -107,20 +109,15 @@ const VotingInterfaceInteractive = () => {
       isSelected: selectedCandidateIds.has(c.id),
     }));
 
-  if (!isHydrated) {
+  if (!isHydrated || contextLoading) {
     return (
-      <div className="min-h-screen bg-background pt-24 pb-12">
-        <div className="mx-4 lg:mx-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="animate-pulse space-y-6">
-              <div className="h-12 bg-muted rounded-lg w-1/3" />
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-4">
-                  <div className="h-64 bg-muted rounded-lg" />
-                  <div className="h-64 bg-muted rounded-lg" />
-                </div>
-                <div className="h-96 bg-muted rounded-lg" />
-              </div>
+      <div className="min-h-screen bg-background pt-8 pb-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse space-y-6">
+            <div className="h-12 bg-muted rounded-lg w-1/3" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-64 bg-muted rounded-lg" />
+              <div className="h-64 bg-muted rounded-lg" />
             </div>
           </div>
         </div>
@@ -312,15 +309,36 @@ const VotingInterfaceInteractive = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {elections.map((election) => (
-              <ElectionCard
-                key={election.id}
-                election={election}
-                onStartVoting={handleStartVoting}
-              />
-            ))}
-          </div>
+          {elections.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {elections.map((election) => (
+                <ElectionCard
+                  key={election.id}
+                  election={election}
+                  onStartVoting={handleStartVoting}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card border border-border rounded-lg p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto mb-4">
+                <Icon name="InboxIcon" size={32} variant="outline" />
+              </div>
+              <h3 className="text-xl font-heading font-semibold text-foreground">
+                No Active Elections Available
+              </h3>
+              <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+                There are currently no active voting sessions matching your eligible elections. Please check back when voting opens.
+              </p>
+              <button
+                onClick={() => refreshData()}
+                className="mt-6 px-6 py-2.5 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-all duration-250 ease-smooth inline-flex items-center gap-2"
+              >
+                <Icon name="ArrowPathIcon" size={18} variant="outline" />
+                <span>Refresh Elections</span>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
