@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import ResetPasswordInteractive from './components/ResetPasswordInteractive';
 
 export const metadata: Metadata = {
@@ -8,5 +9,16 @@ export const metadata: Metadata = {
 };
 
 export default function ResetPasswordPage() {
-  return <ResetPasswordInteractive />;
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        </div>
+      }
+    >
+      <ResetPasswordInteractive />
+    </Suspense>
+  );
 }
+
