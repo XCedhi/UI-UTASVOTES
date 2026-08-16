@@ -111,12 +111,21 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
         votedElectionIds = new Set((voteRows || []).map((v: any) => v.election_id));
       }
 
+      // Fetch real positions and candidates to compute accurate election positions & counts
+      const { data: dbPositions } = await supabase
+        .from('positions')
+        .select('*');
+
+      const { data: dbCandidates } = await supabase
+        .from('candidates')
+        .select('*')
+        .order('votes', { ascending: false });
+
       if (!electionsError && electionsData) {
         setElections(
           electionsData.map((e: any) => {
             // Compute a real status from the voting window when dates exist so
             // the voting UI only surfaces elections that are actually open NOW
-            // (the DB `status` field can be stale).
             const now = Date.now();
             const startTime = e.voting_start || e.start_date;
             const endTime = e.voting_end || e.end_date;
@@ -140,43 +149,73 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
                     : 'active';
             }
 
+            // Real positions for this election from DB + approved candidates
+            const electionDbPositions = (dbPositions || []).filter(
+              (p: any) => p.election_id === e.id
+            );
+            const electionApprovedCandidates = (dbCandidates || []).filter(
+              (c: any) => c.election_id === e.id && c.status === 'approved'
+            );
+
+            // Build list of position objects for this election
+            const positionNamesSet = new Set<string>();
+            const electionPositionsList: Array<{ id?: string; name: string; candidateCount: number }> = [];
+
+            electionDbPositions.forEach((p: any) => {
+              const posTitle = p.title || p.name || 'Position';
+              positionNamesSet.add(posTitle.trim().toLowerCase());
+              const count = electionApprovedCandidates.filter(
+                (c: any) => (c.position || '').trim().toLowerCase() === posTitle.trim().toLowerCase()
+              ).length;
+              electionPositionsList.push({
+                id: p.id,
+                name: posTitle,
+                candidateCount: count,
+              });
+            });
+
+            // Also include any approved candidate position titles not in positions table
+            electionApprovedCandidates.forEach((c: any) => {
+              const posTitle = (c.position || '').trim();
+              if (posTitle && !positionNamesSet.has(posTitle.toLowerCase())) {
+                positionNamesSet.add(posTitle.toLowerCase());
+                const count = electionApprovedCandidates.filter(
+                  (cand: any) => (cand.position || '').trim().toLowerCase() === posTitle.toLowerCase()
+                ).length;
+                electionPositionsList.push({
+                  id: `pos-${e.id}-${posTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+                  name: posTitle,
+                  candidateCount: count,
+                });
+              }
+            });
+
             return {
               id: e.id,
-              // Standardize on canonical columns with legacy fallbacks
               title: e.name || e.title || 'Election',
-              position: e.position || 'President',
+              position: electionPositionsList.length > 0 ? electionPositionsList[0].name : 'President',
               type: e.election_type || e.type || 'university-wide',
               status,
               startDate: e.voting_start || e.start_date,
               endDate: e.voting_end || e.end_date,
               description: e.description || '',
               hasVoted: votedElectionIds.has(e.id),
-              totalCandidates: e.total_candidates || 0,
-              positions: e.positions || [
-                { name: 'President', candidateCount: 5 },
-                { name: 'Vice President', candidateCount: 3 },
-                { name: 'Secretary', candidateCount: 4 },
-                { name: 'Treasurer', candidateCount: 2 },
-              ],
-              voterTurnout: e.voter_turnout || 1250,
-              totalVoters: e.total_voters || 3500,
+              totalCandidates: electionApprovedCandidates.length,
+              positions: electionPositionsList,
+              voterTurnout: e.voter_turnout || 0,
+              totalVoters: e.total_voters || 0,
             };
           })
         );
       }
 
-      // Load candidates
-      const { data: candidatesData, error: candidatesError } = await supabase
-        .from('candidates')
-        .select('*')
-        .order('votes', { ascending: false });
-
-      if (!candidatesError && candidatesData) {
+      // Store candidates in context state
+      if (dbCandidates) {
         setCandidates(
-          candidatesData.map((c: any) => ({
+          dbCandidates.map((c: any) => ({
             id: c.id,
             electionId: c.election_id,
-            name: c.full_name || c.name, // Use full_name from database
+            name: c.full_name || c.name,
             position: c.position,
             status: c.status,
             manifesto: c.manifesto || '',

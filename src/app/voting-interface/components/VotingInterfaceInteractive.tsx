@@ -66,48 +66,87 @@ const VotingInterfaceInteractive = () => {
     setIsHydrated(true);
   }, []);
 
-  // Map global elections to local structure - ONLY ACTIVE ELECTIONS
-  const elections: LocalElection[] = globalElections
-    .filter((e) => e.status === 'active') // Only show active elections
-    .map((e) => ({
+  // Map active elections, positions, and approved candidates
+  const activeGlobalElections = globalElections.filter(
+    (e) => e.status === 'active' || e.status === 'upcoming'
+  );
+  const approvedGlobalCandidates = globalCandidates.filter((c) => c.status === 'approved');
+
+  const positions: Position[] = [];
+  const candidates: LocalCandidate[] = [];
+
+  activeGlobalElections.forEach((e) => {
+    const electionApprovedCandidates = approvedGlobalCandidates.filter((c) => c.electionId === e.id);
+
+    // Get position list from election context (DB positions + candidate position titles)
+    let posList: Array<{ id?: string; name: string }> = e.positions && e.positions.length > 0 ? e.positions : [];
+    if (posList.length === 0) {
+      const uniqueTitles = Array.from(
+        new Set(electionApprovedCandidates.map((c) => (c.position || '').trim()).filter(Boolean))
+      );
+      posList = uniqueTitles.map((title) => ({
+        id: `pos-${e.id}-${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        name: title,
+      }));
+    }
+
+    posList.forEach((p: any) => {
+      const posTitle = p.name || p.title || 'Position';
+      const posId = p.id || `pos-${e.id}-${posTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+      if (!positions.some((existing) => existing.id === posId)) {
+        positions.push({
+          id: posId,
+          name: posTitle,
+          electionId: e.id,
+          isCompleted:
+            selectedCandidateIds.size > 0 &&
+            Array.from(selectedCandidateIds).some((candId) => {
+              const cand = approvedGlobalCandidates.find((c) => c.id === candId);
+              return (
+                cand?.electionId === e.id &&
+                (cand?.position || '').trim().toLowerCase() === posTitle.trim().toLowerCase()
+              );
+            }),
+        });
+      }
+    });
+
+    // Map approved candidates for this election to their respective positionId
+    electionApprovedCandidates.forEach((c) => {
+      const cPosTitle = (c.position || '').trim();
+      const matchedPos = positions.find(
+        (pos) => pos.electionId === e.id && pos.name.trim().toLowerCase() === cPosTitle.toLowerCase()
+      );
+      const posId = matchedPos?.id || `pos-${e.id}-${cPosTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+      candidates.push({
+        id: c.id,
+        name: c.name,
+        photo: c.avatar || 'https://via.placeholder.com/150',
+        photoAlt: c.name || 'Candidate photo',
+        position: c.position,
+        positionId: posId,
+        department: c.department || 'N/A',
+        manifesto: c.manifesto || '',
+        keyPoints: [],
+        isSelected: selectedCandidateIds.has(c.id),
+      });
+    });
+  });
+
+  const elections: LocalElection[] = activeGlobalElections.map((e) => {
+    const electionPosCount = positions.filter((p) => p.electionId === e.id).length;
+    return {
       id: e.id,
       name: e.title,
       category: e.type,
-      positions: 1, // Simplified for now
+      positions: electionPosCount || 1,
       votingDeadline: e.endDate,
       description: e.description,
       isCompleted: e.hasVoted,
-    }));
-
-  // Generate positions (simplified: 1 position per election based on election.position)
-  const positions: Position[] = globalElections
-    .filter((e) => e.status === 'active') // Only active elections
-    .map((e) => ({
-      id: `pos-${e.id}`,
-      name: e.position,
-      electionId: e.id,
-    isCompleted:
-      selectedCandidateIds.size > 0 &&
-      Array.from(selectedCandidateIds).some(
-        (id) => globalCandidates.find((c) => c.id === id)?.electionId === e.id
-      ),
-  }));
-
-  // Map global candidates to local structure
-  const candidates: LocalCandidate[] = globalCandidates
-    .filter((c) => c.status === 'approved')
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      photo: c.avatar || 'https://via.placeholder.com/150',
-      photoAlt: c.name || 'Candidate photo',
-      position: c.position,
-      positionId: `pos-${c.electionId}`,
-      department: c.department || 'N/A',
-      manifesto: c.manifesto,
-      keyPoints: [], // Context doesn't have keyPoints yet
-      isSelected: selectedCandidateIds.has(c.id),
-    }));
+    };
+  });
 
   if (!isHydrated || contextLoading) {
     return (
@@ -188,9 +227,10 @@ const VotingInterfaceInteractive = () => {
     setIsSubmitting(true);
     try {
       // Find selected candidates for this election
-      const selectedForThisElection = candidates.filter(
-        (c) => c.positionId === `pos-${selectedElection.id}` && selectedCandidateIds.has(c.id)
-      );
+      const selectedForThisElection = candidates.filter((c) => {
+        const globalC = globalCandidates.find((gc) => gc.id === c.id);
+        return globalC?.electionId === selectedElection.id && selectedCandidateIds.has(c.id);
+      });
 
       if (selectedForThisElection.length === 0) {
         throw new Error('No candidates selected. Please go back and choose a candidate.');
@@ -254,7 +294,10 @@ const VotingInterfaceInteractive = () => {
 
   // Filter selected candidates to only show those relevant to the currently selected election (for review)
   const selectedCandidatesForReview = selectedElection
-    ? selectedCandidates.filter((c) => c.positionId === `pos-${selectedElection.id}`)
+    ? selectedCandidates.filter((c) => {
+        const globalC = globalCandidates.find((gc) => gc.id === c.id);
+        return globalC?.electionId === selectedElection.id;
+      })
     : [];
 
   const electionPositions = selectedElection
