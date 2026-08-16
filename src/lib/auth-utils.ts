@@ -64,6 +64,8 @@ export const setUserSession = (session: UserSession) => {
   if (session.accessEndDate) localStorage.setItem('userAccessEndDate', session.accessEndDate);
   if (session.originalRole) localStorage.setItem('userOriginalRole', session.originalRole);
   if (session.userId) localStorage.setItem('userId', session.userId);
+
+  window.dispatchEvent(new Event('utas-auth-change'));
 };
 
 export const clearUserSession = () => {
@@ -76,6 +78,8 @@ export const clearUserSession = () => {
   localStorage.removeItem('userAccessEndDate');
   localStorage.removeItem('userOriginalRole');
   localStorage.removeItem('userId');
+
+  window.dispatchEvent(new Event('utas-auth-change'));
 };
 
 export const getRoleDashboard = (role: UserRole): string => {

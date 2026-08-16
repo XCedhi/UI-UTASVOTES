@@ -98,17 +98,30 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      // Load the current user's votes so we can show real "already voted" state
+      // Load the current user's votes from server API so each student only sees their own vote state
       let votedElectionIds = new Set<string>();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        const { data: voteRows } = await supabase
-          .from('votes')
-          .select('election_id')
-          .eq('voter_id', session.user.id);
-        votedElectionIds = new Set((voteRows || []).map((v: any) => v.election_id));
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        const localSession = getUserSession();
+
+        const voteStatusRes = await fetch('/api/vote/status', {
+          headers: {
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            ...(localSession?.userId ? { 'x-user-id': localSession.userId } : {}),
+            ...(localSession?.email ? { 'x-user-email': localSession.email } : {}),
+          },
+        });
+
+        if (voteStatusRes.ok) {
+          const voteStatus = await voteStatusRes.json();
+          if (Array.isArray(voteStatus.votedElectionIds)) {
+            votedElectionIds = new Set(voteStatus.votedElectionIds);
+          }
+        }
+      } catch (voteStatusError) {
+        console.warn('Failed to load user vote status:', voteStatusError);
       }
 
       // Fetch real positions and candidates to compute accurate election positions & counts
@@ -283,6 +296,31 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     loadData();
+
+    // Re-sync elections and votes when Supabase session changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      loadData();
+    });
+
+    // Re-sync elections and votes when user logs in, logs out, or switches accounts
+    const handleAuthEvent = () => {
+      loadData();
+    };
+
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'userId' || e.key === 'userEmail' || e.key === 'userRole') {
+        loadData();
+      }
+    };
+
+    window.addEventListener('utas-auth-change', handleAuthEvent);
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+      window.removeEventListener('utas-auth-change', handleAuthEvent);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
   }, []);
 
   const castVote = async (electionId: string, candidateId: string) => {
