@@ -90,10 +90,8 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
         return;
       }
 
-      // An election is open for applications while its nomination window is
-      // still open or upcoming. Completed elections only remain open when the
-      // nomination deadline explicitly extends to now or later (e.g. the
-      // date-based auto-updater completed it while nominations were running).
+      // An election is open for applications while its status is active, upcoming,
+      // scheduled, or paused (not cancelled, and completed only if nomination_end is still active).
       const nowMs = Date.now();
       const isOpenForApplications = (election: any): boolean => {
         if (election.status === 'cancelled') return false;
@@ -105,7 +103,8 @@ const CandidateRegistrationInteractive = ({ onDeadlineLoad }: CandidateRegistrat
           return nomEndMs !== null && nomEndMs >= nowMs;
         }
 
-        if (nomEndMs !== null && nomEndMs < nowMs) return false;
+        // Upcoming, active, scheduled, and paused elections created by the commissioner
+        // are open for candidate applications.
         return true;
       };
 

@@ -48,18 +48,19 @@ const PositionSelectionForm = ({
 
   // Filter elections based on student's department
   const eligibleElections = elections.filter((election) => {
-    if (election.election_type === 'university-wide') {
-      return true; // All students can see university-wide elections
+    // If university-wide, or if type is omitted/unspecified, show to all students
+    if (!election.election_type || election.election_type === 'university-wide') {
+      return true;
     }
     if (election.election_type === 'departmental') {
-      // Only show if the student is in that department (case-insensitive)
-      if (!election.department || !studentDepartment) return false;
+      // If no department restriction is set on the election or student, allow application
+      if (!election.department || !studentDepartment) return true;
       return (
         election.department.trim().toLowerCase() ===
         studentDepartment.trim().toLowerCase()
       );
     }
-    return false;
+    return true;
   });
 
   // Auto-select the election when deep-linked from a notification
