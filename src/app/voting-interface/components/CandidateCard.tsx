@@ -49,11 +49,13 @@ const CandidateCard = ({ candidate, onSelect, isDisabled }: CandidateCardProps) 
 
       <div className="p-6">
         <div className="mb-4">
+          <span className="inline-block px-2.5 py-0.5 mb-2 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+            {candidate.position}
+          </span>
           <h3 className="text-xl font-heading font-semibold text-foreground mb-1">
             {candidate.name}
           </h3>
-          <p className="text-sm text-primary font-medium">{candidate.position}</p>
-          <p className="text-xs text-muted-foreground mt-1">{candidate.department}</p>
+          <p className="text-xs text-muted-foreground">{candidate.department}</p>
         </div>
 
         <div className="mb-4">

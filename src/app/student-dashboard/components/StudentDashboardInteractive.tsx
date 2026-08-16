@@ -368,23 +368,23 @@ const StudentDashboardInteractive = () => {
                 <h2 className="font-heading text-2xl font-semibold text-foreground mb-4">
                   Active Elections
                 </h2>
-                {realElections.length > 0 ? (
+                {elections.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4">
-                    {realElections.map((election) => (
+                    {elections.map((election) => (
                       <ElectionCard 
                         key={election.id} 
                         id={election.id}
                         title={election.title}
-                        type={election.type || 'departmental'}
-                        status={election.status || 'upcoming'}
-                        startDate={election.start_date}
-                        endDate={election.end_date}
-                        totalCandidates={0}
-                        positions={[]}
-                        hasVoted={false}
+                        type={election.type}
+                        status={election.status}
+                        startDate={election.startDate}
+                        endDate={election.endDate}
+                        totalCandidates={election.totalCandidates || 0}
+                        positions={election.positions || []}
+                        hasVoted={election.hasVoted}
                         description={election.description || ''}
-                        voterTurnout={0}
-                        totalVoters={0}
+                        voterTurnout={election.voterTurnout || 0}
+                        totalVoters={election.totalVoters || 0}
                       />
                     ))}
                   </div>

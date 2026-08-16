@@ -404,15 +404,55 @@ const VotingInterfaceInteractive = () => {
             </div>
           </div>
 
+          {/* Position Category Tabs Bar */}
+          <div className="bg-card border border-border rounded-lg p-3 overflow-x-auto">
+            <div className="flex items-center gap-2 min-w-max">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mr-2">
+                Positions:
+              </span>
+              {electionPositions.map((pos, idx) => {
+                const isSelected = pos.id === currentPositionId;
+                const isFilled = candidates.some(
+                  (c) => c.positionId === pos.id && selectedCandidateIds.has(c.id)
+                );
+                return (
+                  <button
+                    key={pos.id}
+                    onClick={() => setCurrentPositionId(pos.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : isFilled
+                        ? 'bg-success/15 text-success-foreground border border-success/30 hover:bg-success/20'
+                        : 'bg-muted text-foreground hover:bg-muted/80 border border-transparent'
+                    }`}
+                  >
+                    <span>
+                      {idx + 1}. {pos.name}
+                    </span>
+                    {isFilled && (
+                      <Icon name="CheckCircleIcon" size={16} variant="solid" className="text-success" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-3 space-y-6">
               <div className="flex items-center justify-between bg-card border border-border rounded-lg p-4">
                 <div>
-                  <h2 className="text-xl font-heading font-semibold text-foreground">
-                    {positions.find((p) => p.id === currentPositionId)?.name}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    Select one candidate for this position
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary">
+                      Position Category
+                    </span>
+                    <h2 className="text-xl font-heading font-semibold text-foreground">
+                      {positions.find((p) => p.id === currentPositionId)?.name}
+                    </h2>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Select your candidate for <strong>{positions.find((p) => p.id === currentPositionId)?.name}</strong>
                   </p>
                 </div>
                 {allPositionsFilled && (
@@ -425,16 +465,24 @@ const VotingInterfaceInteractive = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {currentPositionCandidates.map((candidate) => (
-                  <CandidateCard
-                    key={candidate.id}
-                    candidate={candidate}
-                    onSelect={handleCandidateSelect}
-                    isDisabled={false}
-                  />
-                ))}
-              </div>
+              {currentPositionCandidates.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {currentPositionCandidates.map((candidate) => (
+                    <CandidateCard
+                      key={candidate.id}
+                      candidate={candidate}
+                      onSelect={handleCandidateSelect}
+                      isDisabled={false}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-card border border-border rounded-lg p-10 text-center">
+                  <Icon name="UserGroupIcon" size={40} variant="outline" className="text-muted-foreground mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-foreground">No Candidates for {positions.find((p) => p.id === currentPositionId)?.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">There are currently no approved candidates for this specific position category.</p>
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">
