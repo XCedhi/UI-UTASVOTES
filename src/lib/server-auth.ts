@@ -49,22 +49,57 @@ function getAdminClient() {
 export async function getRequestUser(request: Request): Promise<ServerAuthUser | null> {
   const authHeader = request.headers.get('authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) return null;
 
-  const { data, error } = await getAnonClient().auth.getUser(token);
-  if (error || !data.user) return null;
+  if (token) {
+    try {
+      const { data, error } = await getAnonClient().auth.getUser(token);
+      if (!error && data?.user) {
+        const { data: profile } = await getAdminClient()
+          .from('user_profiles')
+          .select('id, email, role, status, requires_password_change, access_end_date, original_role')
+          .eq('id', data.user.id)
+          .maybeSingle();
 
-  const { data: profile } = await getAdminClient()
+        if (profile) {
+          return {
+            id: profile.id,
+            email: profile.email || data.user.email || '',
+            role: profile.role,
+            status: profile.status,
+            requiresPasswordChange: Boolean(profile.requires_password_change),
+          };
+        }
+      }
+    } catch {
+      // Fall through to headers check below
+    }
+  }
+
+  // Fallback: localStorage session headers (userId + email) verified against DB
+  const userId = request.headers.get('x-user-id');
+  const userEmail = request.headers.get('x-user-email');
+  if (!userId && !userEmail) return null;
+
+  let query = getAdminClient()
     .from('user_profiles')
-    .select('id, email, role, status, requires_password_change')
-    .eq('id', data.user.id)
-    .maybeSingle();
+    .select('id, email, role, status, requires_password_change, access_end_date, original_role');
 
+  if (userId) {
+    query = query.eq('id', userId);
+  } else if (userEmail) {
+    query = query.eq('email', userEmail);
+  }
+
+  const { data: profile } = await query.maybeSingle();
   if (!profile) return null;
+
+  if (userEmail && profile.email && profile.email.toLowerCase() !== userEmail.toLowerCase()) {
+    return null;
+  }
 
   return {
     id: profile.id,
-    email: profile.email || data.user.email || '',
+    email: profile.email || '',
     role: profile.role,
     status: profile.status,
     requiresPasswordChange: Boolean(profile.requires_password_change),

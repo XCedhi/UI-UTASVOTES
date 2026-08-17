@@ -248,12 +248,15 @@ const CommissionElectionResultsInteractive = () => {
       const { supabase } = await import('@/lib/supabase');
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
+      const localSession = getUserSession();
 
       const res = await fetch('/api/elections/certify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(localSession?.userId ? { 'x-user-id': localSession.userId } : {}),
+          ...(localSession?.email ? { 'x-user-email': localSession.email } : {}),
         },
         body: JSON.stringify({ electionId: election.id }),
       });

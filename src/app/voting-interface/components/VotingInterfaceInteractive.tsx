@@ -66,6 +66,42 @@ const VotingInterfaceInteractive = () => {
     setIsHydrated(true);
   }, []);
 
+  // Support direct deep links to elections via ?election=ID
+  useEffect(() => {
+    if (typeof window !== 'undefined' && globalElections.length > 0 && activeView === 'elections') {
+      const params = new URLSearchParams(window.location.search);
+      const electionParam = params.get('election');
+      if (electionParam) {
+        const found = globalElections.find((e) => e.id === electionParam);
+        if (found) {
+          const electionPosCount = (found.positions || []).length || 1;
+          setSelectedElection({
+            id: found.id,
+            name: found.title,
+            category: found.type,
+            positions: electionPosCount,
+            votingDeadline: found.endDate,
+            description: found.description,
+            isCompleted: found.hasVoted,
+          });
+
+          // Set default position
+          const foundPositions = (found.positions || []).map((p: any) => ({
+            id: p.id || `pos-${found.id}-${(p.name || 'pos').toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+            name: p.name || 'Position',
+            electionId: found.id,
+            isCompleted: false,
+          }));
+
+          if (foundPositions.length > 0) {
+            setCurrentPositionId(foundPositions[0].id);
+          }
+          setActiveView('voting');
+        }
+      }
+    }
+  }, [globalElections, activeView]);
+
   // Map active elections, positions, and approved candidates
   const activeGlobalElections = globalElections.filter(
     (e) => e.status === 'active' || e.status === 'upcoming'
@@ -166,13 +202,12 @@ const VotingInterfaceInteractive = () => {
 
   const handleStartVoting = (electionId: string) => {
     const election = elections.find((e) => e.id === electionId);
-    if (election && !election.isCompleted) {
+    if (election) {
       setSelectedElection(election);
       const electionPositions = positions.filter((p) => p.electionId === electionId);
       if (electionPositions.length > 0) {
         setCurrentPositionId(electionPositions[0].id);
       }
-      // Reset selections for this voting session if needed, but we keep them in state
       setActiveView('voting');
     }
   };

@@ -199,8 +199,7 @@ const Header = ({
       label: 'Vote',
       path: '/voting-interface',
       icon: 'CheckBadgeIcon',
-      roles: ['student'],
-      requiresActiveElection: true,
+      roles: ['student', 'candidate'],
     },
     {
       label: 'Apply',
@@ -235,7 +234,6 @@ const Header = ({
   const visibleNavItems = navigationItems.filter((item) => {
     if (!userRole) return false;
     if (!item.roles.includes(userRole)) return false;
-    if (item.requiresActiveElection && !electionStatus?.isActive) return false;
     return true;
   });
 

@@ -286,8 +286,49 @@ const AdminElectionResultsInteractive = () => {
     alert(`Exporting results as ${format.toUpperCase()}`);
   };
 
-  const handleCertify = () => {
-    alert('Results certified and emails sent to all students');
+  const handleCertify = async () => {
+    const election = elections.find((e) => e.id === selectedElection);
+    if (!election) return;
+
+    if (
+      !confirm(
+        `Certify the final results for "${election.name}" and send them to all students (in-app notification + email)?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const { getUserSession } = await import('@/lib/auth-utils');
+      const localSession = getUserSession();
+
+      const res = await fetch('/api/elections/certify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(localSession?.userId ? { 'x-user-id': localSession.userId } : {}),
+          ...(localSession?.email ? { 'x-user-email': localSession.email } : {}),
+        },
+        body: JSON.stringify({ electionId: election.id }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(data.error || 'Failed to certify results. Please try again.');
+        return;
+      }
+
+      alert(data.message || 'Results certified and sent to all students.');
+      await fetchElections();
+    } catch (error) {
+      console.error('Error certifying election:', error);
+      alert('Failed to certify results. Please try again.');
+    }
   };
 
   const currentElection = elections.find((e) => e.id === selectedElection);
