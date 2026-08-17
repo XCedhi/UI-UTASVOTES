@@ -56,7 +56,7 @@ export async function getRequestUser(request: Request): Promise<ServerAuthUser |
       if (!error && data?.user) {
         const { data: profile } = await getAdminClient()
           .from('user_profiles')
-          .select('id, email, role, status, requires_password_change, access_end_date, original_role')
+          .select('id, email, role, status, requires_password_change, access_end_date')
           .eq('id', data.user.id)
           .maybeSingle();
 
@@ -82,7 +82,7 @@ export async function getRequestUser(request: Request): Promise<ServerAuthUser |
 
   let query = getAdminClient()
     .from('user_profiles')
-    .select('id, email, role, status, requires_password_change, access_end_date, original_role');
+    .select('id, email, role, status, requires_password_change, access_end_date');
 
   if (userId) {
     query = query.eq('id', userId);
