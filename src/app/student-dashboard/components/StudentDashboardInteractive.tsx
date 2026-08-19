@@ -76,12 +76,14 @@ const StudentDashboardInteractive = () => {
   
   // Real user data from database
   const [userData, setUserData] = useState<{
+    id?: string;
     full_name: string;
     email: string;
     student_id: string;
     department: string;
     avatar_url?: string;
   } | null>(null);
+  const [userNotifications, setUserNotifications] = useState<any[]>([]);
   const [realElections, setRealElections] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
@@ -130,6 +132,18 @@ const StudentDashboardInteractive = () => {
 
       if (profile) {
         setUserData(profile);
+
+        // Fetch in-app notifications for this student
+        const { data: notifData } = await supabase
+          .from('notifications')
+          .select('*')
+          .eq('user_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (notifData) {
+          setUserNotifications(notifData);
+        }
       }
 
       // Fetch active elections
@@ -141,10 +155,9 @@ const StudentDashboardInteractive = () => {
       if (!electionsError && electionsData) {
         setRealElections(electionsData);
       }
-
-      setLoadingData(false);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching user data and elections:', error);
+    } finally {
       setLoadingData(false);
     }
   };
@@ -325,6 +338,9 @@ const StudentDashboardInteractive = () => {
   
   // Get active election if any
   const activeElection = realElections.find(e => e.status === 'active');
+  const latestResultNotif = userNotifications.find(
+    (n) => n.type === 'result' && !n.is_read
+  ) || userNotifications.find((n) => n.type === 'result');
 
   return (
     <div className="min-h-screen bg-background">
@@ -332,7 +348,7 @@ const StudentDashboardInteractive = () => {
         userRole="student"
         userName={userData?.full_name || 'Student'}
         userAvatar={userData?.avatar_url}
-        notificationCount={notifications.length}
+        notificationCount={userNotifications.filter(n => !n.is_read).length}
         electionStatus={activeElection ? {
           isActive: true,
           name: activeElection.title,
@@ -350,6 +366,37 @@ const StudentDashboardInteractive = () => {
               Welcome back, {firstName}! Stay updated with ongoing elections and campaign activities.
             </p>
           </div>
+
+          {/* Prominent Certified Results In-App Alert Banner */}
+          {latestResultNotif && (
+            <div className="mb-6 p-5 bg-gradient-to-r from-success/15 via-primary/10 to-accent/15 border-2 border-success/30 rounded-xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-success text-success-foreground flex items-center justify-center shrink-0 shadow-sm">
+                  <Icon name="TrophyIcon" size={24} variant="solid" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider bg-success text-success-foreground">
+                      Certified Results
+                    </span>
+                    <h3 className="font-heading font-bold text-foreground text-base sm:text-lg">
+                      {latestResultNotif.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {latestResultNotif.message}
+                  </p>
+                </div>
+              </div>
+              <a
+                href={latestResultNotif.action_url || '/student-election-results'}
+                className="px-5 py-2.5 bg-success text-success-foreground font-bold text-sm rounded-lg hover:bg-success/90 transition-all shrink-0 text-center shadow-sm flex items-center justify-center gap-2"
+              >
+                <span>View Certified Results</span>
+                <Icon name="ArrowRightIcon" size={16} variant="outline" />
+              </a>
+            </div>
+          )}
 
           {activeElection && (
             <div className="mb-6">

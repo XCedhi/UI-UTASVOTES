@@ -42,21 +42,30 @@ const Header = ({
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
 
-  // Fetch notifications when the user is signed in, then poll every 10s so new
+  // Fetch notifications when the user is signed in, then poll every 5s so new
   // items (e.g. certified election results) appear in real time without a manual
   // page refresh.
   useEffect(() => {
-    if (!userRole) return;
-
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000);
+    const interval = setInterval(fetchNotifications, 5000);
 
-    return () => clearInterval(interval);
+    const handleAuth = () => {
+      fetchNotifications();
+    };
+
+    window.addEventListener('utas-auth-change', handleAuth);
+    window.addEventListener('storage', handleAuth);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('utas-auth-change', handleAuth);
+      window.removeEventListener('storage', handleAuth);
+    };
   }, [userRole]);
 
   const fetchNotifications = async () => {
     try {
-      // Get current user ID
+      // Get current user ID from localStorage
       const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
       
       if (!userId) return;
@@ -67,7 +76,7 @@ const Header = ({
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) {
         console.error('Error fetching notifications:', error);

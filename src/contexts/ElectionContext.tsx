@@ -270,12 +270,19 @@ export const ElectionProvider = ({ children }: { children: ReactNode }) => {
         );
       }
 
-      // Load notifications
-      const { data: notificationsData, error: notificationsError } = await supabase
+      // Load user-specific notifications
+      const localUser = getUserSession();
+      let notifQuery = supabase
         .from('notifications')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
+
+      if (localUser?.userId) {
+        notifQuery = notifQuery.eq('user_id', localUser.userId);
+      }
+
+      const { data: notificationsData, error: notificationsError } = await notifQuery;
 
       if (!notificationsError && notificationsData) {
         setNotifications(
